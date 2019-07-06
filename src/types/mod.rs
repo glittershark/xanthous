@@ -5,6 +5,7 @@ pub mod direction;
 pub use direction::Direction;
 pub use direction::Direction::{Down, Left, Right, Up};
 use proptest_derive::Arbitrary;
+use termion::cursor;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary)]
 pub struct Dimensions {
@@ -42,11 +43,21 @@ impl BoundingBox {
         }
     }
 
+    pub fn from_corners(top_left: Position, lower_right: Position) -> BoundingBox {
+        BoundingBox {
+            position: top_left,
+            dimensions: Dimensions {
+                w: (lower_right.x - top_left.x) as u16,
+                h: (lower_right.y - top_left.y) as u16,
+            }
+        }
+    }
+
     pub fn lr_corner(self) -> Position {
         self.position
             + (Position {
-                x: self.dimensions.w,
-                y: self.dimensions.h,
+                x: self.dimensions.w as i16,
+                y: self.dimensions.h as i16,
             })
     }
 
@@ -80,12 +91,12 @@ impl ops::Sub<Dimensions> for BoundingBox {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary)]
 pub struct Position {
     /// x (horizontal) position
-    #[proptest(strategy = "std::ops::Range::<u16>::from(0..100)")]
-    pub x: u16,
+    #[proptest(strategy = "std::ops::Range::<i16>::from(0..100)")]
+    pub x: i16,
 
-    #[proptest(strategy = "std::ops::Range::<u16>::from(0..100)")]
+    #[proptest(strategy = "std::ops::Range::<i16>::from(0..100)")]
     /// y (vertical) position
-    pub y: u16,
+    pub y: i16,
 }
 
 pub const ORIGIN: Position = Position { x: 0, y: 0 };
@@ -96,6 +107,13 @@ impl Position {
     /// inclusive
     pub fn within(self, b: BoundingBox) -> bool {
         (self > b.position - UNIT_POSITION) && self < (b.lr_corner())
+    }
+
+    /// Returns a sequence of ASCII escape characters for moving the cursor to
+    /// this Position
+    pub fn cursor_goto(&self) -> cursor::Goto {
+        // + 1 because Goto is 1-based, but position is 0-based
+        cursor::Goto(self.x as u16 + 1, self.y as u16 + 1)
     }
 }
 
@@ -131,7 +149,7 @@ impl ops::Add<Direction> for Position {
     fn add(self, dir: Direction) -> Position {
         match dir {
             Left => {
-                if self.x > 0 {
+                if self.x > std::i16::MIN {
                     Position {
                         x: self.x - 1,
                         ..self
@@ -141,7 +159,7 @@ impl ops::Add<Direction> for Position {
                 }
             }
             Right => {
-                if self.x < std::u16::MAX {
+                if self.x < std::i16::MAX {
                     Position {
                         x: self.x + 1,
                         ..self
@@ -151,7 +169,7 @@ impl ops::Add<Direction> for Position {
                 }
             }
             Up => {
-                if self.y > 0 {
+                if self.y > std::i16::MIN {
                     Position {
                         y: self.y - 1,
                         ..self
@@ -161,7 +179,7 @@ impl ops::Add<Direction> for Position {
                 }
             }
             Down => {
-                if self.y < std::u16::MAX {
+                if self.y < std::i16::MAX {
                     Position {
                         y: self.y + 1,
                         ..self
@@ -194,12 +212,18 @@ impl ops::Sub<Position> for Position {
     }
 }
 
+impl Positioned for Position {
+    fn position(&self) -> Position {
+        *self
+    }
+}
+
 pub trait Positioned {
-    fn x(&self) -> u16 {
+    fn x(&self) -> i16 {
         self.position().x
     }
 
-    fn y(&self) -> u16 {
+    fn y(&self) -> i16 {
         self.position().y
     }
 

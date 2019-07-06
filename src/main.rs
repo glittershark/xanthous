@@ -23,6 +23,7 @@ use prettytable::format::consts::FORMAT_BOX_CHARS;
 use settings::Settings;
 
 use std::io::{self, StdinLock, StdoutLock};
+use std::panic;
 
 use termion::raw::IntoRawMode;
 use termion::raw::RawTerminal;
@@ -34,8 +35,9 @@ fn init(
     w: u16,
     h: u16,
 ) {
+    panic::set_hook(Box::new(|info| error!("{}", info)));
     let game = Game::new(settings, stdout, stdin, w, h);
-    game.run()
+    game.run().unwrap()
 }
 
 fn main() {
