@@ -1,0 +1,21 @@
+[package]
+name = "xanthous"
+version = "0.1.0"
+authors = ["Griffin Smith <root@gws.fyi>"]
+edition = "2018"
+
+[dependencies]
+config = "*"
+itertools = "*"
+lazy_static = "*"
+log = "*"
+log4rs = "*"
+proptest = "0.9.3"
+proptest-derive = "*"
+serde = "^1.0.8"
+serde_derive = "^1.0.8"
+termion = "*"
+clap = {version = "^2.33.0", features = ["yaml"]}
+prettytable-rs = "^0.8"
+
+[dev-dependencies]

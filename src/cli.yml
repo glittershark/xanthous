@@ -1,0 +1,14 @@
+name: xanthous
+version: "0.0"
+author: Griffin Smith <root@gws.fyi>
+about: hey, it's a terminal game
+args:
+  - config:
+      short: c
+      long: config
+      value_name: FILE
+      help: Sets a custom config file
+      takes_value: true
+subcommands:
+  - debug:
+      about: Writes debug information to the terminal and exits

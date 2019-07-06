@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a51cf37623f0e4024f4ba1450195be296d9b9e8ae954dbbf997ce5b57cd26792 # shrinks to a = Position { x: 44, y: 25 }, b = Position { x: 0, y: 25 }, c = Position { x: 0, y: 0 }
