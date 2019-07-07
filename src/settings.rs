@@ -48,6 +48,7 @@ impl Logging {
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
+    pub seed: Option<u64>,
     pub logging: Logging,
 }
 

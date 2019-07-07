@@ -1,16 +1,20 @@
+use crate::display::{self, Viewport};
+use crate::entities::Character;
+use crate::messages::message;
 use crate::settings::Settings;
+use crate::types::command::Command;
 use crate::types::Positioned;
 use crate::types::{BoundingBox, Dimensions, Position};
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use std::io::{self, StdinLock, StdoutLock, Write};
 use termion::input::Keys;
 use termion::input::TermRead;
 use termion::raw::RawTerminal;
 
-use crate::display::{self, Viewport};
-use crate::entities::Character;
-use crate::types::command::Command;
-
 type Stdout<'a> = RawTerminal<StdoutLock<'a>>;
+
+type Rng = SmallRng;
 
 /// The full state of a running Game
 pub struct Game<'a> {
@@ -23,6 +27,12 @@ pub struct Game<'a> {
 
     /// The player character
     character: Character,
+
+    /// The messages that have been said to the user, in forward time order
+    messages: Vec<String>,
+
+    /// A global random number generator for the game
+    rng: Rng,
 }
 
 impl<'a> Game<'a> {
@@ -33,18 +43,21 @@ impl<'a> Game<'a> {
         w: u16,
         h: u16,
     ) -> Game<'a> {
+        let rng = match settings.seed {
+            Some(seed) => SmallRng::seed_from_u64(seed),
+            None => SmallRng::from_entropy(),
+        };
         Game {
-            settings: settings,
-            viewport: Viewport {
-                outer: BoundingBox::at_origin(Dimensions { w, h }),
-                inner: BoundingBox::at_origin(Dimensions {
-                    w: w - 2,
-                    h: h - 2,
-                }),
-                out: stdout,
-            },
+            settings,
+            rng,
+            viewport: Viewport::new(
+                BoundingBox::at_origin(Dimensions { w, h }),
+                BoundingBox::at_origin(Dimensions { w: w - 2, h: h - 2 }),
+                stdout,
+            ),
             keys: stdin.keys(),
             character: Character::new(),
+            messages: Vec::new(),
         }
     }
 
@@ -53,8 +66,21 @@ impl<'a> Game<'a> {
         !pos.within(self.viewport.inner)
     }
 
+    /// Draw all the game entities to the screen
     fn draw_entities(&mut self) -> io::Result<()> {
         self.viewport.draw(&self.character)
+    }
+
+    /// Get a message from the global map based on the rng in this game
+    fn message(&mut self, name: &str) -> &'static str {
+        message(name, &mut self.rng)
+    }
+
+    /// Say a message to the user
+    fn say(&mut self, message_name: &str) -> io::Result<()> {
+        let message = self.message(message_name);
+        self.messages.push(message.to_string());
+        self.viewport.write_message(message)
     }
 
     /// Run the game
@@ -62,6 +88,7 @@ impl<'a> Game<'a> {
         info!("Running game");
         self.viewport.init()?;
         self.draw_entities()?;
+        self.say("global.welcome")?;
         self.flush()?;
         loop {
             let mut old_position = None;
@@ -86,7 +113,7 @@ impl<'a> Game<'a> {
                     self.viewport.clear(old_pos)?;
                     self.viewport.draw(&self.character)?;
                 }
-                None => ()
+                None => (),
             }
             self.flush()?;
             debug!("{:?}", self.character);

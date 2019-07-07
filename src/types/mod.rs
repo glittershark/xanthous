@@ -66,6 +66,12 @@ impl BoundingBox {
     pub fn inner(self) -> BoundingBox {
         self + UNIT_POSITION - UNIT_DIMENSIONS - UNIT_DIMENSIONS
     }
+
+    /// Moves the top right corner of the bounding box by the offset specified
+    /// by the given position, keeping the lower right corner in place
+    pub fn move_tr_corner(self, offset: Position) -> BoundingBox {
+        self + offset - Dimensions { w: offset.x as u16, h: offset.y as u16 }
+    }
 }
 
 impl ops::Add<Position> for BoundingBox {

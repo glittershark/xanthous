@@ -1,10 +1,12 @@
 use crate::display::utils::clone_times;
 use crate::display::utils::times;
+use crate::types::BoundingBox;
 use crate::types::Dimensions;
 use itertools::Itertools;
 use proptest::prelude::Arbitrary;
 use proptest::strategy;
 use proptest_derive::Arbitrary;
+use std::io::{self, Write};
 
 // Box Drawing
 //  	    0 	1 	2 	3 	4 	5 	6 	7 	8 	9 	A 	B 	C 	D 	E 	F
@@ -162,6 +164,21 @@ pub fn make_box(style: BoxStyle, dims: Dimensions) -> String {
             Corner::BottomRight.style(style),
         )
     }
+}
+
+/// Draw the box described by the given BoundingBox's position and dimensions to
+/// the given output, with the given style
+pub fn draw_box<W: Write>(
+    out: &mut W,
+    bbox: BoundingBox,
+    style: BoxStyle,
+) -> io::Result<()> {
+    write!(
+        out,
+        "{}{}",
+        bbox.position.cursor_goto(),
+        make_box(style, bbox.dimensions)
+    )
 }
 
 #[cfg(test)]

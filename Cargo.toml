@@ -5,17 +5,20 @@ authors = ["Griffin Smith <root@gws.fyi>"]
 edition = "2018"
 
 [dependencies]
+clap = {version = "^2.33.0", features = ["yaml"]}
 config = "*"
 itertools = "*"
 lazy_static = "*"
 log = "*"
 log4rs = "*"
+maplit = "^1.0.1"
+prettytable-rs = "^0.8"
 proptest = "0.9.3"
 proptest-derive = "*"
+rand = {version = "^0.7.0", features = ["small_rng"]}
 serde = "^1.0.8"
 serde_derive = "^1.0.8"
 termion = "*"
-clap = {version = "^2.33.0", features = ["yaml"]}
-prettytable-rs = "^0.8"
+toml = "^0.5.1"
 
 [dev-dependencies]

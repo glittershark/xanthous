@@ -1,5 +1,8 @@
+use super::BoxStyle;
 use super::Draw;
-use super::{make_box, BoxStyle};
+use crate::display::draw_box::draw_box;
+use crate::display::utils::clone_times;
+use crate::display::utils::times;
 use crate::types::{BoundingBox, Position, Positioned};
 use std::fmt::{self, Debug};
 use std::io::{self, Write};
@@ -10,14 +13,38 @@ pub struct Viewport<W> {
     /// Generally the size of the terminal, and positioned at 0, 0
     pub outer: BoundingBox,
 
+    /// The box describing the game part of the viewport.
+    pub game: BoundingBox,
+
     /// The box describing the inner part of the viewport
     ///
-    /// Its position is relative to `outer.inner()`, and its size should generally not
-    /// be smaller than outer
+    /// Its position is relative to `outer.inner()`, and its size should
+    /// generally not be smaller than outer
     pub inner: BoundingBox,
 
     /// The actual screen that the viewport writes to
     pub out: W,
+}
+impl<W> Viewport<W> {
+    pub fn new(outer: BoundingBox, inner: BoundingBox, out: W) -> Self {
+        Viewport {
+            outer,
+            inner,
+            out,
+            game: outer.move_tr_corner(Position { x: 0, y: 1 }),
+        }
+    }
+
+    /// Returns true if the (inner-relative) position of the given entity is
+    /// visible within this viewport
+    pub fn visible<E: Positioned>(&self, ent: &E) -> bool {
+        self.on_screen(ent.position()).within(self.game.inner())
+    }
+
+    /// Convert the given inner-relative position to one on the actual screen
+    fn on_screen(&self, pos: Position) -> Position {
+        pos + self.inner.position + self.game.inner().position
+    }
 }
 
 impl<W> Debug for Viewport<W> {
@@ -30,44 +57,52 @@ impl<W> Debug for Viewport<W> {
     }
 }
 
-impl<W> Viewport<W> {
-    /// Returns true if the (inner-relative) position of the given entity is
-    /// visible within this viewport
-    fn visible<E: Positioned>(&self, ent: &E) -> bool {
-        self.on_screen(ent.position()).within(self.outer.inner())
-    }
-
-    /// Convert the given inner-relative position to one on the actual screen
-    fn on_screen(&self, pos: Position) -> Position {
-        pos + self.inner.position + self.outer.inner().position
-    }
-}
-
 impl<W: Write> Viewport<W> {
     /// Draw the given entity to the viewport at its position, if visible
     pub fn draw<T: Draw>(&mut self, entity: &T) -> io::Result<()> {
         if !self.visible(entity) {
             return Ok(());
         }
-        write!(
-            self,
-            "{}",
-            (entity.position()
-                + self.inner.position
-                + self.outer.inner().position)
-                .cursor_goto()
-        )?;
+        self.cursor_goto(entity.position())?;
         entity.do_draw(self)
     }
 
-    /// Clear whatever is drawn at the given inner-relative position, if visible
+    /// Move the cursor to the given inner-relative position
+    pub fn cursor_goto(&mut self, pos: Position) -> io::Result<()> {
+        write!(self, "{}", self.on_screen(pos).cursor_goto())
+    }
+
+    /// Clear whatever single character is drawn at the given inner-relative
+    /// position, if visible
     pub fn clear(&mut self, pos: Position) -> io::Result<()> {
         write!(self, "{} ", self.on_screen(pos).cursor_goto(),)
     }
 
     /// Initialize this viewport by drawing its outer box to the screen
     pub fn init(&mut self) -> io::Result<()> {
-        write!(self, "{}", make_box(BoxStyle::Thin, self.outer.dimensions))
+        draw_box(self, self.game, BoxStyle::Thin)
+    }
+
+    /// Write a message to the message area on the screen
+    ///
+    /// Will overwrite any message already present, and if the given message is
+    /// longer than the screen will truncate. This means callers should handle
+    /// message buffering and ellipsisization
+    pub fn write_message(&mut self, msg: &str) -> io::Result<()> {
+        write!(
+            self,
+            "{}{}{}",
+            self.outer.position.cursor_goto(),
+            if msg.len() <= self.outer.dimensions.w as usize {
+                msg
+            } else {
+                &msg[0..self.outer.dimensions.w as usize]
+            },
+            clone_times::<_, String>(
+                " ".to_string(),
+                self.outer.dimensions.w - msg.len() as u16
+            ),
+        )
     }
 }
 
@@ -99,24 +134,24 @@ mod tests {
 
     #[test]
     fn test_visible() {
-        assert!(Viewport {
-            outer: BoundingBox::at_origin(Dimensions { w: 10, h: 10 }),
-            inner: BoundingBox {
+        assert!(Viewport::new(
+            BoundingBox::at_origin(Dimensions { w: 10, h: 10 }),
+            BoundingBox {
                 position: Position { x: -10, y: -10 },
                 dimensions: Dimensions { w: 15, h: 15 },
             },
-            out: (),
-        }
+            ()
+        )
         .visible(&Position { x: 13, y: 13 }));
 
-        assert!(!Viewport {
-            outer: BoundingBox::at_origin(Dimensions { w: 10, h: 10 }),
-            inner: BoundingBox {
+        assert!(!Viewport::new(
+            BoundingBox::at_origin(Dimensions { w: 10, h: 10 }),
+            BoundingBox {
                 position: Position { x: -10, y: -10 },
                 dimensions: Dimensions { w: 15, h: 15 },
             },
-            out: (),
-        }
+            (),
+        )
         .visible(&Position { x: 1, y: 1 }));
     }
 

@@ -3,18 +3,26 @@ extern crate termion;
 extern crate log;
 extern crate config;
 extern crate log4rs;
+extern crate serde;
+extern crate toml;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate prettytable;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate maplit;
+
 
 mod display;
 mod game;
 #[macro_use]
 mod types;
 mod entities;
+mod messages;
 mod settings;
 
 use clap::App;
