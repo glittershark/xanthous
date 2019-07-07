@@ -175,7 +175,6 @@ lazy_static! {
 /// Look up a game message based on the given (dot-separated) name, with the
 /// given random generator used to select from choice-based messages
 pub fn message<R: Rng + ?Sized>(name: &str, rng: &mut R) -> &'static str {
-    use Message::*;
     MESSAGES
         .lookup(name)
         .and_then(|msg| msg.resolve(rng))

@@ -31,6 +31,10 @@ pub struct Game<'a> {
     /// The messages that have been said to the user, in forward time order
     messages: Vec<String>,
 
+    /// The index of the currently-displayed message. Used to track the index of
+    /// the currently displayed message when handling PreviousMessage commands
+    message_idx: usize,
+
     /// A global random number generator for the game
     rng: Rng,
 }
@@ -50,6 +54,7 @@ impl<'a> Game<'a> {
         Game {
             settings,
             rng,
+            message_idx: 0,
             viewport: Viewport::new(
                 BoundingBox::at_origin(Dimensions { w, h }),
                 BoundingBox::at_origin(Dimensions { w: w - 2, h: h - 2 }),
@@ -80,6 +85,16 @@ impl<'a> Game<'a> {
     fn say(&mut self, message_name: &str) -> io::Result<()> {
         let message = self.message(message_name);
         self.messages.push(message.to_string());
+        self.message_idx = self.messages.len() - 1;
+        self.viewport.write_message(message)
+    }
+
+    fn previous_message(&mut self) -> io::Result<()> {
+        if self.message_idx == 0 {
+            return Ok(());
+        }
+        self.message_idx -= 1;
+        let message = &self.messages[self.message_idx];
         self.viewport.write_message(message)
     }
 
@@ -89,23 +104,28 @@ impl<'a> Game<'a> {
         self.viewport.init()?;
         self.draw_entities()?;
         self.say("global.welcome")?;
+        self.say("somethign else")?;
         self.flush()?;
         loop {
             let mut old_position = None;
+            use Command::*;
             match Command::from_key(self.keys.next().unwrap().unwrap()) {
-                Some(Command::Quit) => {
+                Some(Quit) => {
                     info!("Quitting game due to user request");
                     break;
                 }
 
-                Some(Command::Move(direction)) => {
+                Some(Move(direction)) => {
                     let new_pos = self.character.position + direction;
                     if !self.collision_at(new_pos) {
                         old_position = Some(self.character.position);
                         self.character.position = new_pos;
                     }
                 }
-                _ => (),
+
+                Some(PreviousMessage) => self.previous_message()?,
+
+                None => (),
             }
 
             match old_position {
