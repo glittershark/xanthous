@@ -1,13 +1,13 @@
+use crate::display;
+use crate::entities::Entity;
+use crate::types::{Position, Speed};
 use proptest_derive::Arbitrary;
 use std::io::{self, Write};
 use termion::cursor;
 
-use crate::display;
-use crate::types::{Position, Speed};
-
 const DEFAULT_SPEED: Speed = Speed(100);
 
-#[derive(Debug, PartialEq, Eq, Arbitrary)]
+#[derive(Debug, PartialEq, Eq, Arbitrary, Clone)]
 pub struct Character {
     /// The position of the character, relative to the game
     pub position: Position,
@@ -26,13 +26,12 @@ impl Character {
 }
 
 positioned!(Character);
+positioned_mut!(Character);
+
+impl Entity for Character {}
 
 impl display::Draw for Character {
-    fn do_draw<W: Write>(&self, out: &mut W) -> io::Result<()> {
-        write!(
-            out,
-            "@{}",
-            cursor::Left(1),
-        )
+    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+        write!(out, "@{}", cursor::Left(1),)
     }
 }

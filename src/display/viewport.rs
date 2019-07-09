@@ -2,7 +2,6 @@ use super::BoxStyle;
 use super::Draw;
 use crate::display::draw_box::draw_box;
 use crate::display::utils::clone_times;
-use crate::display::utils::times;
 use crate::types::{BoundingBox, Position, Positioned};
 use std::fmt::{self, Debug};
 use std::io::{self, Write};

@@ -14,5 +14,17 @@ pub fn clear<T: Write>(out: &mut T) -> io::Result<()> {
 pub trait Draw: Positioned {
     /// Draw this entity, assuming the character is already at the correct
     /// position
-    fn do_draw<W: Write>(&self, out: &mut W) -> io::Result<()>;
+    fn do_draw(&self, out: &mut Write) -> io::Result<()>;
+}
+
+impl<T : Draw> Draw for &T {
+    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+        (**self).do_draw(out)
+    }
+}
+
+impl<T : Draw> Draw for Box<T> {
+    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+        (**self).do_draw(out)
+    }
 }

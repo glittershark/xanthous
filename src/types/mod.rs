@@ -1,7 +1,11 @@
 use std::cmp::Ordering;
 use std::ops;
+use std::rc::Rc;
+pub mod collision;
 pub mod command;
 pub mod direction;
+pub mod entity_map;
+pub use collision::Collision;
 pub use direction::Direction;
 pub use direction::Direction::{Down, Left, Right, Up};
 use proptest_derive::Arbitrary;
@@ -43,13 +47,16 @@ impl BoundingBox {
         }
     }
 
-    pub fn from_corners(top_left: Position, lower_right: Position) -> BoundingBox {
+    pub fn from_corners(
+        top_left: Position,
+        lower_right: Position,
+    ) -> BoundingBox {
         BoundingBox {
             position: top_left,
             dimensions: Dimensions {
                 w: (lower_right.x - top_left.x) as u16,
                 h: (lower_right.y - top_left.y) as u16,
-            }
+            },
         }
     }
 
@@ -70,7 +77,11 @@ impl BoundingBox {
     /// Moves the top right corner of the bounding box by the offset specified
     /// by the given position, keeping the lower right corner in place
     pub fn move_tr_corner(self, offset: Position) -> BoundingBox {
-        self + offset - Dimensions { w: offset.x as u16, h: offset.y as u16 }
+        self + offset
+            - Dimensions {
+                w: offset.x as u16,
+                h: offset.y as u16,
+            }
     }
 }
 
@@ -94,7 +105,7 @@ impl ops::Sub<Dimensions> for BoundingBox {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary, Hash, Ord)]
 pub struct Position {
     /// x (horizontal) position
     #[proptest(strategy = "std::ops::Range::<i16>::from(0..100)")]
@@ -103,6 +114,10 @@ pub struct Position {
     #[proptest(strategy = "std::ops::Range::<i16>::from(0..100)")]
     /// y (vertical) position
     pub y: i16,
+}
+
+pub fn pos(x: i16, y: i16) -> Position {
+    Position { x, y }
 }
 
 pub const ORIGIN: Position = Position { x: 0, y: 0 };
@@ -241,6 +256,47 @@ pub trait Positioned {
     }
 }
 
+pub trait PositionedMut: Positioned {
+    fn set_position(&mut self, pos: Position);
+}
+
+// impl<A, I> Positioned for A where A : Deref<Target = I>, I: Positioned {
+//     fn position(&self) -> Position {
+//         self.position()
+//     }
+// }
+
+impl<T: Positioned> Positioned for Box<T> {
+    fn position(&self) -> Position {
+        (**self).position()
+    }
+}
+
+impl<'a, T: Positioned> Positioned for &'a T {
+    fn position(&self) -> Position {
+        (**self).position()
+    }
+}
+
+impl<'a, T: Positioned> Positioned for &'a mut T {
+    fn position(&self) -> Position {
+        (**self).position()
+    }
+}
+
+impl<'a, T: Positioned> Positioned for Rc<T> {
+    fn position(&self) -> Position {
+        (**self).position()
+    }
+}
+
+impl<'a, T: PositionedMut> PositionedMut for &'a mut T {
+    fn set_position(&mut self, pos: Position) {
+        (**self).set_position(pos)
+    }
+}
+
+#[macro_export]
 macro_rules! positioned {
     ($name:ident) => {
         positioned!($name, position);
@@ -249,6 +305,20 @@ macro_rules! positioned {
         impl crate::types::Positioned for $name {
             fn position(&self) -> Position {
                 self.$attr
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! positioned_mut {
+    ($name:ident) => {
+        positioned_mut!($name, position);
+    };
+    ($name:ident, $attr:ident) => {
+        impl crate::types::PositionedMut for $name {
+            fn set_position(&mut self, pos: Position) {
+                self.$attr = pos;
             }
         }
     };

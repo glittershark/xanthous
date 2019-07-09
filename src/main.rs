@@ -13,9 +13,12 @@ extern crate clap;
 extern crate prettytable;
 #[macro_use]
 extern crate lazy_static;
+#[cfg(test)]
 #[macro_use]
 extern crate maplit;
-
+#[macro_use]
+extern crate downcast_rs;
+extern crate backtrace;
 
 mod display;
 mod game;
@@ -24,12 +27,14 @@ mod types;
 mod entities;
 mod messages;
 mod settings;
+mod util;
 
 use clap::App;
 use game::Game;
 use prettytable::format::consts::FORMAT_BOX_CHARS;
 use settings::Settings;
 
+use backtrace::Backtrace;
 use std::io::{self, StdinLock, StdoutLock};
 use std::panic;
 
@@ -43,7 +48,16 @@ fn init(
     w: u16,
     h: u16,
 ) {
-    panic::set_hook(Box::new(|info| error!("{}", info)));
+    panic::set_hook(if settings.logging.print_backtrace {
+        Box::new(|info| {
+            (error!("{}\n{:#?}", info, Backtrace::new()))
+        })
+    } else {
+        Box::new(|info| {
+            (error!("{}\n{:#?}", info, Backtrace::new()))
+        })
+    });
+
     let game = Game::new(settings, stdout, stdin, w, h);
     game.run().unwrap()
 }

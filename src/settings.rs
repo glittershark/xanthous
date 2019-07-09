@@ -4,13 +4,16 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Logging {
     #[serde(default = "Logging::default_level")]
     pub level: LevelFilter,
 
     #[serde(default = "Logging::default_file")]
     pub file: String,
+
+    #[serde(default = "Logging::default_print_backtrace")]
+    pub print_backtrace: bool,
 }
 
 impl Default for Logging {
@@ -18,6 +21,7 @@ impl Default for Logging {
         Logging {
             level: LevelFilter::Off,
             file: "debug.log".to_string(),
+            print_backtrace: true,
         }
     }
 }
@@ -44,9 +48,13 @@ impl Logging {
     fn default_file() -> String {
         Logging::default().file
     }
+
+    fn default_print_backtrace() -> bool {
+        Logging::default().print_backtrace
+    }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub seed: Option<u64>,
     pub logging: Logging,
