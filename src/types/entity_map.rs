@@ -73,8 +73,9 @@ impl<A> EntityMap<A> {
     /// Remove all entities at the given position
     pub fn remove_all_at(&mut self, pos: Position) {
         self.by_position.remove(&pos).map(|eids| {
-            eids.iter()
-                .map(|eid| self.by_id.remove(&eid).expect(BY_POS_INVARIANT));
+            for eid in eids {
+                self.by_id.remove(&eid).expect(BY_POS_INVARIANT);
+            }
         });
     }
 
@@ -227,16 +228,26 @@ mod tests {
             em.update_position(entity_id, new_position);
 
             if new_position != original_position {
-                assert_eq!(em.at(original_position).len(), 0);
+                assert!(em.at(original_position).iter().all(|e| e.name != ent.name));
             }
             assert_eq!(
                 em.get(entity_id).map(|e| e.position()),
                 Some(new_position)
             );
             assert_eq!(
-                em.at(new_position).iter().map(|e| e.name.clone()).collect::<Vec<_>>(),
+                em.at(new_position).iter().map(
+                    |e| e.name.clone()).collect::<Vec<_>>(),
                 vec![ent.name]
             )
+        }
+
+        #[test]
+        fn test_remove_all_at(
+            mut em in gen_entity_map(),
+            pos: Position,
+        ) {
+            em.remove_all_at(pos);
+            assert_eq!(em.at(pos).len(), 0);
         }
     }
 }

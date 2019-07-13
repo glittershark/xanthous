@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::cmp::Ordering;
 use std::ops;
 use std::rc::Rc;
@@ -135,6 +136,13 @@ impl Position {
     pub fn cursor_goto(&self) -> cursor::Goto {
         // + 1 because Goto is 1-based, but position is 0-based
         cursor::Goto(self.x as u16 + 1, self.y as u16 + 1)
+    }
+
+    /// Converts this position to the number of `Tiles` away from the origin it
+    /// represents. Usually done after subtracting two positions. Gives distance
+    /// as the crow flies
+    pub fn as_tiles(&self) -> Tiles {
+        Tiles(max(self.x.abs(), self.y.abs()).into())
     }
 }
 
@@ -340,8 +348,16 @@ pub struct Tiles(pub f32);
 pub struct Speed(pub u32);
 
 impl Speed {
+    /// Returns the number of tiles that would be moved in the given number of
+    /// ticks at this speed
     pub fn ticks_to_tiles(self, ticks: Ticks) -> Tiles {
         Tiles(ticks.0 as f32 / self.0 as f32)
+    }
+
+    /// Returns the number of ticks required to move the given number of tiles
+    /// at this speed
+    pub fn tiles_to_ticks(self, tiles: Tiles) -> Ticks {
+        Ticks(tiles.0 as u16 * self.0 as u16)
     }
 }
 
@@ -392,5 +408,21 @@ mod tests {
                 assert!(!(a < b))
             }
         }
+
+        #[test]
+        fn test_position_plus_dimension_as_tiles_monoid_action(
+            pos: Position,
+            dir: Direction,
+        ) {
+            prop_assume!(pos.y > 0 && pos.x > 0);
+            assert_eq!(((pos + dir) - pos).as_tiles(), Tiles(1.0));
+        }
+    }
+
+    #[test]
+    fn test_position_as_tiles() {
+        assert_eq!(pos(0, 0).as_tiles(), Tiles(0.0));
+        assert_eq!(pos(1, 1).as_tiles(), Tiles(1.0));
+        assert_eq!(pos(1, 2).as_tiles(), Tiles(2.0));
     }
 }

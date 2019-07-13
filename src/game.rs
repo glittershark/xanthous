@@ -6,6 +6,7 @@ use crate::settings::Settings;
 use crate::types::command::Command;
 use crate::types::entity_map::EntityID;
 use crate::types::entity_map::EntityMap;
+use crate::types::Ticks;
 use crate::types::{
     BoundingBox, Collision, Dimensions, Position, Positioned, PositionedMut,
 };
@@ -99,7 +100,11 @@ impl<'a> Game<'a> {
     }
 
     fn character(&self) -> &Character {
-        debug!("ents: {:?} cid: {:?}", self.entities.ids().map(|id| *id).collect::<Vec<u32>>(), self.character_entity_id);
+        debug!(
+            "ents: {:?} cid: {:?}",
+            self.entities.ids().map(|id| *id).collect::<Vec<u32>>(),
+            self.character_entity_id
+        );
         (*self.entities.get(self.character_entity_id).unwrap())
             .downcast_ref()
             .unwrap()
@@ -112,6 +117,9 @@ impl<'a> Game<'a> {
         }
         Ok(())
     }
+
+    /// Step the game forward the given number of ticks
+    fn tick(&mut self, ticks: Ticks) {}
 
     /// Get a message from the global map based on the rng in this game
     fn message(&mut self, name: &str) -> &'static str {
@@ -174,10 +182,14 @@ impl<'a> Game<'a> {
 
             match old_position {
                 Some(old_pos) => {
+                    self.tick(self.character().speed().tiles_to_ticks(
+                        (old_pos - self.character().position).as_tiles(),
+                    ));
                     self.viewport.clear(old_pos)?;
                     self.viewport.draw(
                         // TODO this clone feels unnecessary.
-                        &self.character().clone())?;
+                        &self.character().clone(),
+                    )?;
                 }
                 None => (),
             }
