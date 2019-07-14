@@ -2,7 +2,7 @@ use super::BoxStyle;
 use super::Draw;
 use crate::display::draw_box::draw_box;
 use crate::display::utils::clone_times;
-use crate::types::{BoundingBox, Position, Positioned};
+use crate::types::{pos, BoundingBox, Position, Positioned};
 use std::fmt::{self, Debug};
 use std::io::{self, Write};
 
@@ -23,6 +23,9 @@ pub struct Viewport<W> {
 
     /// The actual screen that the viewport writes to
     pub out: W,
+
+    /// Reset the cursor back to this position after every draw
+    pub cursor_position: Position,
 }
 impl<W> Viewport<W> {
     pub fn new(outer: BoundingBox, inner: BoundingBox, out: W) -> Self {
@@ -31,6 +34,7 @@ impl<W> Viewport<W> {
             inner,
             out,
             game: outer.move_tr_corner(Position { x: 0, y: 1 }),
+            cursor_position: pos(0, 0),
         }
     }
 
@@ -63,7 +67,12 @@ impl<W: Write> Viewport<W> {
             return Ok(());
         }
         self.cursor_goto(entity.position())?;
-        entity.do_draw(self)
+        entity.do_draw(self)?;
+        self.reset_cursor()
+    }
+
+    fn reset_cursor(&mut self) -> io::Result<()> {
+        self.cursor_goto(self.cursor_position)
     }
 
     /// Move the cursor to the given inner-relative position
@@ -74,7 +83,8 @@ impl<W: Write> Viewport<W> {
     /// Clear whatever single character is drawn at the given inner-relative
     /// position, if visible
     pub fn clear(&mut self, pos: Position) -> io::Result<()> {
-        write!(self, "{} ", self.on_screen(pos).cursor_goto(),)
+        write!(self, "{} ", self.on_screen(pos).cursor_goto(),)?;
+        self.reset_cursor()
     }
 
     /// Initialize this viewport by drawing its outer box to the screen
@@ -101,7 +111,8 @@ impl<W: Write> Viewport<W> {
                 " ".to_string(),
                 self.outer.dimensions.w - msg.len() as u16
             ),
-        )
+        )?;
+        self.reset_cursor()
     }
 }
 

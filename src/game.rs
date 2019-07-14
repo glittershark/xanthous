@@ -242,6 +242,7 @@ impl<'a> Game<'a> {
                         (old_pos - self.character().position).as_tiles(),
                     ));
                     self.viewport.clear(old_pos)?;
+                    self.viewport.cursor_position = self.character().position;
                     self.viewport.draw(
                         // TODO this clone feels unnecessary.
                         &self.character().clone(),
