@@ -1,11 +1,12 @@
 use crate::display::{self, Viewport};
 use crate::entities::Character;
-use crate::entities::Entity;
+use crate::entities::{Creature, Entity};
 use crate::messages::message;
 use crate::settings::Settings;
 use crate::types::command::Command;
 use crate::types::entity_map::EntityID;
 use crate::types::entity_map::EntityMap;
+use crate::types::pos;
 use crate::types::Ticks;
 use crate::types::{
     BoundingBox, Collision, Dimensions, Position, Positioned, PositionedMut,
@@ -74,6 +75,15 @@ impl<'a> Game<'a> {
             None => SmallRng::from_entropy(),
         };
         let mut entities: EntityMap<AnEntity<'a>> = EntityMap::new();
+
+        // TODO make this dynamic
+        {
+            entities.insert(Box::new(Creature::new_from_raw(
+                "gormlak",
+                pos(10, 0),
+            )));
+        }
+
         Game {
             settings,
             rng,

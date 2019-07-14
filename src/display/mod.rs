@@ -1,3 +1,4 @@
+pub mod color;
 pub mod draw_box;
 pub mod utils;
 pub mod viewport;
@@ -17,13 +18,13 @@ pub trait Draw: Positioned {
     fn do_draw(&self, out: &mut Write) -> io::Result<()>;
 }
 
-impl<T : Draw> Draw for &T {
+impl<T: Draw> Draw for &T {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {
         (**self).do_draw(out)
     }
 }
 
-impl<T : Draw> Draw for Box<T> {
+impl<T: Draw> Draw for Box<T> {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {
         (**self).do_draw(out)
     }

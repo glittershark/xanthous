@@ -348,7 +348,8 @@ pub struct Ticks(pub u16);
 pub struct Tiles(pub f32);
 
 /// The speed of an entity, expressed in ticks per tile
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary, Deserialize)]
+#[serde(transparent)]
 pub struct Speed(pub u32);
 
 impl Speed {

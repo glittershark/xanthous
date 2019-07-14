@@ -1,7 +1,15 @@
 pub mod character;
+pub mod creature;
+pub mod entity_char;
+pub mod raws;
+
+pub use character::Character;
+pub use creature::Creature;
+pub use entity_char::EntityChar;
+pub use raws::raw;
+
 use crate::display::Draw;
 use crate::types::{Positioned, PositionedMut};
-pub use character::Character;
 use downcast_rs::Downcast;
 use std::io::{self, Write};
 
