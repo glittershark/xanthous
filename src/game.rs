@@ -1,15 +1,12 @@
 use crate::display::{self, Viewport};
-use crate::entities::Character;
-use crate::entities::{Creature, Entity};
+use crate::entities::{Character, Creature, Entity, EntityID, Identified};
 use crate::messages::message;
 use crate::settings::Settings;
 use crate::types::command::Command;
-use crate::types::entity_map::EntityID;
 use crate::types::entity_map::EntityMap;
-use crate::types::pos;
-use crate::types::Ticks;
 use crate::types::{
-    BoundingBox, Collision, Dimensions, Position, Positioned, PositionedMut,
+    pos, BoundingBox, Collision, Dimensions, Position, Positioned,
+    PositionedMut, Ticks,
 };
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -100,21 +97,29 @@ impl<'a> Game<'a> {
         }
     }
 
+    /// Returns a list of all creature entities at the given position
+    fn creatures_at<'b>(&'b self, pos: Position) -> Vec<&'b Creature> {
+        self.entities
+            .at(pos)
+            .iter()
+            .filter_map(|e| e.downcast_ref())
+            .collect()
+    }
+
     /// Returns a collision, if any, at the given Position in the game
     fn collision_at(&self, pos: Position) -> Option<Collision> {
         if !pos.within(self.viewport.inner) {
             Some(Collision::Stop)
         } else {
-            None
+            if self.creatures_at(pos).len() > 0 {
+                Some(Collision::Combat)
+            } else {
+                None
+            }
         }
     }
 
     fn character(&self) -> &Character {
-        debug!(
-            "ents: {:?} cid: {:?}",
-            self.entities.ids().map(|id| *id).collect::<Vec<u32>>(),
-            self.character_entity_id
-        );
         (*self.entities.get(self.character_entity_id).unwrap())
             .downcast_ref()
             .unwrap()
@@ -124,6 +129,14 @@ impl<'a> Game<'a> {
     fn draw_entities(&mut self) -> io::Result<()> {
         for entity in self.entities.entities() {
             self.viewport.draw(entity)?;
+        }
+        Ok(())
+    }
+
+    /// Remove the given entity from the game, drawing over it if it's visible
+    fn remove_entity(&mut self, entity_id: EntityID) -> io::Result<()> {
+        if let Some(entity) = self.entities.remove(entity_id) {
+            self.viewport.clear(entity.position())?;
         }
         Ok(())
     }
@@ -153,6 +166,37 @@ impl<'a> Game<'a> {
         self.viewport.write_message(message)
     }
 
+    fn attack(&mut self, creature_id: EntityID) -> io::Result<()> {
+        info!("Attacking creature {:?}", creature_id);
+        self.say("combat.attack")?;
+        let damage = self.character().damage();
+        let creature = self
+            .entities
+            .get_mut(creature_id)
+            .and_then(|e| e.downcast_mut::<Creature>())
+            .expect(
+                format!("Creature ID went away: {:?}", creature_id).as_str(),
+            );
+        creature.damage(damage);
+        if creature.dead() {
+            self.say("combat.killed")?;
+            info!("Killed creature {:?}", creature_id);
+            self.remove_entity(creature_id)?;
+        }
+        Ok(())
+    }
+
+    fn attack_at(&mut self, pos: Position) -> io::Result<()> {
+        let creatures = self.creatures_at(pos);
+        if creatures.len() == 1 {
+            let creature = creatures.get(0).unwrap();
+            self.attack(creature.id())
+        } else {
+            // TODO prompt with a menu of creatures to combat
+            unimplemented!()
+        }
+    }
+
     /// Run the game
     pub fn run(mut self) -> io::Result<()> {
         info!("Running game");
@@ -180,7 +224,9 @@ impl<'a> Game<'a> {
                                 new_pos,
                             );
                         }
-                        Some(Combat) => unimplemented!(),
+                        Some(Combat) => {
+                            self.attack_at(new_pos)?;
+                        }
                         Some(Stop) => (),
                     }
                 }

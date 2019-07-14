@@ -1,11 +1,13 @@
 use crate::display;
 use crate::entities::raws::CreatureType;
 use crate::entities::raws::EntityRaw;
-use crate::entities::{raw, Entity};
+use crate::entities::{raw, EntityID};
 use crate::types::Position;
 use std::io::{self, Write};
 
+#[derive(Debug)]
 pub struct Creature {
+    pub id: Option<EntityID>,
     pub typ: &'static CreatureType<'static>,
     pub position: Position,
     pub hitpoints: u16,
@@ -24,17 +26,29 @@ impl Creature {
         position: Position,
     ) -> Self {
         Creature {
+            id: None,
             typ,
             position,
             hitpoints: typ.max_hitpoints,
         }
     }
+
+    /// Damage the given creature by the given amount
+    pub fn damage(&mut self, amount: u16) {
+        if self.hitpoints <= amount {
+            self.hitpoints = 0;
+        } else {
+            self.hitpoints -= amount;
+        }
+    }
+
+    /// Returns true if this creature has died
+    pub fn dead(&self) -> bool {
+        self.hitpoints <= 0
+    }
 }
 
-positioned!(Creature);
-positioned_mut!(Creature);
-
-impl Entity for Creature {}
+entity!(Creature);
 
 impl display::Draw for Creature {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {

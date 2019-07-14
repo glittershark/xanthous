@@ -1,11 +1,11 @@
+use crate::entities::entity::Identified;
+use crate::entities::EntityID;
 use crate::types::Position;
 use crate::types::Positioned;
 use crate::types::PositionedMut;
 use std::collections::hash_map::HashMap;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
-
-pub type EntityID = u32;
 
 #[derive(Debug)]
 pub struct EntityMap<A> {
@@ -83,6 +83,10 @@ impl<A> EntityMap<A> {
         self.by_id.get(&id)
     }
 
+    pub fn get_mut<'a>(&'a mut self, id: EntityID) -> Option<&'a mut A> {
+        self.by_id.get_mut(&id)
+    }
+
     pub fn entities<'a>(&'a self) -> impl Iterator<Item = &'a A> {
         self.by_id.values()
     }
@@ -101,10 +105,11 @@ impl<A> EntityMap<A> {
     }
 }
 
-impl<A: Positioned> EntityMap<A> {
-    pub fn insert(&mut self, entity: A) -> EntityID {
+impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
+    pub fn insert(&mut self, mut entity: A) -> EntityID {
         let pos = entity.position();
         let entity_id = self.next_id();
+        entity.set_id(entity_id);
         self.by_id.entry(entity_id).or_insert(entity);
         self.by_position
             .entry(pos)
@@ -112,9 +117,19 @@ impl<A: Positioned> EntityMap<A> {
             .push(entity_id);
         entity_id
     }
+
+    /// Remove the entity with the given ID
+    pub fn remove(&mut self, id: EntityID) -> Option<A> {
+        self.by_id.remove(&id).map(|e| {
+            self.by_position
+                .get_mut(&e.position())
+                .map(|es| es.retain(|e| *e != id));
+            e
+        })
+    }
 }
 
-impl<A: Positioned> FromIterator<A> for EntityMap<A> {
+impl<A: Positioned + Identified<EntityID>> FromIterator<A> for EntityMap<A> {
     fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
         let mut em = EntityMap::new();
         for ent in iter {
@@ -160,6 +175,7 @@ mod tests {
 
     #[derive(Debug, Arbitrary, PartialEq, Eq, Clone)]
     struct TestEntity {
+        _id: Option<EntityID>,
         position: Position,
         name: String,
     }
@@ -173,6 +189,16 @@ mod tests {
     impl PositionedMut for TestEntity {
         fn set_position(&mut self, pos: Position) {
             self.position = pos
+        }
+    }
+
+    impl Identified<EntityID> for TestEntity {
+        fn opt_id(&self) -> Option<EntityID> {
+            self._id
+        }
+
+        fn set_id(&mut self, id: EntityID) {
+            self._id = Some(id);
         }
     }
 
@@ -194,7 +220,7 @@ mod tests {
             let mut map = EntityMap::new();
             assert_eq!(map.len(), 0);
             for ent in &items {
-                map.insert(ent);
+                map.insert(ent.clone());
             }
             assert_eq!(map.len(), items.len());
         }
@@ -205,7 +231,7 @@ mod tests {
             ent: TestEntity
         ) {
             em.insert(ent.clone());
-            assert!(em.at(ent.position).iter().any(|e| **e == ent))
+            assert!(em.at(ent.position).iter().any(|e| e.name == ent.name))
         }
 
         #[test]
@@ -214,7 +240,7 @@ mod tests {
             ent: TestEntity
         ) {
             em.insert(ent.clone());
-            assert!(em.entities().any(|e| *e == ent))
+            assert!(em.entities().any(|e| e.name == ent.name))
         }
 
         #[test]

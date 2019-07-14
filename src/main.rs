@@ -24,11 +24,12 @@ extern crate include_dir;
 
 #[macro_use]
 mod util;
-mod display;
-mod game;
 #[macro_use]
 mod types;
+#[macro_use]
 mod entities;
+mod display;
+mod game;
 mod messages;
 mod settings;
 

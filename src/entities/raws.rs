@@ -49,7 +49,6 @@ lazy_static! {
 }
 
 pub fn raw(name: &'static str) -> &'static EntityRaw<'static> {
-    debug!("{:?}", RAWS_BY_NAME.keys().collect::<Vec<&&'static str>>());
     RAWS_BY_NAME
         .get(name)
         .map(|e| *e)

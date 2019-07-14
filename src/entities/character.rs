@@ -1,5 +1,5 @@
 use crate::display;
-use crate::entities::Entity;
+use crate::entities::EntityID;
 use crate::types::{Position, Speed};
 use proptest_derive::Arbitrary;
 use std::io::{self, Write};
@@ -9,6 +9,8 @@ const DEFAULT_SPEED: Speed = Speed(100);
 
 #[derive(Debug, PartialEq, Eq, Arbitrary, Clone)]
 pub struct Character {
+    pub id: Option<EntityID>,
+
     /// The position of the character, relative to the game
     pub position: Position,
 }
@@ -16,6 +18,7 @@ pub struct Character {
 impl Character {
     pub fn new() -> Character {
         Character {
+            id: None,
             position: Position { x: 0, y: 0 },
         }
     }
@@ -23,12 +26,14 @@ impl Character {
     pub fn speed(&self) -> Speed {
         Speed(100)
     }
+
+    pub fn damage(&self) -> u16 {
+        // TODO
+        1
+    }
 }
 
-positioned!(Character);
-positioned_mut!(Character);
-
-impl Entity for Character {}
+entity!(Character);
 
 impl display::Draw for Character {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {

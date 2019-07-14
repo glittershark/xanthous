@@ -1,2 +1,6 @@
 [global]
 welcome = "Welcome to Xanthous! It's dangerous out there, why not stay inside?"
+
+[combat]
+attack = "You attack the {{creature_name}}."
+killed = "You killed the {{creature_name}}."
