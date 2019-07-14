@@ -19,14 +19,16 @@ extern crate maplit;
 #[macro_use]
 extern crate downcast_rs;
 extern crate backtrace;
+#[macro_use]
+extern crate include_dir;
 
+#[macro_use]
+mod util;
 mod display;
 mod game;
 #[macro_use]
 mod types;
 mod entities;
-#[macro_use]
-mod util;
 mod messages;
 mod settings;
 

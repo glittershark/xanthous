@@ -1,2 +1,2 @@
 #[macro_use]
-pub mod static_toml;
+pub mod static_cfg;

@@ -9,6 +9,7 @@ backtrace = "0.3"
 clap = {version = "^2.33.0", features = ["yaml"]}
 config = "*"
 downcast-rs = "^1.0.4"
+include_dir = "0.2.1"
 itertools = "*"
 lazy_static = "*"
 log = "*"
@@ -20,6 +21,7 @@ proptest-derive = "*"
 rand = {version = "^0.7.0", features = ["small_rng"]}
 serde = "^1.0.8"
 serde_derive = "^1.0.8"
+serde_json = "*"
 termion = "*"
 toml = "^0.5.1"
 
