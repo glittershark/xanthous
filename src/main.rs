@@ -25,9 +25,10 @@ mod game;
 #[macro_use]
 mod types;
 mod entities;
+#[macro_use]
+mod util;
 mod messages;
 mod settings;
-mod util;
 
 use clap::App;
 use game::Game;
@@ -49,13 +50,9 @@ fn init(
     h: u16,
 ) {
     panic::set_hook(if settings.logging.print_backtrace {
-        Box::new(|info| {
-            (error!("{}\n{:#?}", info, Backtrace::new()))
-        })
+        Box::new(|info| (error!("{}\n{:#?}", info, Backtrace::new())))
     } else {
-        Box::new(|info| {
-            (error!("{}\n{:#?}", info, Backtrace::new()))
-        })
+        Box::new(|info| (error!("{}\n{:#?}", info, Backtrace::new())))
     });
 
     let game = Game::new(settings, stdout, stdin, w, h);

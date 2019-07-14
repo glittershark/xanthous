@@ -165,11 +165,8 @@ choice = ["Say this", "Or this"]
     }
 }
 
-static MESSAGES_RAW: &'static str = include_str!("messages.toml");
-
-lazy_static! {
-    static ref MESSAGES: NestedMap<'static> =
-        toml::from_str(MESSAGES_RAW).unwrap();
+static_cfg! {
+    static ref MESSAGES: NestedMap<'static> = toml_file("messages.toml");
 }
 
 /// Look up a game message based on the given (dot-separated) name, with the
