@@ -6,4 +6,8 @@ pub enum Direction {
     Up,
     Down,
     Right,
+    UpLeft,
+    UpRight,
+    DownRight,
+    DownLeft,
 }

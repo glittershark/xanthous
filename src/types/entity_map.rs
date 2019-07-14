@@ -234,10 +234,9 @@ mod tests {
                 em.get(entity_id).map(|e| e.position()),
                 Some(new_position)
             );
-            assert_eq!(
+            assert!(
                 em.at(new_position).iter().map(
-                    |e| e.name.clone()).collect::<Vec<_>>(),
-                vec![ent.name]
+                    |e| e.name.clone()).any(|en| en == ent.name),
             )
         }
 

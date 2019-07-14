@@ -8,7 +8,7 @@ pub mod direction;
 pub mod entity_map;
 pub use collision::Collision;
 pub use direction::Direction;
-pub use direction::Direction::{Down, Left, Right, Up};
+pub use direction::Direction::*;
 use proptest_derive::Arbitrary;
 use termion::cursor;
 
@@ -217,6 +217,10 @@ impl ops::Add<Direction> for Position {
                     self
                 }
             }
+            UpLeft => self + Up + Left,
+            UpRight => self + Up + Right,
+            DownLeft => self + Down + Left,
+            DownRight => self + Down + Right,
         }
     }
 }

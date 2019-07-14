@@ -6,3 +6,4 @@
 # everyone who runs the test benefits from these saved cases.
 cc 16afe2473971397314ffa77acf7bad62f0c40bc3f591aff7aa9193c29e5a0921 # shrinks to items = [(Position { x: 92, y: 60 }, ""), (Position { x: 92, y: 60 }, "")]
 cc 3a68a382c3bb8fdf60ea150a369abbdd45859e0c54cd6a4f7c75937a6c783b98 # shrinks to mut em = EntityMap { by_position: {Position { x: 25, y: 33 }: [1]}, by_id: {1: TestEntity { position: Position { x: 25, y: 33 }, name: "" }}, last_id: 1 }, ent = TestEntity { position: Position { x: 25, y: 33 }, name: "" }, new_position = Position { x: 0, y: 0 }
+cc ffd7181e1c0343ab4c2ac92990f068d24c8663158c1c0a9526cd9edc470f950a # shrinks to mut em = EntityMap { by_position: {Position { x: 64, y: 58 }: [1]}, by_id: {1: TestEntity { position: Position { x: 64, y: 58 }, name: "" }}, last_id: 1 }, ent = TestEntity { position: Position { x: 0, y: 0 }, name: "" }, new_position = Position { x: 64, y: 58 }

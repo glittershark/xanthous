@@ -23,6 +23,11 @@ impl Command {
             Char('k') | Char('w') | Key::Up => Some(Move(Up)),
             Char('j') | Char('s') | Key::Down => Some(Move(Down)),
             Char('l') | Char('d') | Key::Right => Some(Move(Right)),
+            Char('y') => Some(Move(UpLeft)),
+            Char('u') => Some(Move(UpRight)),
+            Char('b') => Some(Move(DownLeft)),
+            Char('n') => Some(Move(DownRight)),
+
             Ctrl('p') => Some(PreviousMessage),
             _ => None,
         }
