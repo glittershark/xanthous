@@ -21,6 +21,8 @@ extern crate downcast_rs;
 extern crate backtrace;
 #[macro_use]
 extern crate include_dir;
+#[macro_use]
+extern crate nom;
 
 #[macro_use]
 mod util;

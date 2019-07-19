@@ -8,6 +8,7 @@ use crate::types::{
     pos, BoundingBox, Collision, Dimensions, Position, Positioned,
     PositionedMut, Ticks,
 };
+use crate::util::template::TemplateParams;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use std::io::{self, StdinLock, StdoutLock, Write};
@@ -145,16 +146,24 @@ impl<'a> Game<'a> {
     fn tick(&mut self, ticks: Ticks) {}
 
     /// Get a message from the global map based on the rng in this game
-    fn message(&mut self, name: &str) -> &'static str {
-        message(name, &mut self.rng)
+    fn message<'params>(
+        &mut self,
+        name: &'static str,
+        params: &TemplateParams<'params>,
+    ) -> String {
+        message(name, &mut self.rng, params)
     }
 
     /// Say a message to the user
-    fn say(&mut self, message_name: &str) -> io::Result<()> {
-        let message = self.message(message_name);
+    fn say<'params>(
+        &mut self,
+        message_name: &'static str,
+        params: &TemplateParams<'params>,
+    ) -> io::Result<()> {
+        let message = self.message(message_name, params);
         self.messages.push(message.to_string());
         self.message_idx = self.messages.len() - 1;
-        self.viewport.write_message(message)
+        self.viewport.write_message(&message)
     }
 
     fn previous_message(&mut self) -> io::Result<()> {
@@ -166,20 +175,45 @@ impl<'a> Game<'a> {
         self.viewport.write_message(message)
     }
 
-    fn attack(&mut self, creature_id: EntityID) -> io::Result<()> {
-        info!("Attacking creature {:?}", creature_id);
-        self.say("combat.attack")?;
-        let damage = self.character().damage();
-        let creature = self
-            .entities
+    fn creature(&self, creature_id: EntityID) -> Option<&Creature> {
+        self.entities
+            .get(creature_id)
+            .and_then(|e| e.downcast_ref::<Creature>())
+    }
+
+    fn expect_creature(&self, creature_id: EntityID) -> &Creature {
+        self.creature(creature_id).expect(
+            format!("Creature ID went away: {:?}", creature_id).as_str(),
+        )
+    }
+
+    fn mut_creature(&mut self, creature_id: EntityID) -> Option<&mut Creature> {
+        self.entities
             .get_mut(creature_id)
             .and_then(|e| e.downcast_mut::<Creature>())
-            .expect(
-                format!("Creature ID went away: {:?}", creature_id).as_str(),
-            );
+    }
+
+    fn expect_mut_creature(&mut self, creature_id: EntityID) -> &mut Creature {
+        self.mut_creature(creature_id).expect(
+            format!("Creature ID went away: {:?}", creature_id).as_str(),
+        )
+    }
+
+    fn attack(&mut self, creature_id: EntityID) -> io::Result<()> {
+        info!("Attacking creature {:?}", creature_id);
+        let damage = self.character().damage();
+        let creature_name = self.expect_creature(creature_id).typ.name;
+        let tps = template_params!({
+            "creature" => {
+                "name" => creature_name,
+            },
+        });
+        self.say("combat.attack", &tps)?;
+
+        let creature = self.expect_mut_creature(creature_id);
         creature.damage(damage);
         if creature.dead() {
-            self.say("combat.killed")?;
+            self.say("combat.killed", &tps)?;
             info!("Killed creature {:?}", creature_id);
             self.remove_entity(creature_id)?;
         }
@@ -202,7 +236,7 @@ impl<'a> Game<'a> {
         info!("Running game");
         self.viewport.init()?;
         self.draw_entities()?;
-        self.say("global.welcome")?;
+        self.say("global.welcome", &template_params!())?;
         self.flush()?;
         loop {
             let mut old_position = None;

@@ -2,5 +2,10 @@
 welcome = "Welcome to Xanthous! It's dangerous out there, why not stay inside?"
 
 [combat]
-attack = "You attack the {{creature_name}}."
-killed = "You killed the {{creature_name}}."
+attack = "You attack the {{creature.name}}."
+killed = [
+    "You've killed the {{creature.name}}.",
+    "The {{creature.name}} dies.",
+    "The {{creature.name}} kicks it.",
+    "The {{creature.name}} beefs it."
+    ]

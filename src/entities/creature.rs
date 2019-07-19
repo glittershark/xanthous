@@ -5,7 +5,7 @@ use crate::entities::{raw, EntityID};
 use crate::types::Position;
 use std::io::{self, Write};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Creature {
     pub id: Option<EntityID>,
     pub typ: &'static CreatureType<'static>,

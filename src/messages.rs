@@ -1,32 +1,33 @@
+use crate::util::template::Template;
+use crate::util::template::TemplateParams;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use serde::de::MapAccess;
-use serde::de::SeqAccess;
-use serde::de::Visitor;
 use std::collections::HashMap;
-use std::fmt;
-use std::marker::PhantomData;
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 enum Message<'a> {
-    Single(&'a str),
-    Choice(Vec<&'a str>),
+    #[serde(borrow)]
+    Single(Template<'a>),
+    Choice(Vec<Template<'a>>),
 }
 
 impl<'a> Message<'a> {
-    fn resolve<R: Rng + ?Sized>(&self, rng: &mut R) -> Option<&'a str> {
+    fn resolve<R: Rng + ?Sized>(&self, rng: &mut R) -> Option<&Template<'a>> {
         use Message::*;
         match self {
-            Single(msg) => Some(*msg),
-            Choice(msgs) => msgs.choose(rng).map(|msg| *msg),
+            Single(msg) => Some(msg),
+            Choice(msgs) => msgs.choose(rng),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[serde(untagged)]
 enum NestedMap<'a> {
+    #[serde(borrow)]
     Direct(Message<'a>),
+    #[serde(borrow)]
     Nested(HashMap<&'a str, NestedMap<'a>>),
 }
 
@@ -43,63 +44,6 @@ impl<'a> NestedMap<'a> {
             Some(Direct(msg)) => Some(msg),
             _ => None,
         }
-    }
-}
-
-struct NestedMapVisitor<'a> {
-    marker: PhantomData<fn() -> NestedMap<'a>>,
-}
-
-impl<'a> NestedMapVisitor<'a> {
-    fn new() -> Self {
-        NestedMapVisitor {
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'de> Visitor<'de> for NestedMapVisitor<'de> {
-    type Value = NestedMap<'de>;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(
-            "A message, a list of messages, or a nested map of messages",
-        )
-    }
-
-    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E> {
-        Ok(NestedMap::Direct(Message::Single(v)))
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut choices = Vec::with_capacity(seq.size_hint().unwrap_or(0));
-        while let Some(choice) = seq.next_element()? {
-            choices.push(choice);
-        }
-        Ok(NestedMap::Direct(Message::Choice(choices)))
-    }
-
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        let mut nested = HashMap::with_capacity(map.size_hint().unwrap_or(0));
-        while let Some((k, v)) = map.next_entry()? {
-            nested.insert(k, v);
-        }
-        Ok(NestedMap::Nested(nested))
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for NestedMap<'de> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_any(NestedMapVisitor::new())
     }
 }
 
@@ -122,13 +66,18 @@ choice = ["Say this", "Or this"]
             result,
             Ok(NestedMap::Nested(hashmap! {
                 "global" => NestedMap::Nested(hashmap!{
-                    "hello" => NestedMap::Direct(Message::Single("Hello World!")),
+                    "hello" => NestedMap::Direct(Message::Single(Template::parse("Hello World!").unwrap())),
                 }),
                 "foo" => NestedMap::Nested(hashmap!{
                     "bar" => NestedMap::Nested(hashmap!{
-                        "single" => NestedMap::Direct(Message::Single("Single")),
+                        "single" => NestedMap::Direct(Message::Single(
+                            Template::parse("Single").unwrap()
+                        )),
                         "choice" => NestedMap::Direct(Message::Choice(
-                            vec!["Say this", "Or this"]
+                            vec![
+                                Template::parse("Say this").unwrap(),
+                                Template::parse("Or this").unwrap()
+                            ]
                         ))
                     })
                 })
@@ -152,31 +101,43 @@ choice = ["Say this", "Or this"]
 
         assert_eq!(
             map.lookup("global.hello"),
-            Some(&Message::Single("Hello World!"))
+            Some(&Message::Single(Template::parse("Hello World!").unwrap()))
         );
         assert_eq!(
             map.lookup("foo.bar.single"),
-            Some(&Message::Single("Single"))
+            Some(&Message::Single(Template::parse("Single").unwrap()))
         );
         assert_eq!(
             map.lookup("foo.bar.choice"),
-            Some(&Message::Choice(vec!["Say this", "Or this"]))
+            Some(&Message::Choice(vec![
+                Template::parse("Say this").unwrap(),
+                Template::parse("Or this").unwrap()
+            ]))
         );
     }
 }
+
+// static MESSAGES_RAW: &'static str = include_str!("messages.toml");
 
 static_cfg! {
     static ref MESSAGES: NestedMap<'static> = toml_file("messages.toml");
 }
 
-/// Look up a game message based on the given (dot-separated) name, with the
-/// given random generator used to select from choice-based messages
-pub fn message<R: Rng + ?Sized>(name: &str, rng: &mut R) -> &'static str {
-    MESSAGES
-        .lookup(name)
-        .and_then(|msg| msg.resolve(rng))
-        .unwrap_or_else(|| {
+/// Look up and format a game message based on the given (dot-separated) name,
+/// with the given random generator used to select from choice-based messages
+pub fn message<'a, R: Rng + ?Sized>(
+    name: &'static str,
+    rng: &mut R,
+    params: &TemplateParams<'a>,
+) -> String {
+    match MESSAGES.lookup(name).and_then(|msg| msg.resolve(rng)) {
+        Some(msg) => msg.format(params).unwrap_or_else(|e| {
+            error!("Error formatting template: {}", e);
+            "Template Error".to_string()
+        }),
+        None => {
             error!("Message not found: {}", name);
-            "Message not found"
-        })
+            "Template Not Found".to_string()
+        }
+    }
 }
