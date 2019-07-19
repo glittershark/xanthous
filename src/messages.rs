@@ -48,7 +48,7 @@ impl<'a> NestedMap<'a> {
 }
 
 #[cfg(test)]
-mod tests {
+mod nested_map_tests {
     use super::*;
 
     #[test]
@@ -139,5 +139,21 @@ pub fn message<'a, R: Rng + ?Sized>(
             error!("Message not found: {}", name);
             "Template Not Found".to_string()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::rngs::SmallRng;
+    use rand::SeedableRng;
+
+    #[test]
+    fn test_static_messages() {
+        message(
+            "global.welcome",
+            &mut SmallRng::from_entropy(),
+            &template_params!(),
+        );
     }
 }
