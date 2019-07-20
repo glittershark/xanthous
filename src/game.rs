@@ -1,5 +1,7 @@
 use crate::display::{self, Viewport};
-use crate::entities::{Character, Creature, Entity, EntityID, Identified};
+use crate::entities::{
+    Character, Creature, Entity, EntityID, Identified, Item,
+};
 use crate::messages::message;
 use crate::settings::Settings;
 use crate::types::command::Command;
@@ -80,6 +82,9 @@ impl<'a> Game<'a> {
                 "gormlak",
                 pos(10, 0),
             )));
+
+            entities
+                .insert(Box::new(Item::new_from_raw("noodles", pos(0, 10))));
         }
 
         Game {

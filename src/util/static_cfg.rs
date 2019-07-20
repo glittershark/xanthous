@@ -14,6 +14,9 @@ macro_rules! __static_cfg_include {
     (json_dir, $filename:expr) => {
         include_dir!($filename)
     };
+    (cfg_dir, $filename:expr) => {
+        include_dir!($filename)
+    };
 }
 
 macro_rules! __static_cfg_type {
@@ -21,6 +24,7 @@ macro_rules! __static_cfg_type {
     (json_file) => (&'static str);
     (toml_dir) => (include_dir::Dir<'static>);
     (json_dir) => (include_dir::Dir<'static>);
+    (cfg_dir) => (include_dir::Dir<'static>);
 }
 
 macro_rules! __static_cfg_parse {
@@ -38,6 +42,10 @@ macro_rules! __static_cfg_parse {
 
     (json_dir, $e:expr) => {
         crate::util::static_cfg::parse_json_dir($e)
+    };
+
+    (cfg_dir, $e:expr) => {
+        crate::util::static_cfg::parse_cfg_dir($e);
     };
 }
 
@@ -70,13 +78,61 @@ macro_rules! static_cfg {
     () => ()
 }
 
+pub fn parse_cfg_dir<'a, T>(d: Dir<'a>) -> Vec<T>
+where
+    T: de::Deserialize<'a>,
+{
+    d.files()
+        .iter()
+        .filter_map(|f| {
+            let path = f.path();
+            let contents = f.contents_utf8().unwrap();
+            match path.extension().and_then(|e| e.to_str()) {
+                Some("toml") => {
+                    Some(toml::from_str(contents).unwrap_or_else(|e| {
+                        panic!(
+                            "Error parsing TOML file {}: {}",
+                            path.display(),
+                            e
+                        )
+                    }))
+                }
+                Some("json") => {
+                    Some(serde_json::from_str(contents).unwrap_or_else(|e| {
+                        panic!(
+                            "Error parsing JSON file {}: {}",
+                            path.display(),
+                            e
+                        )
+                    }))
+                }
+                // > YAML currently does not support zero-copy deserialization
+                // Some("yaml") => {
+                //     Some(serde_yaml::from_str(contents).unwrap_or_else(|e| {
+                //         panic!(
+                //             "Error parsing YAML file {}: {}",
+                //             path.display(),
+                //             e
+                //         )
+                //     }))
+                // }
+                _ => None,
+            }
+        })
+        .collect()
+}
+
 pub fn parse_toml_dir<'a, T>(d: Dir<'a>) -> Vec<T>
 where
     T: de::Deserialize<'a>,
 {
     d.files()
         .iter()
-        .map(|f| toml::from_str(f.contents_utf8().unwrap()).unwrap())
+        .map(|f| {
+            toml::from_str(f.contents_utf8().unwrap()).unwrap_or_else(|e| {
+                panic!("Error parsing TOML file {}: {}", f.path, e)
+            })
+        })
         .collect()
 }
 

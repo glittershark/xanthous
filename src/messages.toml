@@ -9,3 +9,6 @@ killed = [
     "The {{creature.name}} kicks it.",
     "The {{creature.name}} beefs it."
     ]
+
+[defaults.item]
+eat = "You eat the {{item.name}}"

@@ -35,6 +35,12 @@ impl<'a> color::Color for &'a Color {
     }
 }
 
+impl Default for Color {
+    fn default() -> Self {
+        Color::new(color::Reset)
+    }
+}
+
 pub struct ColorVisitor {
     marker: PhantomData<fn() -> Color>,
 }

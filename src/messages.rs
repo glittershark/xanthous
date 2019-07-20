@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
-enum Message<'a> {
+pub enum Message<'a> {
     #[serde(borrow)]
     Single(Template<'a>),
     Choice(Vec<Template<'a>>),
@@ -123,6 +123,13 @@ static_cfg! {
     static ref MESSAGES: NestedMap<'static> = toml_file("messages.toml");
 }
 
+pub fn get<R: Rng + ?Sized>(
+    name: &'static str,
+    rng: &mut R,
+) -> Option<&'static Template<'static>> {
+    MESSAGES.lookup(name).and_then(|msg| msg.resolve(rng))
+}
+
 /// Look up and format a game message based on the given (dot-separated) name,
 /// with the given random generator used to select from choice-based messages
 pub fn message<'a, R: Rng + ?Sized>(
@@ -130,7 +137,7 @@ pub fn message<'a, R: Rng + ?Sized>(
     rng: &mut R,
     params: &TemplateParams<'a>,
 ) -> String {
-    match MESSAGES.lookup(name).and_then(|msg| msg.resolve(rng)) {
+    match get(name, rng) {
         Some(msg) => msg.format(params).unwrap_or_else(|e| {
             error!("Error formatting template: {}", e);
             "Template Error".to_string()

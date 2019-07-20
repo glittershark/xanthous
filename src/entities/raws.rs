@@ -1,37 +1,8 @@
-use crate::entities::entity_char::EntityChar;
-use crate::types::Speed;
+pub use crate::entities::raw_types::{CreatureType, EntityRaw, ItemType};
 use std::collections::HashMap;
 
-#[derive(Debug, Deserialize)]
-pub struct CreatureType<'a> {
-    /// The name of the creature. Used in raw lookups.
-    pub name: &'a str,
-
-    /// A description of the entity, used by the "look" command
-    pub description: &'a str,
-
-    #[serde(rename = "char")]
-    pub chr: EntityChar,
-    pub max_hitpoints: u16,
-    pub speed: Speed,
-    pub friendly: bool,
-}
-
-#[derive(Debug, Deserialize)]
-pub enum EntityRaw<'a> {
-    Creature(#[serde(borrow)] CreatureType<'a>),
-}
-
-impl<'a> EntityRaw<'a> {
-    pub fn name(&self) -> &'a str {
-        match self {
-            EntityRaw::Creature(typ) => typ.name,
-        }
-    }
-}
-
 static_cfg! {
-    static ref RAWS: Vec<EntityRaw<'static>> = toml_dir("src/entities/raws");
+    static ref RAWS: Vec<EntityRaw<'static>> = cfg_dir("src/entities/raws");
 }
 
 lazy_static! {
@@ -53,4 +24,15 @@ pub fn raw(name: &'static str) -> &'static EntityRaw<'static> {
         .get(name)
         .map(|e| *e)
         .expect(format!("Raw not found: {}", name).as_str())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_raws() {
+        RAWS_BY_NAME.keys();
+        assert_eq!(raw("noodles").name(), "noodles");
+    }
 }

@@ -7,6 +7,7 @@ extern crate serde;
 extern crate toml;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -23,6 +24,8 @@ extern crate backtrace;
 extern crate include_dir;
 #[macro_use]
 extern crate nom;
+#[macro_use]
+extern crate matches;
 
 #[macro_use]
 mod util;

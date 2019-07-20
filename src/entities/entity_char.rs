@@ -4,7 +4,9 @@ use termion::color;
 
 #[derive(Debug, Deserialize)]
 pub struct EntityChar {
+    #[serde(default)]
     color: Color,
+
     #[serde(rename = "char")]
     chr: char,
 }
