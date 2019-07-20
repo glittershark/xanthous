@@ -12,3 +12,11 @@ args:
 subcommands:
   - debug:
       about: Writes debug information to the terminal and exits
+  - generate-level:
+      about: Generate a level and print it to the screen
+      args:
+      - generator:
+          long: generator
+          value_name: GEN
+          help: Select which generator to use
+          takes_value: true

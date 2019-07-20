@@ -35,12 +35,15 @@ mod types;
 mod entities;
 mod display;
 mod game;
+mod level_gen;
 mod messages;
 mod settings;
 
 use clap::App;
 use game::Game;
 use prettytable::format::consts::FORMAT_BOX_CHARS;
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use settings::Settings;
 
 use backtrace::Backtrace;
@@ -73,14 +76,12 @@ fn main() {
     let settings = Settings::load().unwrap();
     settings.logging.init_log();
     let stdout = io::stdout();
-    let stdout = stdout.lock();
+    let mut stdout = stdout.lock();
 
     let stdin = io::stdin();
     let stdin = stdin.lock();
 
     let termsize = termion::terminal_size().ok();
-    // let termwidth = termsize.map(|(w, _)| w - 2).unwrap_or(70);
-    // let termheight = termsize.map(|(_, h)| h - 2).unwrap_or(40);
     let (termwidth, termheight) = termsize.unwrap_or((70, 40));
 
     match matches.subcommand() {
@@ -93,6 +94,20 @@ fn main() {
             );
             table.set_format(*FORMAT_BOX_CHARS);
             table.printstd();
+        }
+        ("generate-level", params) => {
+            let params = params.unwrap();
+            let mut rand = SmallRng::from_entropy();
+            let level = match params.value_of("generator") {
+                None => panic!("Must supply a generator with --generator"),
+                Some("cave_automata") => level_gen::cave_automata::generate(
+                    &Default::default(),
+                    &mut rand,
+                ),
+                Some(gen) => panic!("Unrecognized generator: {}", gen),
+            };
+            level_gen::display::print_generated_level(&level, &mut stdout)
+                .unwrap();
         }
         _ => {
             let stdout = stdout.into_raw_mode().unwrap();
