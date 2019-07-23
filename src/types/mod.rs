@@ -24,6 +24,12 @@ pub struct Dimensions {
 pub const ZERO_DIMENSIONS: Dimensions = Dimensions { w: 0, h: 0 };
 pub const UNIT_DIMENSIONS: Dimensions = Dimensions { w: 1, h: 1 };
 
+impl Default for Dimensions {
+    fn default() -> Self {
+        Dimensions { w: 80, h: 20 }
+    }
+}
+
 impl ops::Sub<Dimensions> for Dimensions {
     type Output = Dimensions;
     fn sub(self, dims: Dimensions) -> Dimensions {

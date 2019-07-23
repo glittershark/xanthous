@@ -4,17 +4,46 @@ use rand::Rng;
 
 pub struct Params {
     chance_to_start_alive: f64,
-    dimensions: Dimensions,
     birth_limit: i32,
     death_limit: i32,
     steps: usize,
+}
+
+macro_rules! parse_optional {
+    ($out: ident . $attr: ident, $matches: expr, $arg: expr) => {
+        if let Some(val_s) = $matches.value_of($arg) {
+            $out.$attr = val_s.parse().unwrap();
+        }
+    };
+}
+
+macro_rules! parse_optional_matches {
+    ($matches: expr) => {};
+    ($matches: expr , { $ret: ident . $attr: ident = $arg: expr }) => {
+        parse_optional!($ret.$attr, $matches, $arg);
+    };
+    ($matches: expr, { $($ret: ident . $attr: ident = $arg: expr ,)* }) => {
+        $(parse_optional!($ret.$attr, $matches, $arg);)*
+    };
+}
+
+impl Params {
+    pub fn from_matches<'a>(matches: &clap::ArgMatches<'a>) -> Self {
+        let mut ret: Self = Default::default();
+        parse_optional_matches!(matches, {
+            ret.chance_to_start_alive = "start-alive-chance",
+            ret.birth_limit = "birth-limit",
+            ret.death_limit = "death-limit",
+            ret.steps = "steps",
+        });
+        ret
+    }
 }
 
 impl Default for Params {
     fn default() -> Self {
         Params {
             chance_to_start_alive: 0.45,
-            dimensions: Dimensions { w: 80, h: 20 },
             birth_limit: 4,
             death_limit: 3,
             steps: 2,
@@ -23,21 +52,26 @@ impl Default for Params {
 }
 
 pub fn generate<R: Rng + ?Sized>(
+    dimensions: &Dimensions,
     params: &Params,
     rand: &mut R,
 ) -> Vec<Vec<bool>> {
     let mut cells =
-        rand_initialize(&params.dimensions, rand, params.chance_to_start_alive);
+        rand_initialize(&dimensions, rand, params.chance_to_start_alive);
     for _ in 0..params.steps {
-        step_automata(&mut cells, params);
+        step_automata(&mut cells, dimensions, params);
     }
     cells
 }
 
-fn step_automata(cells: &mut Vec<Vec<bool>>, params: &Params) {
+fn step_automata(
+    cells: &mut Vec<Vec<bool>>,
+    dimensions: &Dimensions,
+    params: &Params,
+) {
     let orig_cells = (*cells).clone();
-    for x in 0..(params.dimensions.h as usize) {
-        for y in 0..(params.dimensions.w as usize) {
+    for x in 0..(dimensions.h as usize) {
+        for y in 0..(dimensions.w as usize) {
             let nbs = num_alive_neighbors(&orig_cells, x as i32, y as i32);
             if orig_cells[x][y] {
                 if nbs < params.death_limit {

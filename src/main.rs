@@ -39,6 +39,7 @@ mod level_gen;
 mod messages;
 mod settings;
 
+use crate::types::Dimensions;
 use clap::App;
 use game::Game;
 use prettytable::format::consts::FORMAT_BOX_CHARS;
@@ -59,7 +60,7 @@ fn init(
     stdin: StdinLock<'_>,
     w: u16,
     h: u16,
-) {
+) -> io::Result<()> {
     panic::set_hook(if settings.logging.print_backtrace {
         Box::new(|info| (error!("{}\n{:#?}", info, Backtrace::new())))
     } else {
@@ -67,10 +68,36 @@ fn init(
     });
 
     let game = Game::new(settings, stdout, stdin, w, h);
-    game.run().unwrap()
+    game.run()
 }
 
-fn main() {
+fn generate_level<'a, W: io::Write>(
+    stdout: &mut W,
+    params: &clap::ArgMatches<'a>,
+) -> io::Result<()> {
+    let mut rand = SmallRng::from_entropy();
+
+    let mut dimensions: Dimensions = Default::default();
+    if let Some(h_s) = params.value_of("height") {
+        dimensions.h = h_s.parse().unwrap();
+    }
+    if let Some(w_s) = params.value_of("width") {
+        dimensions.w = w_s.parse().unwrap();
+    }
+
+    let level = match params.value_of("generator") {
+        None => panic!("Must supply a generator with --generator"),
+        Some("cave_automata") => level_gen::cave_automata::generate(
+            &dimensions,
+            &level_gen::cave_automata::Params::from_matches(params),
+            &mut rand,
+        ),
+        Some(gen) => panic!("Unrecognized generator: {}", gen),
+    };
+    level_gen::display::print_generated_level(&level, stdout)
+}
+
+fn main() -> io::Result<()> {
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
     let settings = Settings::load().unwrap();
@@ -85,7 +112,7 @@ fn main() {
     let (termwidth, termheight) = termsize.unwrap_or((70, 40));
 
     match matches.subcommand() {
-        ("debug", _) => {
+        ("info", _) => {
             let mut table = table!(
                 [br->"termwidth", termwidth],
                 [br->"termheight", termheight],
@@ -94,24 +121,14 @@ fn main() {
             );
             table.set_format(*FORMAT_BOX_CHARS);
             table.printstd();
+            Ok(())
         }
         ("generate-level", params) => {
-            let params = params.unwrap();
-            let mut rand = SmallRng::from_entropy();
-            let level = match params.value_of("generator") {
-                None => panic!("Must supply a generator with --generator"),
-                Some("cave_automata") => level_gen::cave_automata::generate(
-                    &Default::default(),
-                    &mut rand,
-                ),
-                Some(gen) => panic!("Unrecognized generator: {}", gen),
-            };
-            level_gen::display::print_generated_level(&level, &mut stdout)
-                .unwrap();
+            generate_level(&mut stdout, params.unwrap())
         }
         _ => {
             let stdout = stdout.into_raw_mode().unwrap();
-            init(settings, stdout, stdin, termwidth, termheight);
+            init(settings, stdout, stdin, termwidth, termheight)
         }
     }
 }
