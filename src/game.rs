@@ -24,15 +24,15 @@ type Stdout<'a> = RawTerminal<StdoutLock<'a>>;
 
 type Rng = SmallRng;
 
-type AnEntity<'a> = Box<dyn Entity>;
+type AnEntity = Box<dyn Entity>;
 
-impl<'a> Positioned for AnEntity<'a> {
+impl Positioned for AnEntity {
     fn position(&self) -> Position {
         (**self).position()
     }
 }
 
-impl<'a> PositionedMut for AnEntity<'a> {
+impl PositionedMut for AnEntity {
     fn set_position(&mut self, pos: Position) {
         (**self).set_position(pos)
     }
@@ -120,7 +120,7 @@ pub struct Game<'a> {
     input_state: InputState,
 
     /// The map of all the entities in the game
-    entities: EntityMap<AnEntity<'a>>,
+    entities: EntityMap<AnEntity>,
 
     /// The entity ID of the player character
     character_entity_id: EntityID,
@@ -151,7 +151,7 @@ impl<'a> Game<'a> {
             Some(seed) => SmallRng::seed_from_u64(seed),
             None => SmallRng::from_entropy(),
         };
-        let mut entities: EntityMap<AnEntity<'a>> = EntityMap::new();
+        let mut entities: EntityMap<AnEntity> = EntityMap::new();
 
         // TODO make this dynamic
         {
@@ -219,9 +219,25 @@ impl<'a> Game<'a> {
     /// Draw all the game entities to the screen
     fn draw_entities(&mut self) -> io::Result<()> {
         for entity in self.entities.entities() {
-            self.viewport.draw(entity)?;
+            self.viewport.draw(
+                entity,
+                &self.entities.neighbor_entities(entity.position()),
+            )?;
         }
         Ok(())
+    }
+
+    /// Draw the game entity with the given ID, if any, to the screen
+    fn draw_entity(&mut self, entity_id: EntityID) -> io::Result<bool> {
+        if let Some(entity) = self.entities.get(entity_id) {
+            self.viewport.draw(
+                entity,
+                &self.entities.neighbor_entities(entity.position()),
+            )?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Remove the given entity from the game, drawing over it if it's visible
@@ -418,19 +434,17 @@ impl<'a> Game<'a> {
 
                     match old_position {
                         Some(old_pos) => {
+                            let character = self.character();
+                            self.viewport.game_cursor_position =
+                                character.position;
+                            self.viewport.clear(old_pos)?;
+                            self.draw_entity(self.character_entity_id)?;
                             self.tick(
                                 self.character().speed().tiles_to_ticks(
                                     (old_pos - self.character().position)
                                         .as_tiles(),
                                 ),
                             );
-                            self.viewport.clear(old_pos)?;
-                            self.viewport.game_cursor_position =
-                                self.character().position;
-                            self.viewport.draw(
-                                // TODO this clone feels unnecessary.
-                                &self.character().clone(),
-                            )?;
                         }
                         None => (),
                     }

@@ -2,6 +2,7 @@ use crate::display::utils::clone_times;
 use crate::display::utils::times;
 use crate::types::BoundingBox;
 use crate::types::Dimensions;
+use crate::types::Neighbors;
 use itertools::Itertools;
 use proptest::prelude::Arbitrary;
 use proptest::strategy;
@@ -22,42 +23,50 @@ use std::io::{self, Write};
 static BOX: char = '☐';
 
 static BOX_CHARS: [[char; 16]; 8] = [
+    // 0
     [
         // 0    1    2    3    4    5    6    7    8    9
         '─', '━', '│', '┃', '┄', '┅', '┆', '┇', '┈', '┉',
         // 10
         '┊', '┋', '┌', '┍', '┎', '┏',
     ],
+    // 1
     [
         // 0    1    2    3    4    5    6    7    8    9
         '┐', '┑', '┒', '┓', '└', '┕', '┖', '┗', '┘', '┙',
         '┚', '┛', '├', '┝', '┞', '┟',
     ],
+    // 2
     [
         // 0    1    2    3    4    5    6    7    8    9
         '┠', '┡', '┢', '┣', '┤', '┥', '┦', '┧', '┨', '┩',
         '┪', '┫', '┬', '┭', '┮', '┯',
     ],
+    // 3
     [
         // 0    1    2    3    4    5    6    7    8    9
         '┰', '┱', '┲', '┳', '┴', '┵', '┶', '┷', '┸', '┹',
         '┺', '┻', '┼', '┽', '┾', '┿',
     ],
+    // 4
     [
         // 0    1    2    3    4    5    6    7    8    9
         '╀', '╁', '╂', '╃', '╄', '╅', '╆', '╇', '╈', '╉',
         '╊', '╋', '╌', '╍', '╎', '╏',
     ],
+    // 5
     [
         // 0    1    2    3    4    5    6    7    8    9
         '═', '║', '╒', '╓', '╔', '╕', '╖', '╗', '╘', '╙',
         '╚', '╛', '╜', '╝', '╞', '╟',
     ],
+    // 6
     [
         // 0    1    2    3    4    5    6    7    8    9
         '╠', '╡', '╢', '╣', '╤', '╥', '╦', '╧', '╨', '╩',
         '╪', '╫', '╬', '╭', '╮', '╯',
     ],
+    // 7
     [
         // 0    1    2    3    4    5    6    7    8    9
         '╰', '╱', '╲', '╳', '╴', '╵', '╶', '╷', '╸', '╹',
@@ -85,8 +94,8 @@ impl Arbitrary for BoxStyle {
     }
 }
 
-trait Stylable {
-    fn style(self, style: BoxStyle) -> char;
+pub trait Stylable {
+    fn style(&self, style: BoxStyle) -> char;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary)]
@@ -98,7 +107,7 @@ enum Corner {
 }
 
 impl Stylable for Corner {
-    fn style(self, style: BoxStyle) -> char {
+    fn style(&self, style: BoxStyle) -> char {
         use BoxStyle::*;
         use Corner::*;
 
@@ -119,13 +128,46 @@ enum Line {
 }
 
 impl Stylable for Line {
-    fn style(self, style: BoxStyle) -> char {
+    fn style(&self, style: BoxStyle) -> char {
         use BoxStyle::*;
         use Line::*;
         match (self, style) {
             (H, Thin) => BOX_CHARS[0][0],
             (V, Thin) => BOX_CHARS[0][2],
             _ => unimplemented!(),
+        }
+    }
+}
+
+impl Stylable for Neighbors<Option<BoxStyle>> {
+    fn style(&self, style: BoxStyle) -> char {
+        use BoxStyle::*;
+        match (self.left, self.right, self.top, self.bottom) {
+            (None, None, None, None) => BOX,
+            (Some(Thin), None, None, None) => BOX_CHARS[7][4],
+            (None, Some(Thin), None, None) => BOX_CHARS[7][6],
+            (None, None, Some(Thin), None) => BOX_CHARS[7][5],
+            (None, None, None, Some(Thin)) => BOX_CHARS[7][7],
+            (Some(Thin), Some(Thin), None, None) => Line::H.style(Thin),
+            (Some(Thin), None, Some(Thin), None) => {
+                Corner::BottomRight.style(Thin)
+            }
+            (Some(Thin), None, None, Some(Thin)) => {
+                Corner::TopRight.style(Thin)
+            }
+            (None, Some(Thin), Some(Thin), None) => {
+                Corner::BottomLeft.style(Thin)
+            }
+            (None, Some(Thin), None, Some(Thin)) => Corner::TopLeft.style(Thin),
+            (None, None, Some(Thin), Some(Thin)) => Line::V.style(Thin),
+            (None, Some(Thin), Some(Thin), Some(Thin)) => BOX_CHARS[1][12],
+            (Some(Thin), None, Some(Thin), Some(Thin)) => BOX_CHARS[2][4],
+            (Some(Thin), Some(Thin), None, Some(Thin)) => BOX_CHARS[2][12],
+            (Some(Thin), Some(Thin), Some(Thin), None) => BOX_CHARS[3][4],
+            (Some(Thin), Some(Thin), Some(Thin), Some(Thin)) => {
+                BOX_CHARS[3][12]
+            }
+            neighs => panic!("unimplemented: {:?}", neighs),
         }
     }
 }

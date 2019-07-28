@@ -1,8 +1,11 @@
 #[macro_use]
 pub mod entity;
+#[macro_use]
+pub mod util;
 pub mod character;
 pub mod creature;
 pub mod entity_char;
+pub mod environment;
 pub mod item;
 pub mod raw_types;
 pub mod raws;

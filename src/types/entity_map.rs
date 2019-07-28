@@ -1,13 +1,16 @@
 use crate::entities::entity::Identified;
 use crate::entities::EntityID;
+use crate::types::Neighbors;
 use crate::types::Position;
 use crate::types::Positioned;
 use crate::types::PositionedMut;
-use std::collections::hash_map::HashMap;
-use std::collections::BTreeMap;
+use alga::general::{
+    AbstractMagma, AbstractMonoid, AbstractSemigroup, Additive, Identity,
+};
+use std::collections::{BTreeMap, HashMap};
 use std::iter::FromIterator;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct EntityMap<A> {
     by_position: BTreeMap<Position, Vec<EntityID>>,
     by_id: HashMap<EntityID, A>,
@@ -127,6 +130,52 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
             e
         })
     }
+
+    /// Moves all elements from `other` into `Self`, leathing `other` empty.
+    pub fn append(&mut self, other: &mut Self) {
+        self.by_position.append(&mut other.by_position);
+        self.by_id.reserve(other.len());
+        for (k, v) in other.by_id.drain() {
+            self.by_id.insert(k, v);
+        }
+        self.last_id = self.last_id.max(other.last_id);
+        other.last_id = 0;
+    }
+
+    /// Gets all 8 neighbors of the given position.
+    pub fn neighbors<'a>(
+        &'a self,
+        position: Position,
+    ) -> Neighbors<Vec<(EntityID, &'a A)>> {
+        Neighbors::of_position(position)
+            .map(|pos| self.at(*pos))
+            .mapmap(&|e| (e.id(), *e))
+    }
+
+    pub fn neighbor_entities<'a>(
+        &'a self,
+        position: Position,
+    ) -> Neighbors<Vec<&'a A>> {
+        self.neighbors(position).mapmap(&|(_eid, ent)| *ent)
+    }
+}
+
+impl<'a, A: Positioned + Identified<EntityID>> IntoIterator
+    for &'a EntityMap<A>
+{
+    type Item = (&'a EntityID, &'a A);
+    type IntoIter = std::collections::hash_map::Iter<'a, EntityID, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        (&self.by_id).into_iter()
+    }
+}
+
+impl<A: Positioned + Identified<EntityID>> IntoIterator for EntityMap<A> {
+    type Item = (EntityID, A);
+    type IntoIter = std::collections::hash_map::IntoIter<EntityID, A>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.by_id.into_iter()
+    }
 }
 
 impl<A: Positioned + Identified<EntityID>> FromIterator<A> for EntityMap<A> {
@@ -137,6 +186,44 @@ impl<A: Positioned + Identified<EntityID>> FromIterator<A> for EntityMap<A> {
         }
         em
     }
+}
+
+impl<A: Positioned + Identified<EntityID> + Eq + Clone> AbstractMagma<Additive>
+    for EntityMap<A>
+{
+    fn operate(&self, right: &Self) -> Self {
+        let mut by_position = self.by_position.clone();
+        by_position.append(&mut right.by_position.clone());
+
+        let mut by_id = self.by_id.clone();
+        for (k, v) in right.by_id.clone() {
+            by_id.insert(k, v);
+        }
+
+        EntityMap {
+            by_position,
+            by_id,
+            last_id: self.last_id.max(right.last_id),
+        }
+    }
+}
+
+impl<A: Positioned + Identified<EntityID> + Eq + Clone>
+    AbstractSemigroup<Additive> for EntityMap<A>
+{
+}
+
+impl<A: Positioned + Identified<EntityID> + Eq> Identity<Additive>
+    for EntityMap<A>
+{
+    fn identity() -> Self {
+        EntityMap::new()
+    }
+}
+
+impl<A: Positioned + Identified<EntityID> + Eq + Clone> AbstractMonoid<Additive>
+    for EntityMap<A>
+{
 }
 
 impl<A: PositionedMut> EntityMap<A> {
@@ -273,6 +360,36 @@ mod tests {
         ) {
             em.remove_all_at(pos);
             assert_eq!(em.at(pos).len(), 0);
+        }
+
+        #[test]
+        fn test_entity_map_semigroup_laws(
+            em1 in gen_entity_map(),
+            em2 in gen_entity_map(),
+            em3 in gen_entity_map(),
+        ) {
+            assert!(AbstractSemigroup::prop_is_associative((em1, em2, em3)));
+        }
+
+        fn test_entity_map_monoid_laws(
+            em in gen_entity_map(),
+        ) {
+            assert!(
+                AbstractMonoid::prop_operating_identity_element_is_noop((em,))
+            );
+        }
+
+        #[test]
+        fn test_entity_map_append(
+            mut target in gen_entity_map(),
+            mut source in gen_entity_map(),
+        ) {
+            let orig_source = source.clone();
+            target.append(&mut source);
+            assert_eq!(source, EntityMap::new());
+            for (eid, e) in orig_source {
+                assert_eq!(target.get(eid), Some(&e))
+            }
         }
     }
 }

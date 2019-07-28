@@ -1,5 +1,6 @@
-use crate::display::Draw;
+use crate::display::DrawWithNeighbors;
 use crate::entities::EntityID;
+use crate::types::Neighbors;
 use crate::types::{Positioned, PositionedMut};
 use downcast_rs::Downcast;
 use std::fmt::Debug;
@@ -37,7 +38,7 @@ impl<ID, A: Identified<ID>> Identified<ID> for Box<A> {
 }
 
 pub trait Entity:
-    Positioned + PositionedMut + Identified<EntityID> + Draw + Downcast
+    Positioned + PositionedMut + Identified<EntityID> + DrawWithNeighbors + Downcast
 {
 }
 
@@ -52,10 +53,10 @@ impl Identified<EntityID> for Box<dyn Entity> {
 
 #[macro_export]
 macro_rules! identified {
-    ($name: ident, $typ: ident) => {
+    ($name: ident, $typ: path) => {
         identified!($name, $typ, id);
     };
-    ($name: ident, $typ: ident, $attr: ident) => {
+    ($name: ident, $typ: path, $attr: ident) => {
         impl crate::entities::entity::Identified<$typ> for $name {
             fn opt_id(&self) -> Option<$typ> {
                 self.$attr
@@ -68,20 +69,14 @@ macro_rules! identified {
     };
 }
 
-#[macro_export]
-macro_rules! entity {
-    ($name: ident) => {
-        positioned!($name);
-        positioned_mut!($name);
-        identified!($name, EntityID);
-        impl crate::entities::entity::Entity for $name {}
-    };
-}
-
 impl_downcast!(Entity);
 
-impl Draw for Box<dyn Entity> {
-    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
-        (**self).do_draw(out)
+impl DrawWithNeighbors for Box<dyn Entity> {
+    fn do_draw_with_neighbors<'a, 'b>(
+        &'a self,
+        out: &'b mut Write,
+        neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+    ) -> io::Result<()> {
+        (**self).do_draw_with_neighbors(out, neighbors)
     }
 }

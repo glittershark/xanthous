@@ -2,6 +2,8 @@ pub mod color;
 pub mod draw_box;
 pub mod utils;
 pub mod viewport;
+use crate::entities::entity::Entity;
+use crate::types::Neighbors;
 use crate::types::Positioned;
 pub use draw_box::{make_box, BoxStyle};
 use std::io::{self, Write};
@@ -27,5 +29,23 @@ impl<T: Draw> Draw for &T {
 impl<T: Draw> Draw for Box<T> {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {
         (**self).do_draw(out)
+    }
+}
+
+pub trait DrawWithNeighbors: Positioned {
+    fn do_draw_with_neighbors<'a, 'b>(
+        &'a self,
+        out: &'b mut Write,
+        neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+    ) -> io::Result<()>;
+}
+
+impl<T: Draw> DrawWithNeighbors for T {
+    fn do_draw_with_neighbors<'a, 'b>(
+        &'a self,
+        out: &'b mut Write,
+        _neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+    ) -> io::Result<()> {
+        self.do_draw(out)
     }
 }

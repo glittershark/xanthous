@@ -31,3 +31,22 @@ pub fn rand_initialize<R: Rng + ?Sized>(
     }
     ret
 }
+
+/// Fill the outer edges of a generated level with walls
+pub fn fill_outer_edges(level: &mut Vec<Vec<bool>>) {
+    let xmax = level.len();
+    if xmax == 0 {
+        return;
+    }
+    let ymax = level[0].len();
+
+    for x in 0..xmax {
+        level[x][0] = true;
+        level[x][ymax - 1] = true;
+    }
+
+    for y in 0..level[0].len() {
+        level[0][y] = true;
+        level[xmax - 1][y] = true;
+    }
+}

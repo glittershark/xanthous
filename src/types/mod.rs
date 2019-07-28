@@ -320,8 +320,8 @@ macro_rules! positioned {
         positioned!($name, position);
     };
     ($name:ident, $attr:ident) => {
-        impl crate::types::Positioned for $name {
-            fn position(&self) -> Position {
+        impl $crate::types::Positioned for $name {
+            fn position(&self) -> $crate::types::Position {
                 self.$attr
             }
         }
@@ -335,7 +335,7 @@ macro_rules! positioned_mut {
     };
     ($name:ident, $attr:ident) => {
         impl crate::types::PositionedMut for $name {
-            fn set_position(&mut self, pos: Position) {
+            fn set_position(&mut self, pos: $crate::types::Position) {
                 self.$attr = pos;
             }
         }
@@ -369,6 +369,55 @@ impl Speed {
     /// at this speed
     pub fn tiles_to_ticks(self, tiles: Tiles) -> Ticks {
         Ticks(tiles.0 as u16 * self.0 as u16)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Arbitrary)]
+pub struct Neighbors<A> {
+    pub top_left: A,
+    pub top: A,
+    pub top_right: A,
+    pub left: A,
+    pub right: A,
+    pub bottom_left: A,
+    pub bottom: A,
+    pub bottom_right: A,
+}
+
+impl Neighbors<Position> {
+    fn of_position(pos: Position) -> Self {
+        Neighbors {
+            top_left: pos + Direction::UpLeft,
+            top: pos + Direction::Up,
+            top_right: pos + Direction::UpRight,
+            left: pos + Direction::Left,
+            right: pos + Direction::Right,
+            bottom_left: pos + Direction::DownLeft,
+            bottom: pos + Direction::Down,
+            bottom_right: pos + Direction::DownRight,
+        }
+    }
+}
+
+impl<A> Neighbors<A> {
+    /// it's a functor, yo
+    pub fn map<B, F: Fn(&A) -> B>(&self, f: F) -> Neighbors<B> {
+        Neighbors {
+            top_left: f(&self.top_left),
+            top: f(&self.top),
+            top_right: f(&self.top_right),
+            left: f(&self.left),
+            right: f(&self.right),
+            bottom_left: f(&self.bottom_left),
+            bottom: f(&self.bottom),
+            bottom_right: f(&self.bottom_right),
+        }
+    }
+}
+
+impl<A> Neighbors<Vec<A>> {
+    pub fn mapmap<B, F: Fn(&A) -> B>(&self, f: &F) -> Neighbors<Vec<B>> {
+        self.map(|xs| xs.iter().map(f).collect())
     }
 }
 

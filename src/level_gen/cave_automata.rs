@@ -1,3 +1,4 @@
+use crate::level_gen::util::fill_outer_edges;
 use crate::level_gen::util::rand_initialize;
 use crate::types::Dimensions;
 use rand::Rng;
@@ -61,6 +62,9 @@ pub fn generate<R: Rng + ?Sized>(
     for _ in 0..params.steps {
         step_automata(&mut cells, dimensions, params);
     }
+
+    fill_outer_edges(&mut cells);
+
     cells
 }
 

@@ -1,7 +1,9 @@
 use super::BoxStyle;
-use super::Draw;
+use super::DrawWithNeighbors;
 use crate::display::draw_box::draw_box;
 use crate::display::utils::clone_times;
+use crate::entities::entity::Entity;
+use crate::types::Neighbors;
 use crate::types::{pos, BoundingBox, Direction, Position, Positioned};
 use std::fmt::{self, Debug};
 use std::io::{self, Write};
@@ -77,12 +79,16 @@ impl<W> Debug for Viewport<W> {
 
 impl<W: Write> Viewport<W> {
     /// Draw the given entity to the viewport at its position, if visible
-    pub fn draw<T: Draw>(&mut self, entity: &T) -> io::Result<()> {
+    pub fn draw<'a, T: DrawWithNeighbors>(
+        &mut self,
+        entity: &T,
+        neighbors: &Neighbors<Vec<&Box<dyn Entity>>>,
+    ) -> io::Result<()> {
         if !self.visible(entity) {
             return Ok(());
         }
         self.cursor_goto(entity.position())?;
-        entity.do_draw(self)?;
+        entity.do_draw_with_neighbors(self, neighbors)?;
         self.reset_cursor()
     }
 

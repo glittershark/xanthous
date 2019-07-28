@@ -95,7 +95,7 @@ fn generate_level<'a, W: io::Write>(
         ),
         Some(gen) => panic!("Unrecognized generator: {}", gen),
     };
-    level_gen::display::print_generated_level(&level, stdout)
+    level_gen::draw_level(level, stdout)
 }
 
 fn main() -> io::Result<()> {
