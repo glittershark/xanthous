@@ -2,9 +2,20 @@ use super::BoxStyle;
 use super::Draw;
 use crate::display::draw_box::draw_box;
 use crate::display::utils::clone_times;
-use crate::types::{pos, BoundingBox, Position, Positioned};
+use crate::types::{pos, BoundingBox, Direction, Position, Positioned};
 use std::fmt::{self, Debug};
 use std::io::{self, Write};
+
+pub enum CursorState {
+    Game,
+    Prompt(Position),
+}
+
+impl Default for CursorState {
+    fn default() -> Self {
+        CursorState::Game
+    }
+}
 
 pub struct Viewport<W> {
     /// The box describing the visible part of the viewport.
@@ -24,9 +35,12 @@ pub struct Viewport<W> {
     /// The actual screen that the viewport writes to
     pub out: W,
 
+    cursor_state: CursorState,
+
     /// Reset the cursor back to this position after every draw
-    pub cursor_position: Position,
+    pub game_cursor_position: Position,
 }
+
 impl<W> Viewport<W> {
     pub fn new(outer: BoundingBox, inner: BoundingBox, out: W) -> Self {
         Viewport {
@@ -34,7 +48,8 @@ impl<W> Viewport<W> {
             inner,
             out,
             game: outer.move_tr_corner(Position { x: 0, y: 1 }),
-            cursor_position: pos(0, 0),
+            cursor_state: Default::default(),
+            game_cursor_position: pos(0, 0),
         }
     }
 
@@ -72,7 +87,7 @@ impl<W: Write> Viewport<W> {
     }
 
     fn reset_cursor(&mut self) -> io::Result<()> {
-        self.cursor_goto(self.cursor_position)
+        self.cursor_goto(self.game_cursor_position)
     }
 
     /// Move the cursor to the given inner-relative position
@@ -97,22 +112,84 @@ impl<W: Write> Viewport<W> {
     /// Will overwrite any message already present, and if the given message is
     /// longer than the screen will truncate. This means callers should handle
     /// message buffering and ellipsisization
-    pub fn write_message(&mut self, msg: &str) -> io::Result<()> {
+    pub fn write_message(&mut self, msg: &str) -> io::Result<usize> {
+        let msg_to_write = if msg.len() <= self.outer.dimensions.w as usize {
+            msg
+        } else {
+            &msg[0..self.outer.dimensions.w as usize]
+        };
         write!(
             self,
             "{}{}{}",
             self.outer.position.cursor_goto(),
-            if msg.len() <= self.outer.dimensions.w as usize {
-                msg
-            } else {
-                &msg[0..self.outer.dimensions.w as usize]
-            },
+            msg_to_write,
             clone_times::<_, String>(
                 " ".to_string(),
                 self.outer.dimensions.w - msg.len() as u16
             ),
         )?;
+        self.reset_cursor()?;
+        Ok(msg_to_write.len())
+    }
+
+    pub fn clear_message(&mut self) -> io::Result<()> {
+        write!(
+            self,
+            "{}{}",
+            self.outer.position.cursor_goto(),
+            clone_times::<_, String>(
+                " ".to_string(),
+                self.outer.dimensions.w as u16
+            )
+        )?;
         self.reset_cursor()
+    }
+
+    /// Write a prompt requesting text input to the message area on the screen.
+    ///
+    /// Will overwrite any message already present, and if the given message is
+    /// longer than the screen will truncate. This means callers should handle
+    /// message buffering and ellipsisization
+    pub fn write_prompt<'a, 'b>(&'a mut self, msg: &'b str) -> io::Result<()> {
+        let len = self.write_message(msg)? + 1;
+        let pos = self.outer.position + pos(len as i16, 0);
+        self.cursor_state = CursorState::Prompt(pos);
+        write!(self, "{}", pos.cursor_goto())?;
+        self.flush()
+    }
+
+    pub fn push_prompt_chr(&mut self, chr: char) -> io::Result<()> {
+        match self.cursor_state {
+            CursorState::Prompt(pos) => {
+                write!(self, "{}", chr)?;
+                self.cursor_state = CursorState::Prompt(pos + Direction::Right);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    pub fn pop_prompt_chr(&mut self) -> io::Result<()> {
+        match self.cursor_state {
+            CursorState::Prompt(pos) => {
+                let new_pos = pos + Direction::Left;
+                write!(
+                    self,
+                    "{} {}",
+                    new_pos.cursor_goto(),
+                    new_pos.cursor_goto()
+                )?;
+                self.cursor_state = CursorState::Prompt(new_pos);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    pub fn clear_prompt(&mut self) -> io::Result<()> {
+        self.clear_message()?;
+        self.cursor_state = CursorState::Game;
+        Ok(())
     }
 }
 

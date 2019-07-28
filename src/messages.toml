@@ -1,5 +1,5 @@
 [global]
-welcome = "Welcome to Xanthous! It's dangerous out there, why not stay inside?"
+welcome = "Welcome to Xanthous, {{character.name}}! It's dangerous out there, why not stay inside?"
 
 [combat]
 attack = "You attack the {{creature.name}}."
@@ -10,5 +10,8 @@ killed = [
     "The {{creature.name}} beefs it."
     ]
 
+[character]
+name_prompt = "What's your name?"
+
 [defaults.item]
-eat = "You eat the {{item.name}}"
+eat = "You eat the {{item.name}}. {{action.result}}"

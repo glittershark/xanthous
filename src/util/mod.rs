@@ -2,3 +2,4 @@
 pub mod static_cfg;
 #[macro_use]
 pub mod template;
+pub mod promise;

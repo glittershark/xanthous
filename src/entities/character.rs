@@ -13,6 +13,8 @@ pub struct Character {
 
     /// The position of the character, relative to the game
     pub position: Position,
+
+    pub o_name: Option<String>,
 }
 
 impl Character {
@@ -20,6 +22,7 @@ impl Character {
         Character {
             id: None,
             position: Position { x: 0, y: 0 },
+            o_name: None,
         }
     }
 
@@ -30,6 +33,16 @@ impl Character {
     pub fn damage(&self) -> u16 {
         // TODO
         1
+    }
+
+    pub fn name<'a>(&'a self) -> &'a str {
+        self.o_name
+            .as_ref()
+            .expect("Character name not initialized")
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.o_name = Some(name);
     }
 }
 

@@ -26,6 +26,7 @@ extern crate include_dir;
 extern crate nom;
 #[macro_use]
 extern crate matches;
+extern crate futures;
 
 #[macro_use]
 mod util;

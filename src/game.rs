@@ -10,6 +10,8 @@ use crate::types::{
     pos, BoundingBox, Collision, Dimensions, Position, Positioned,
     PositionedMut, Ticks,
 };
+use crate::util::promise::Cancelled;
+use crate::util::promise::{promise, Complete, Promise, Promises};
 use crate::util::template::TemplateParams;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -36,6 +38,75 @@ impl<'a> PositionedMut for AnEntity<'a> {
     }
 }
 
+enum PromptResolution {
+    Uncancellable(Complete<String>),
+    Cancellable(Complete<Result<String, Cancelled>>),
+}
+
+impl PromptResolution {
+    fn is_cancellable(&self) -> bool {
+        use PromptResolution::*;
+        match self {
+            Uncancellable(_) => false,
+            Cancellable(_) => true,
+        }
+    }
+
+    fn fulfill(&mut self, val: String) {
+        use PromptResolution::*;
+        match self {
+            Cancellable(complete) => complete.ok(val),
+            Uncancellable(complete) => complete.fulfill(val),
+        }
+    }
+
+    fn cancel(&mut self) {
+        use PromptResolution::*;
+        match self {
+            Cancellable(complete) => complete.cancel(),
+            Uncancellable(complete) => {}
+        }
+    }
+}
+
+/// The kind of input the game is waiting to receive
+enum InputState {
+    /// The initial input state of the game - we're currently waiting for direct
+    /// commands.
+    Initial,
+
+    /// A free text prompt has been shown to the user, and every character
+    /// besides "escape" is interpreted as a response to that prompt
+    Prompt {
+        complete: PromptResolution,
+        buffer: String,
+    },
+}
+
+impl InputState {
+    fn uncancellable_prompt(complete: Complete<String>) -> Self {
+        InputState::Prompt {
+            complete: PromptResolution::Uncancellable(complete),
+            buffer: String::new(),
+        }
+    }
+
+    fn cancellable_prompt(
+        complete: Complete<Result<String, Cancelled>>,
+    ) -> Self {
+        InputState::Prompt {
+            complete: PromptResolution::Cancellable(complete),
+            buffer: String::new(),
+        }
+    }
+}
+
+impl Default for InputState {
+    fn default() -> Self {
+        InputState::Initial
+    }
+}
+
 /// The full state of a running Game
 pub struct Game<'a> {
     settings: Settings,
@@ -44,6 +115,9 @@ pub struct Game<'a> {
 
     /// An iterator on keypresses from the user
     keys: Keys<StdinLock<'a>>,
+
+    /// The kind of input the game is waiting to receive
+    input_state: InputState,
 
     /// The map of all the entities in the game
     entities: EntityMap<AnEntity<'a>>,
@@ -60,6 +134,9 @@ pub struct Game<'a> {
 
     /// A global random number generator for the game
     rng: Rng,
+
+    /// A list of promises that are waiting on the game and a result
+    promises: Promises<'a, Self>,
 }
 
 impl<'a> Game<'a> {
@@ -97,9 +174,11 @@ impl<'a> Game<'a> {
                 stdout,
             ),
             keys: stdin.keys(),
+            input_state: Default::default(),
             character_entity_id: entities.insert(Box::new(Character::new())),
             messages: Vec::new(),
             entities,
+            promises: Promises::new(),
         }
     }
 
@@ -128,6 +207,12 @@ impl<'a> Game<'a> {
     fn character(&self) -> &Character {
         (*self.entities.get(self.character_entity_id).unwrap())
             .downcast_ref()
+            .unwrap()
+    }
+
+    fn mut_character(&mut self) -> &mut Character {
+        (*self.entities.get_mut(self.character_entity_id).unwrap())
+            .downcast_mut()
             .unwrap()
     }
 
@@ -168,7 +253,36 @@ impl<'a> Game<'a> {
         let message = self.message(message_name, params);
         self.messages.push(message.to_string());
         self.message_idx = self.messages.len() - 1;
-        self.viewport.write_message(&message)
+        self.viewport.write_message(&message)?;
+        Ok(())
+    }
+
+    /// Prompt the user for input, returning a Future for the result of the
+    /// prompt
+    fn prompt(
+        &mut self,
+        name: &'static str,
+        params: &TemplateParams<'_>,
+    ) -> io::Result<Promise<Self, String>> {
+        let (complete, promise) = promise();
+        self.input_state = InputState::uncancellable_prompt(complete);
+        let message = self.message(name, params);
+        self.viewport.write_prompt(&message)?;
+        self.promises.push(Box::new(promise.clone()));
+        Ok(promise)
+    }
+
+    fn prompt_cancellable(
+        &mut self,
+        name: &'static str,
+        params: &TemplateParams<'_>,
+    ) -> io::Result<Promise<Self, Result<String, Cancelled>>> {
+        let (complete, promise) = promise();
+        self.input_state = InputState::cancellable_prompt(complete);
+        let message = self.message(name, params);
+        self.viewport.write_prompt(&message)?;
+        self.promises.push(Box::new(promise.clone()));
+        Ok(promise)
     }
 
     fn previous_message(&mut self) -> io::Result<()> {
@@ -177,7 +291,8 @@ impl<'a> Game<'a> {
         }
         self.message_idx -= 1;
         let message = &self.messages[self.message_idx];
-        self.viewport.write_message(message)
+        self.viewport.write_message(message)?;
+        Ok(())
     }
 
     fn creature(&self, creature_id: EntityID) -> Option<&Creature> {
@@ -236,60 +351,116 @@ impl<'a> Game<'a> {
         }
     }
 
+    fn flush_promises(&mut self) {
+        unsafe {
+            let game = self as *mut Self;
+            (*game).promises.give_all(&mut *game);
+        }
+    }
+
     /// Run the game
     pub fn run(mut self) -> io::Result<()> {
         info!("Running game");
         self.viewport.init()?;
         self.draw_entities()?;
-        self.say("global.welcome", &template_params!())?;
-        self.flush()?;
+        self.flush().unwrap();
+
+        self.prompt("character.name_prompt", &template_params!())?
+            .on_fulfill(|game, char_name| {
+                game.say(
+                    "global.welcome",
+                    &template_params!({
+                        "character" => {
+                            "name" => char_name,
+                        },
+                    }),
+                )
+                .unwrap();
+                game.flush().unwrap();
+                game.mut_character().set_name(char_name.to_string());
+            });
+
         loop {
             let mut old_position = None;
-            use Command::*;
-            match Command::from_key(self.keys.next().unwrap().unwrap()) {
-                Some(Quit) => {
-                    info!("Quitting game due to user request");
-                    break;
-                }
+            let next_key = self.keys.next().unwrap().unwrap();
+            match &mut self.input_state {
+                InputState::Initial => {
+                    use Command::*;
+                    match Command::from_key(next_key) {
+                        Some(Quit) => {
+                            info!("Quitting game due to user request");
+                            break;
+                        }
 
-                Some(Move(direction)) => {
-                    use Collision::*;
-                    let new_pos = self.character().position + direction;
-                    match self.collision_at(new_pos) {
-                        None => {
-                            old_position = Some(self.character().position);
-                            self.entities.update_position(
-                                self.character_entity_id,
-                                new_pos,
+                        Some(Move(direction)) => {
+                            use Collision::*;
+                            let new_pos = self.character().position + direction;
+                            match self.collision_at(new_pos) {
+                                None => {
+                                    old_position =
+                                        Some(self.character().position);
+                                    self.entities.update_position(
+                                        self.character_entity_id,
+                                        new_pos,
+                                    );
+                                }
+                                Some(Combat) => {
+                                    self.attack_at(new_pos)?;
+                                }
+                                Some(Stop) => (),
+                            }
+                        }
+
+                        Some(PreviousMessage) => self.previous_message()?,
+
+                        None => (),
+                    }
+
+                    match old_position {
+                        Some(old_pos) => {
+                            self.tick(
+                                self.character().speed().tiles_to_ticks(
+                                    (old_pos - self.character().position)
+                                        .as_tiles(),
+                                ),
                             );
+                            self.viewport.clear(old_pos)?;
+                            self.viewport.game_cursor_position =
+                                self.character().position;
+                            self.viewport.draw(
+                                // TODO this clone feels unnecessary.
+                                &self.character().clone(),
+                            )?;
                         }
-                        Some(Combat) => {
-                            self.attack_at(new_pos)?;
-                        }
-                        Some(Stop) => (),
+                        None => (),
                     }
                 }
 
-                Some(PreviousMessage) => self.previous_message()?,
-
-                None => (),
-            }
-
-            match old_position {
-                Some(old_pos) => {
-                    self.tick(self.character().speed().tiles_to_ticks(
-                        (old_pos - self.character().position).as_tiles(),
-                    ));
-                    self.viewport.clear(old_pos)?;
-                    self.viewport.cursor_position = self.character().position;
-                    self.viewport.draw(
-                        // TODO this clone feels unnecessary.
-                        &self.character().clone(),
-                    )?;
+                InputState::Prompt { complete, buffer } => {
+                    use termion::event::Key::*;
+                    match next_key {
+                        Char('\n') => {
+                            info!("Prompt complete: \"{}\"", buffer);
+                            self.viewport.clear_prompt()?;
+                            complete.fulfill(buffer.clone());
+                            self.input_state = InputState::Initial;
+                        }
+                        Char(chr) => {
+                            buffer.push(chr);
+                            self.viewport.push_prompt_chr(chr)?;
+                        }
+                        Esc => complete.cancel(),
+                        Backspace => {
+                            buffer.pop();
+                            self.viewport.pop_prompt_chr()?;
+                        }
+                        _ => {}
+                    }
                 }
-                None => (),
             }
+
             self.flush()?;
+            self.flush_promises();
             debug!("{:?}", self.character());
         }
         Ok(())

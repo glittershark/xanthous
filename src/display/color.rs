@@ -92,7 +92,6 @@ impl<'de> Visitor<'de> for ColorVisitor {
                 Ok(Color(Box::new(color::LightYellow)))
             }
             "magenta" => Ok(Color(Box::new(color::Magenta))),
-            "magenta" => Ok(Color(Box::new(color::Magenta))),
             "red" => Ok(Color(Box::new(color::Red))),
             "white" => Ok(Color(Box::new(color::White))),
             "yellow" => Ok(Color(Box::new(color::Yellow))),

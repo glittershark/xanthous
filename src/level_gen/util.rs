@@ -13,6 +13,8 @@ pub fn falses(dims: &Dimensions) -> Vec<Vec<bool>> {
     ret
 }
 
+/// Randomly initialize a 2-dimensional boolean vector of the given
+/// `Dimensions`, using the given random number generator and alive chance
 pub fn rand_initialize<R: Rng + ?Sized>(
     dims: &Dimensions,
     rng: &mut R,
