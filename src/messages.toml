@@ -11,7 +11,14 @@ killed = [
     ]
 
 [character]
-name_prompt = "What's your name?"
+name_prompt = [
+    "Hey there friend. What's your name?",
+    "Hey there friend. What should we call you?",
+    "Howdy. What's your name?",
+    "Name please!",
+    "What's your name?",
+    "Hey, what's your name?",
+]
 
 [defaults.item]
 eat = "You eat the {{item.name}}. {{action.result}}"
