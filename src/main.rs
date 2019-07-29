@@ -34,6 +34,7 @@ mod util;
 mod types;
 #[macro_use]
 mod entities;
+mod description;
 mod display;
 mod game;
 mod level_gen;
