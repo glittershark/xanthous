@@ -44,7 +44,7 @@ impl Creature {
 
     /// Returns true if this creature has died
     pub fn dead(&self) -> bool {
-        self.hitpoints <= 0
+        self.hitpoints == 0
     }
 }
 

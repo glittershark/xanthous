@@ -1,3 +1,6 @@
+#![allow(clippy::unit_arg)]
+#![allow(clippy::identity_conversion)]
+
 use std::cmp::max;
 use std::cmp::Ordering;
 use std::ops;
@@ -139,7 +142,7 @@ impl Position {
 
     /// Returns a sequence of ASCII escape characters for moving the cursor to
     /// this Position
-    pub fn cursor_goto(&self) -> cursor::Goto {
+    pub fn cursor_goto(self) -> cursor::Goto {
         // + 1 because Goto is 1-based, but position is 0-based
         cursor::Goto(self.x as u16 + 1, self.y as u16 + 1)
     }
@@ -147,7 +150,7 @@ impl Position {
     /// Converts this position to the number of `Tiles` away from the origin it
     /// represents. Usually done after subtracting two positions. Gives distance
     /// as the crow flies
-    pub fn as_tiles(&self) -> Tiles {
+    pub fn as_tiles(self) -> Tiles {
         Tiles(max(self.x.abs(), self.y.abs()).into())
     }
 }
@@ -179,6 +182,7 @@ impl PartialOrd for Position {
 /// let right_pos = pos + Direction::Right
 /// assert_eq!(right_pos, Position { x: 0, y: 10 })
 /// ```
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl ops::Add<Direction> for Position {
     type Output = Position;
     fn add(self, dir: Direction) -> Position {
@@ -362,7 +366,7 @@ impl Speed {
     /// Returns the number of tiles that would be moved in the given number of
     /// ticks at this speed
     pub fn ticks_to_tiles(self, ticks: Ticks) -> Tiles {
-        Tiles(ticks.0 as f32 / self.0 as f32)
+        Tiles(f32::from(ticks.0) / self.0 as f32)
     }
 
     /// Returns the number of ticks required to move the given number of tiles

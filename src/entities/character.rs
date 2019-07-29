@@ -30,7 +30,7 @@ impl Character {
         1
     }
 
-    pub fn name<'a>(&'a self) -> &'a str {
+    pub fn name(&self) -> &str {
         self.o_name
             .as_ref()
             .expect("Character name not initialized")

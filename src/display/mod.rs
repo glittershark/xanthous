@@ -33,6 +33,7 @@ impl<T: Draw> Draw for Box<T> {
 }
 
 pub trait DrawWithNeighbors: Positioned {
+    #[allow(clippy::borrowed_box)]
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
         out: &'b mut Write,

@@ -201,10 +201,10 @@ impl<'a> Game<'a> {
         if !pos.within(self.viewport.inner) {
             Some(Collision::Stop)
         } else {
-            if self.creatures_at(pos).len() > 0 {
-                Some(Collision::Combat)
-            } else {
+            if self.creatures_at(pos).is_empty() {
                 None
+            } else {
+                Some(Collision::Combat)
             }
         }
     }
@@ -271,7 +271,7 @@ impl<'a> Game<'a> {
             entities.retain(|e| e.id() != self.character_entity_id);
         }
 
-        if entities.len() == 0 {
+        if entities.is_empty() {
             match mode {
                 Walk => return Ok(()),
                 Look => {
@@ -284,7 +284,10 @@ impl<'a> Game<'a> {
         }
 
         let descriptions = list_to_sentence(
-            &entities.iter().map(|e| e.description()).collect(),
+            &entities
+                .iter()
+                .map(|e| e.description())
+                .collect::<Vec<String>>(),
         );
 
         self.say(
@@ -371,9 +374,9 @@ impl<'a> Game<'a> {
     }
 
     fn expect_creature(&self, creature_id: EntityID) -> &Creature {
-        self.creature(creature_id).expect(
-            format!("Creature ID went away: {:?}", creature_id).as_str(),
-        )
+        self.creature(creature_id).unwrap_or_else(|| {
+            panic!("Creature ID went away: {:?}", creature_id)
+        })
     }
 
     fn mut_creature(&mut self, creature_id: EntityID) -> Option<&mut Creature> {
@@ -383,9 +386,9 @@ impl<'a> Game<'a> {
     }
 
     fn expect_mut_creature(&mut self, creature_id: EntityID) -> &mut Creature {
-        self.mut_creature(creature_id).expect(
-            format!("Creature ID went away: {:?}", creature_id).as_str(),
-        )
+        self.mut_creature(creature_id).unwrap_or_else(|| {
+            panic!("Creature ID went away: {:?}", creature_id)
+        })
     }
 
     fn attack(&mut self, creature_id: EntityID) -> io::Result<()> {
@@ -411,12 +414,17 @@ impl<'a> Game<'a> {
 
     fn attack_at(&mut self, pos: Position) -> io::Result<()> {
         let creatures = self.creatures_at(pos);
-        if creatures.len() == 1 {
-            let creature = creatures.get(0).unwrap();
-            self.attack(creature.id())
-        } else {
-            // TODO prompt with a menu of creatures to combat
-            unimplemented!()
+        match creatures.len() {
+            0 => Ok(()),
+            1 => {
+                let creature = creatures.get(0).unwrap();
+                let creature_id = creature.id();
+                self.attack(creature_id)
+            }
+            _ => {
+                // TODO prompt with a menu of creatures to combat
+                unimplemented!()
+            }
         }
     }
 
@@ -485,23 +493,22 @@ impl<'a> Game<'a> {
                         None => (),
                     }
 
-                    match old_position {
-                        Some(old_pos) => {
-                            let character = self.character();
-                            let char_pos = character.position.clone();
-                            self.viewport.game_cursor_position = char_pos;
-                            self.viewport.clear(old_pos)?;
-                            self.draw_entities_at(old_pos)?;
-                            self.draw_entity(self.character_entity_id)?;
-                            self.describe_entities_at(
-                                char_pos,
-                                EntityDescriptionMode::Walk,
-                            )?;
-                            self.tick(self.character().speed().tiles_to_ticks(
+                    if let Some(old_pos) = old_position {
+                        let character = self.character();
+                        let char_pos = character.position;
+                        self.viewport.game_cursor_position = char_pos;
+                        self.viewport.clear(old_pos)?;
+                        self.draw_entities_at(old_pos)?;
+                        self.draw_entity(self.character_entity_id)?;
+                        self.describe_entities_at(
+                            char_pos,
+                            EntityDescriptionMode::Walk,
+                        )?;
+                        self.tick(
+                            self.character().speed().tiles_to_ticks(
                                 (old_pos - char_pos).as_tiles(),
-                            ));
-                        }
-                        None => (),
+                            ),
+                        );
                     }
                 }
 

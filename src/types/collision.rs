@@ -1,4 +1,5 @@
 /// Describes a kind of game collision
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Collision {
     /// Stop moving - you can't move there!
     Stop,

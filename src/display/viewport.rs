@@ -79,7 +79,8 @@ impl<W> Debug for Viewport<W> {
 
 impl<W: Write> Viewport<W> {
     /// Draw the given entity to the viewport at its position, if visible
-    pub fn draw<'a, T: DrawWithNeighbors>(
+    #[allow(clippy::borrowed_box)]
+    pub fn draw<T: DrawWithNeighbors>(
         &mut self,
         entity: &T,
         neighbors: &Neighbors<Vec<&Box<dyn Entity>>>,
@@ -165,29 +166,23 @@ impl<W: Write> Viewport<W> {
     }
 
     pub fn push_prompt_chr(&mut self, chr: char) -> io::Result<()> {
-        match self.cursor_state {
-            CursorState::Prompt(pos) => {
-                write!(self, "{}", chr)?;
-                self.cursor_state = CursorState::Prompt(pos + Direction::Right);
-            }
-            _ => {}
+        if let CursorState::Prompt(pos) = self.cursor_state {
+            write!(self, "{}", chr)?;
+            self.cursor_state = CursorState::Prompt(pos + Direction::Right);
         }
         Ok(())
     }
 
     pub fn pop_prompt_chr(&mut self) -> io::Result<()> {
-        match self.cursor_state {
-            CursorState::Prompt(pos) => {
-                let new_pos = pos + Direction::Left;
-                write!(
-                    self,
-                    "{} {}",
-                    new_pos.cursor_goto(),
-                    new_pos.cursor_goto()
-                )?;
-                self.cursor_state = CursorState::Prompt(new_pos);
-            }
-            _ => {}
+        if let CursorState::Prompt(pos) = self.cursor_state {
+            let new_pos = pos + Direction::Left;
+            write!(
+                self,
+                "{} {}",
+                new_pos.cursor_goto(),
+                new_pos.cursor_goto()
+            )?;
+            self.cursor_state = CursorState::Prompt(new_pos);
         }
         Ok(())
     }

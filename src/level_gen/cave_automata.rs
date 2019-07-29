@@ -53,12 +53,12 @@ impl Default for Params {
 }
 
 pub fn generate<R: Rng + ?Sized>(
-    dimensions: &Dimensions,
+    dimensions: Dimensions,
     params: &Params,
     rand: &mut R,
 ) -> Vec<Vec<bool>> {
     let mut cells =
-        rand_initialize(&dimensions, rand, params.chance_to_start_alive);
+        rand_initialize(dimensions, rand, params.chance_to_start_alive);
     for _ in 0..params.steps {
         step_automata(&mut cells, dimensions, params);
     }
@@ -70,7 +70,7 @@ pub fn generate<R: Rng + ?Sized>(
 
 fn step_automata(
     cells: &mut Vec<Vec<bool>>,
-    dimensions: &Dimensions,
+    dimensions: Dimensions,
     params: &Params,
 ) {
     let orig_cells = (*cells).clone();
@@ -83,12 +83,10 @@ fn step_automata(
                 } else {
                     cells[x][y] = true;
                 }
+            } else if nbs > params.birth_limit {
+                cells[x][y] = true;
             } else {
-                if nbs > params.birth_limit {
-                    cells[x][y] = true;
-                } else {
-                    cells[x][y] = false;
-                }
+                cells[x][y] = false;
             }
         }
     }
@@ -96,7 +94,7 @@ fn step_automata(
 
 const COUNT_EDGES_AS_NEIGHBORS: bool = true;
 
-fn num_alive_neighbors(cells: &Vec<Vec<bool>>, x: i32, y: i32) -> i32 {
+fn num_alive_neighbors(cells: &[Vec<bool>], x: i32, y: i32) -> i32 {
     let mut count = 0;
     for i in -1..2 {
         for j in -1..2 {
@@ -107,14 +105,13 @@ fn num_alive_neighbors(cells: &Vec<Vec<bool>>, x: i32, y: i32) -> i32 {
             let neighbor_x = x + i;
             let neighbor_y = y + j;
 
-            if COUNT_EDGES_AS_NEIGHBORS
+            if (COUNT_EDGES_AS_NEIGHBORS
                 && (neighbor_x < 0
                     || neighbor_y < 0
                     || neighbor_x >= (cells.len() as i32)
-                    || neighbor_y >= (cells[0].len()) as i32)
+                    || neighbor_y >= (cells[0].len()) as i32))
+                || cells[neighbor_x as usize][neighbor_y as usize]
             {
-                count += 1;
-            } else if cells[neighbor_x as usize][neighbor_y as usize] {
                 count += 1;
             }
         }

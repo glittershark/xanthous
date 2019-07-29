@@ -13,7 +13,7 @@ pub trait Identified<ID>: Debug {
 
     fn id(&self) -> ID {
         self.opt_id()
-            .expect(format!("Entity ({:?}) is not in the game", self).as_str())
+            .unwrap_or_else(|| panic!("Entity ({:?}) is not in the game", self))
     }
 }
 

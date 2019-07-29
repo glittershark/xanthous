@@ -90,7 +90,7 @@ fn generate_level<'a, W: io::Write>(
     let level = match params.value_of("generator") {
         None => panic!("Must supply a generator with --generator"),
         Some("cave_automata") => level_gen::cave_automata::generate(
-            &dimensions,
+            dimensions,
             &level_gen::cave_automata::Params::from_matches(params),
             &mut rand,
         ),

@@ -22,8 +22,8 @@ lazy_static! {
 pub fn raw(name: &'static str) -> &'static EntityRaw<'static> {
     RAWS_BY_NAME
         .get(name)
-        .map(|e| *e)
-        .expect(format!("Raw not found: {}", name).as_str())
+        .copied()
+        .unwrap_or_else(|| panic!("Raw not found: {}", name))
 }
 
 #[cfg(test)]

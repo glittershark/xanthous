@@ -29,6 +29,7 @@ jobs:
 workflows:
   default:
     jobs:
+      - lint
       - format
       - build
       - test:

@@ -1,7 +1,7 @@
 use crate::types::Dimensions;
 use rand::{distributions, Rng};
 
-pub fn falses(dims: &Dimensions) -> Vec<Vec<bool>> {
+pub fn falses(dims: Dimensions) -> Vec<Vec<bool>> {
     let mut ret = Vec::with_capacity(dims.h as usize);
     for _ in 0..dims.h {
         let mut row = Vec::with_capacity(dims.w as usize);
@@ -16,7 +16,7 @@ pub fn falses(dims: &Dimensions) -> Vec<Vec<bool>> {
 /// Randomly initialize a 2-dimensional boolean vector of the given
 /// `Dimensions`, using the given random number generator and alive chance
 pub fn rand_initialize<R: Rng + ?Sized>(
-    dims: &Dimensions,
+    dims: Dimensions,
     rng: &mut R,
     alive_chance: f64,
 ) -> Vec<Vec<bool>> {
@@ -40,9 +40,9 @@ pub fn fill_outer_edges(level: &mut Vec<Vec<bool>>) {
     }
     let ymax = level[0].len();
 
-    for x in 0..xmax {
-        level[x][0] = true;
-        level[x][ymax - 1] = true;
+    for row in level.iter_mut() {
+        row[0] = true;
+        row[ymax - 1] = true;
     }
 
     for y in 0..level[0].len() {

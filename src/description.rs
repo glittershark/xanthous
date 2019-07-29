@@ -1,6 +1,6 @@
 use crate::entities::Describe;
 
-pub fn list_to_sentence(lst: &Vec<String>) -> String {
+pub fn list_to_sentence(lst: &[String]) -> String {
     let mut buf = String::with_capacity(
         lst.iter()
             .map(|e| e.len() + 2usize /* ", " */)
@@ -33,7 +33,7 @@ pub fn list_to_sentence(lst: &Vec<String>) -> String {
     buf
 }
 
-pub fn describe_list<A: Describe>(lst: &Vec<A>) -> String {
+pub fn describe_list<A: Describe>(lst: &[A]) -> String {
     list_to_sentence(
         &lst.iter().map(|e| e.description()).collect::<Vec<String>>(),
     )

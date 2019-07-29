@@ -35,7 +35,7 @@ impl<'a> NestedMap<'a> {
     fn lookup(&'a self, path: &str) -> Option<&'a Message<'a>> {
         use NestedMap::*;
         let leaf =
-            path.split(".")
+            path.split('.')
                 .fold(Some(self), |current, key| match current {
                     Some(Nested(m)) => m.get(key),
                     _ => None,

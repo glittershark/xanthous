@@ -68,7 +68,7 @@ pub fn draw_level<W: io::Write>(
     level: Vec<Vec<bool>>,
     out: &mut W,
 ) -> io::Result<()> {
-    if level.len() == 0 {
+    if level.is_empty() {
         return Ok(());
     }
 
