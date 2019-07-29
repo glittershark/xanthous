@@ -50,6 +50,6 @@ entity!(Character);
 
 impl display::Draw for Character {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {
-        write!(out, "@{}", cursor::Left(1),)
+        write!(out, "@")
     }
 }

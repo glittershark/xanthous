@@ -153,7 +153,6 @@ impl<'a, Env> Promises<'a, Env> {
     }
 
     pub fn give_all(&mut self, env: &mut Env) {
-        debug!("promises: {}", self.ps.len());
         self.ps.retain(|p| !p.give(env));
     }
 }

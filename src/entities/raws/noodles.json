@@ -2,7 +2,8 @@
   "Item": {
     "name": "noodles",
     "char": {
-      "char": "🍜"
+      "char": "n",
+      "color": "yellow"
     },
     "description": "You know exactly what kind of noodles",
     "edible_item": {

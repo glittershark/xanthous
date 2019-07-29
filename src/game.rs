@@ -227,6 +227,17 @@ impl<'a> Game<'a> {
         Ok(())
     }
 
+    /// Draw all the game entities to the screen
+    fn draw_entities_at(&mut self, pos: Position) -> io::Result<()> {
+        for entity in self.entities.at(pos) {
+            self.viewport.draw(
+                entity,
+                &self.entities.neighbor_entities(entity.position()),
+            )?;
+        }
+        Ok(())
+    }
+
     /// Draw the game entity with the given ID, if any, to the screen
     fn draw_entity(&mut self, entity_id: EntityID) -> io::Result<bool> {
         if let Some(entity) = self.entities.get(entity_id) {
@@ -438,6 +449,7 @@ impl<'a> Game<'a> {
                             self.viewport.game_cursor_position =
                                 character.position;
                             self.viewport.clear(old_pos)?;
+                            self.draw_entities_at(old_pos)?;
                             self.draw_entity(self.character_entity_id)?;
                             self.tick(
                                 self.character().speed().tiles_to_ticks(
