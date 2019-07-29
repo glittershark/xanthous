@@ -42,21 +42,14 @@ impl<A> EntityMap<A> {
 
     /// Returns a list of all entities at the given position
     pub fn at<'a>(&'a self, pos: Position) -> Vec<&'a A> {
-        // self.by_position.get(&pos).iter().flat_map(|eids| {
-        //     eids.iter()
-        //         .map(|eid| self.by_id.get(eid).expect(BY_POS_INVARIANT))
-        // })
-        // gross.
-        match self.by_position.get(&pos) {
-            None => Vec::new(),
-            Some(eids) => {
-                let mut res = Vec::new();
-                for eid in eids {
-                    res.push(self.by_id.get(eid).expect(BY_POS_INVARIANT));
-                }
-                res
-            }
-        }
+        self.by_position
+            .get(&pos)
+            .iter()
+            .flat_map(|eids| {
+                eids.iter()
+                    .map(|eid| self.by_id.get(eid).expect(BY_POS_INVARIANT))
+            })
+            .collect()
     }
 
     /// Remove all entities at the given position
