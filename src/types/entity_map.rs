@@ -7,36 +7,22 @@ use crate::types::PositionedMut;
 use alga::general::{
     AbstractMagma, AbstractMonoid, AbstractSemigroup, Additive, Identity,
 };
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{hash_map, BTreeMap, HashMap};
 use std::iter::FromIterator;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct EntityMap<A> {
     by_position: BTreeMap<Position, Vec<EntityID>>,
     by_id: HashMap<EntityID, A>,
     last_id: EntityID,
 }
 
-// impl<A: Debug> ArbitraryF1<A> for EntityMap<A> {
-//     type Parameters = ();
-//     fn lift1_with<AS>(base: AS, _: Self::Parameters) -> BoxedStrategy<Self>
-//     where
-//         AS: Strategy<Value = A> + 'static,
-//     {
-//         unimplemented!()
-//     }
-//     // type Strategy = strategy::Just<Self>;
-//     // fn arbitrary_with(params : Self::Parameters) -> Self::Strategy;
-// }
-
-// impl<A: Arbitrary> Arbitrary for EntityMap<A> {
-//     type Parameters = A::Parameters;
-//     type Strategy = BoxedStrategy<Self>;
-//     fn arbitrary_with(params: Self::Parameters) -> Self::Strategy {
-//         let a_strat: A::Strategy = Arbitrary::arbitrary_with(params);
-//         ArbitraryF1::lift1::<A::Strategy>(a_strat)
-//     }
-// }
+impl<A: PartialEq> PartialEq for EntityMap<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.by_position == other.by_position && self.by_id == other.by_id
+    }
+}
+impl<A: Eq> Eq for EntityMap<A> {}
 
 const BY_POS_INVARIANT: &'static str =
     "Invariant: All references in EntityMap.by_position should point to existent references in by_id";
@@ -98,8 +84,16 @@ impl<A> EntityMap<A> {
         self.by_id.values_mut()
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = &EntityID> {
+    pub fn ids(&self) -> hash_map::Keys<'_, EntityID, A> {
         self.by_id.keys()
+    }
+
+    pub fn drain<'a>(&'a mut self) -> Drain<'a, A> {
+        let ids = self.ids().map(|e| *e).collect::<Vec<_>>();
+        Drain {
+            map: self,
+            ids_iter: Box::new(ids.into_iter()),
+        }
     }
 
     fn next_id(&mut self) -> EntityID {
@@ -124,22 +118,28 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
     /// Remove the entity with the given ID
     pub fn remove(&mut self, id: EntityID) -> Option<A> {
         self.by_id.remove(&id).map(|e| {
-            self.by_position
-                .get_mut(&e.position())
-                .map(|es| es.retain(|e| *e != id));
+            let mut empty = false;
+            let position = e.position();
+            self.by_position.get_mut(&position).map(|es| {
+                es.retain(|e| *e != id);
+                if es.len() == 0 {
+                    empty = true;
+                }
+            });
+            if empty {
+                self.by_position.remove(&position);
+            }
             e
         })
     }
 
     /// Moves all elements from `other` into `Self`, leathing `other` empty.
     pub fn append(&mut self, other: &mut Self) {
-        self.by_position.append(&mut other.by_position);
-        self.by_id.reserve(other.len());
-        for (k, v) in other.by_id.drain() {
-            self.by_id.insert(k, v);
+        // TODO there's probably some perf opportunities here by calling
+        // reserve() on stuff
+        for (_, entity) in other.drain() {
+            self.insert(entity);
         }
-        self.last_id = self.last_id.max(other.last_id);
-        other.last_id = 0;
     }
 
     /// Gets all 8 neighbors of the given position.
@@ -157,6 +157,19 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
         position: Position,
     ) -> Neighbors<Vec<&'a A>> {
         self.neighbors(position).mapmap(&|(_eid, ent)| *ent)
+    }
+
+    pub fn check_invariants(&self) {
+        for (id, ent) in &self.by_id {
+            assert_eq!(*id, ent.id());
+        }
+
+        for (pos, ents) in &self.by_position {
+            for eid in ents {
+                let ent = self.by_id.get(eid).unwrap();
+                assert_eq!(*pos, ent.position())
+            }
+        }
     }
 }
 
@@ -250,6 +263,21 @@ impl<A: PositionedMut> EntityMap<A> {
                 .or_insert(Vec::new())
                 .push(entity_id);
         });
+    }
+}
+
+pub struct Drain<'a, A: 'a> {
+    map: &'a mut EntityMap<A>,
+    ids_iter: Box<dyn Iterator<Item = EntityID> + 'a>,
+}
+
+impl<A: Positioned + Identified<EntityID>> Iterator for Drain<'_, A> {
+    type Item = (EntityID, A);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.ids_iter
+            .next()
+            .map(|eid| (eid, self.map.remove(eid).expect(BY_POS_INVARIANT)))
     }
 }
 
@@ -384,11 +412,24 @@ mod tests {
             mut target in gen_entity_map(),
             mut source in gen_entity_map(),
         ) {
+            let orig_target = target.clone();
             let orig_source = source.clone();
+
             target.append(&mut source);
+            target.check_invariants();
+
             assert_eq!(source, EntityMap::new());
-            for (eid, e) in orig_source {
-                assert_eq!(target.get(eid), Some(&e))
+
+            for ent in orig_source.entities() {
+                assert!(
+                    target.at(ent.position()).iter().any(|e| e.name == ent.name)
+                );
+            }
+
+            for ent in orig_target.entities() {
+                assert!(
+                    target.at(ent.position()).iter().any(|e| e.name == ent.name)
+                );
             }
         }
     }
