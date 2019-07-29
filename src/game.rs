@@ -1,14 +1,14 @@
+use crate::description::list_to_sentence;
 use crate::display::{self, Viewport};
 use crate::entities::{
-    Character, Creature, Entity, EntityID, Identified, Item,
+    AnEntity, Character, Creature, EntityID, Identified, Item,
 };
 use crate::messages::message;
 use crate::settings::Settings;
 use crate::types::command::Command;
 use crate::types::entity_map::EntityMap;
 use crate::types::{
-    pos, BoundingBox, Collision, Dimensions, Position, Positioned,
-    PositionedMut, Ticks,
+    pos, BoundingBox, Collision, Dimensions, Position, Positioned, Ticks,
 };
 use crate::util::promise::Cancelled;
 use crate::util::promise::{promise, Complete, Promise, Promises};
@@ -24,23 +24,28 @@ type Stdout<'a> = RawTerminal<StdoutLock<'a>>;
 
 type Rng = SmallRng;
 
-type AnEntity = Box<dyn Entity>;
-
-impl Positioned for AnEntity {
-    fn position(&self) -> Position {
-        (**self).position()
-    }
-}
-
-impl PositionedMut for AnEntity {
-    fn set_position(&mut self, pos: Position) {
-        (**self).set_position(pos)
-    }
-}
-
 enum PromptResolution {
     Uncancellable(Complete<String>),
     Cancellable(Complete<Result<String, Cancelled>>),
+}
+
+/// The mode to use when describing entities on a tile to the user
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EntityDescriptionMode {
+    /// Describe the entities that the user is walking over.
+    ///
+    /// This means:
+    /// - Skip the character themselves
+    /// - Describe nothing if there are no items other than the character
+    Walk,
+
+    /// Describe entities that the user is actively asking about.
+    ///
+    /// This means:
+    /// - Describe the character themselves if they've asked to look at the tile
+    ///   they're standing on
+    /// - Explicitly say there's nothing there if there's nothing there.
+    Look,
 }
 
 impl PromptResolution {
@@ -251,6 +256,43 @@ impl<'a> Game<'a> {
         }
     }
 
+    /// Describe all the entities at a given position to the user.
+    ///
+    /// If `force` is not set to `true`, will not do anything if there are no
+    /// entities
+    fn describe_entities_at(
+        &mut self,
+        pos: Position,
+        mode: EntityDescriptionMode,
+    ) -> io::Result<()> {
+        use EntityDescriptionMode::*;
+        let mut entities = self.entities.at(pos);
+        if mode == Walk {
+            entities.retain(|e| e.id() != self.character_entity_id);
+        }
+
+        if entities.len() == 0 {
+            match mode {
+                Walk => return Ok(()),
+                Look => {
+                    return self.say(
+                        "global.describe_no_entities",
+                        &template_params!(),
+                    )
+                }
+            }
+        }
+
+        let descriptions = list_to_sentence(
+            &entities.iter().map(|e| e.description()).collect(),
+        );
+
+        self.say(
+            "global.describe_entities",
+            &template_params!({ "descriptions" => &descriptions, }),
+        )
+    }
+
     /// Remove the given entity from the game, drawing over it if it's visible
     fn remove_entity(&mut self, entity_id: EntityID) -> io::Result<()> {
         if let Some(entity) = self.entities.remove(entity_id) {
@@ -446,17 +488,18 @@ impl<'a> Game<'a> {
                     match old_position {
                         Some(old_pos) => {
                             let character = self.character();
-                            self.viewport.game_cursor_position =
-                                character.position;
+                            let char_pos = character.position.clone();
+                            self.viewport.game_cursor_position = char_pos;
                             self.viewport.clear(old_pos)?;
                             self.draw_entities_at(old_pos)?;
                             self.draw_entity(self.character_entity_id)?;
-                            self.tick(
-                                self.character().speed().tiles_to_ticks(
-                                    (old_pos - self.character().position)
-                                        .as_tiles(),
-                                ),
-                            );
+                            self.describe_entities_at(
+                                char_pos,
+                                EntityDescriptionMode::Walk,
+                            )?;
+                            self.tick(self.character().speed().tiles_to_ticks(
+                                (old_pos - char_pos).as_tiles(),
+                            ));
                         }
                         None => (),
                     }

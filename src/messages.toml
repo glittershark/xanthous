@@ -1,5 +1,7 @@
 [global]
 welcome = "Welcome to Xanthous, {{character.name}}! It's dangerous out there, why not stay inside?"
+describe_entities = "You see here {{descriptions}}"
+describe_no_entities = "You see nothing here."
 
 [combat]
 attack = "You attack the {{creature.name}}."

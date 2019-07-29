@@ -12,7 +12,7 @@ pub mod raws;
 
 pub use character::Character;
 pub use creature::Creature;
-pub use entity::{Entity, Identified};
+pub use entity::{AnEntity, Describe, Entity, Identified};
 pub use entity_char::EntityChar;
 pub use item::Item;
 pub use raws::raw;

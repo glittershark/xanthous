@@ -1,6 +1,7 @@
 use crate::display::DrawWithNeighbors;
 use crate::entities::EntityID;
 use crate::types::Neighbors;
+use crate::types::Position;
 use crate::types::{Positioned, PositionedMut};
 use downcast_rs::Downcast;
 use std::fmt::Debug;
@@ -37,8 +38,36 @@ impl<ID, A: Identified<ID>> Identified<ID> for Box<A> {
     }
 }
 
+pub trait Describe {
+    fn description(&self) -> String;
+}
+
+ref_impl! {
+    impl<T: Describe> Describe for &T {
+        fn description(&self) -> String {
+            (**self).description()
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! static_description {
+    ($name: ident, $description: expr) => {
+        impl $crate::entities::entity::Describe for $name {
+            fn description(&self) -> String {
+                $description.to_string()
+            }
+        }
+    };
+}
+
 pub trait Entity:
-    Positioned + PositionedMut + Identified<EntityID> + DrawWithNeighbors + Downcast
+    Positioned
+    + PositionedMut
+    + Identified<EntityID>
+    + DrawWithNeighbors
+    + Downcast
+    + Describe
 {
 }
 
@@ -78,5 +107,19 @@ impl DrawWithNeighbors for Box<dyn Entity> {
         neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
     ) -> io::Result<()> {
         (**self).do_draw_with_neighbors(out, neighbors)
+    }
+}
+
+pub type AnEntity = Box<dyn Entity>;
+
+impl Positioned for AnEntity {
+    fn position(&self) -> Position {
+        (**self).position()
+    }
+}
+
+impl PositionedMut for AnEntity {
+    fn set_position(&mut self, pos: Position) {
+        (**self).set_position(pos)
     }
 }

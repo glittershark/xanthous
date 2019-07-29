@@ -30,8 +30,12 @@ pub struct EdibleItem<'a> {
 pub struct ItemType<'a> {
     pub name: &'a str,
 
-    /// A description of the item, used by the "look" command
+    /// A description of the item, used by the "look" command and when walking
+    /// over the item on the ground
     pub description: &'a str,
+
+    /// A longer description of the item
+    pub long_description: &'a str,
 
     pub edible_item: Option<EdibleItem<'a>>,
 
@@ -49,7 +53,8 @@ mod item_type_tests {
             r#"{
                 "Item": {
                     "name": "noodles",
-                    "description": "You know exactly what kind of noodles",
+                    "description": "a big bowl o' noodles",
+                    "long_description": "You know exactly what kind of noodles",
                     "char": { "char": "n" },
                     "edible_item": {
                         "eat_message": "You slurp up the noodles",
@@ -67,7 +72,8 @@ mod item_type_tests {
         let toml_result = toml::from_str(
             r#"[Item]
 name = "noodles"
-description = "You know exactly what kind of noodles"
+description = "a big bowl o' noodles"
+long_description = "You know exactly what kind of noodles"
 char = { char = "🍜" }
 edible_item = { eat_message = "You slurp up the noodles", hitpoints_healed = 2 }
 "#,

@@ -1,7 +1,7 @@
 use crate::display;
 use crate::entities::raws::CreatureType;
 use crate::entities::raws::EntityRaw;
-use crate::entities::{raw, EntityID};
+use crate::entities::{raw, Describe, EntityID};
 use crate::types::Position;
 use std::io::{self, Write};
 
@@ -49,6 +49,12 @@ impl Creature {
 }
 
 entity!(Creature);
+
+impl Describe for Creature {
+    fn description(&self) -> String {
+        self.typ.description.to_string()
+    }
+}
 
 impl display::Draw for Creature {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {

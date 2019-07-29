@@ -1,6 +1,6 @@
 use crate::display;
 use crate::entities::raws::{raw, EntityRaw, ItemType};
-use crate::entities::EntityID;
+use crate::entities::{Describe, EntityID};
 use crate::types::Position;
 use std::io::{self, Write};
 
@@ -36,6 +36,12 @@ impl Item {
 }
 
 entity!(Item);
+
+impl Describe for Item {
+    fn description(&self) -> String {
+        self.typ.description.to_string()
+    }
+}
 
 impl display::Draw for Item {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {

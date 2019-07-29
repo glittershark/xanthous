@@ -10,6 +10,8 @@ entity! {
     }
 }
 
+static_description!(Wall, "a wall");
+
 impl Wall {
     pub fn new(position: Position, style: BoxStyle) -> Self {
         new_entity!(Wall { position, style })

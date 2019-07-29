@@ -5,11 +5,11 @@
       "char": "n",
       "color": "yellow"
     },
-    "description": "You know exactly what kind of noodles",
+    "description": "a big bowl o' noodles",
+    "long_description": "You know exactly what kind of noodles",
     "edible_item": {
       "eat_message": "You slurp up the noodles",
       "hitpoints_healed": 2
-    },
-    "display_name": "big bowl o' noodles"
+    }
   }
 }

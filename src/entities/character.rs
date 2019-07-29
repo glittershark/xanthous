@@ -1,21 +1,16 @@
 use crate::display;
-use crate::entities::EntityID;
 use crate::types::{Position, Speed};
-use proptest_derive::Arbitrary;
 use std::io::{self, Write};
-use termion::cursor;
 
 const DEFAULT_SPEED: Speed = Speed(100);
 
-#[derive(Debug, PartialEq, Eq, Arbitrary, Clone)]
-pub struct Character {
-    pub id: Option<EntityID>,
-
-    /// The position of the character, relative to the game
-    pub position: Position,
-
-    pub o_name: Option<String>,
+entity! {
+    pub struct Character {
+        pub o_name: Option<String>,
+    }
 }
+
+static_description!(Character, "yourself");
 
 impl Character {
     pub fn new() -> Character {
@@ -45,8 +40,6 @@ impl Character {
         self.o_name = Some(name);
     }
 }
-
-entity!(Character);
 
 impl display::Draw for Character {
     fn do_draw(&self, out: &mut Write) -> io::Result<()> {
