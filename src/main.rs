@@ -1,13 +1,7 @@
-extern crate termion;
 #[macro_use]
 extern crate log;
-extern crate config;
-extern crate log4rs;
-extern crate serde;
-extern crate toml;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -19,14 +13,13 @@ extern crate lazy_static;
 extern crate maplit;
 #[macro_use]
 extern crate downcast_rs;
-extern crate backtrace;
 #[macro_use]
 extern crate include_dir;
 #[macro_use]
 extern crate nom;
+#[cfg(test)]
 #[macro_use]
 extern crate matches;
-extern crate futures;
 
 #[macro_use]
 mod util;
@@ -53,6 +46,7 @@ use backtrace::Backtrace;
 use std::io::{self, StdinLock, StdoutLock};
 use std::panic;
 
+use termion;
 use termion::raw::IntoRawMode;
 use termion::raw::RawTerminal;
 

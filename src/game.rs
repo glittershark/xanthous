@@ -69,7 +69,7 @@ impl PromptResolution {
         use PromptResolution::*;
         match self {
             Cancellable(complete) => complete.cancel(),
-            Uncancellable(complete) => {}
+            Uncancellable(_complete) => {}
         }
     }
 }
@@ -200,12 +200,10 @@ impl<'a> Game<'a> {
     fn collision_at(&self, pos: Position) -> Option<Collision> {
         if !pos.within(self.viewport.inner) {
             Some(Collision::Stop)
+        } else if self.creatures_at(pos).is_empty() {
+            None
         } else {
-            if self.creatures_at(pos).is_empty() {
-                None
-            } else {
-                Some(Collision::Combat)
-            }
+            Some(Collision::Combat)
         }
     }
 
@@ -305,7 +303,7 @@ impl<'a> Game<'a> {
     }
 
     /// Step the game forward the given number of ticks
-    fn tick(&mut self, ticks: Ticks) {}
+    fn tick(&mut self, _ticks: Ticks) {}
 
     /// Get a message from the global map based on the rng in this game
     fn message<'params>(

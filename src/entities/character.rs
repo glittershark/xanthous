@@ -42,7 +42,7 @@ impl Character {
 }
 
 impl display::Draw for Character {
-    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+    fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
         write!(out, "@")
     }
 }

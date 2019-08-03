@@ -69,12 +69,12 @@ mod tests {
     #[test]
     fn test_describe_list() {
         assert_eq!(
-            describe_list(&vec![Description("one".to_string())]),
+            describe_list(&[Description("one".to_string())]),
             "one".to_string()
         );
 
         assert_eq!(
-            describe_list(&vec![
+            describe_list(&[
                 Description("one".to_string()),
                 Description("two".to_string())
             ]),
@@ -82,7 +82,7 @@ mod tests {
         );
 
         assert_eq!(
-            describe_list(&vec![
+            describe_list(&[
                 Description("one".to_string()),
                 Description("two".to_string()),
                 Description("three".to_string())

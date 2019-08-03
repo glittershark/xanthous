@@ -3,9 +3,11 @@ use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll, Waker};
 
+type Waiter<Env, T> = Box<dyn Fn(&mut Env, &T)>;
+
 pub struct Promise<Env, T> {
     inner: Arc<RwLock<Inner<T>>>,
-    waiters: Arc<RwLock<Vec<Box<dyn Fn(&mut Env, &T)>>>>,
+    waiters: Arc<RwLock<Vec<Waiter<Env, T>>>>,
 }
 
 pub struct Complete<T> {
@@ -29,7 +31,7 @@ pub fn promise<Env, T>() -> (Complete<T>, Promise<Env, T>) {
         inner: inner.clone(),
         waiters: Arc::new(RwLock::new(Vec::new())),
     };
-    let complete = Complete { inner: inner };
+    let complete = Complete { inner };
     (complete, promise)
 }
 
@@ -127,7 +129,7 @@ impl<Env, P: Give<Env>> Give<Env> for &P {
 
 impl<Env, T> Future for Promise<Env, T> {
     type Output = Arc<T>;
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut inner = self.inner.write().unwrap();
         match inner.value {
             Some(ref v) => Poll::Ready(v.clone()),

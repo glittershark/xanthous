@@ -44,7 +44,7 @@ impl Describe for Item {
 }
 
 impl display::Draw for Item {
-    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+    fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
         write!(out, "{}", self.typ.chr)
     }
 }

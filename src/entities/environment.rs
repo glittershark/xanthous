@@ -21,7 +21,7 @@ impl Wall {
 impl display::DrawWithNeighbors for Wall {
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
-        out: &'b mut Write,
+        out: &'b mut dyn Write,
         neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
     ) -> io::Result<()> {
         let neighbor_styles: Neighbors<Option<BoxStyle>> =

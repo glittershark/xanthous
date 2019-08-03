@@ -427,6 +427,7 @@ impl<A> Neighbors<Vec<A>> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unnecessary_operation)]
     use super::*;
     use proptest::prelude::*;
 

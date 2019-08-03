@@ -103,7 +103,7 @@ impl_downcast!(Entity);
 impl DrawWithNeighbors for Box<dyn Entity> {
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
-        out: &'b mut Write,
+        out: &'b mut dyn Write,
         neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
     ) -> io::Result<()> {
         (**self).do_draw_with_neighbors(out, neighbors)

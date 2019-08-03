@@ -10,7 +10,7 @@ use alga::general::{
 use std::collections::{hash_map, BTreeMap, HashMap};
 use std::iter::FromIterator;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EntityMap<A> {
     by_position: BTreeMap<Position, Vec<EntityID>>,
     by_id: HashMap<EntityID, A>,
@@ -24,7 +24,7 @@ impl<A: PartialEq> PartialEq for EntityMap<A> {
 }
 impl<A: Eq> Eq for EntityMap<A> {}
 
-const BY_POS_INVARIANT: &'static str =
+const BY_POS_INVARIANT: &str =
     "Invariant: All references in EntityMap.by_position should point to existent references in by_id";
 
 impl<A> EntityMap<A> {
@@ -54,26 +54,26 @@ impl<A> EntityMap<A> {
 
     /// Remove all entities at the given position
     pub fn remove_all_at(&mut self, pos: Position) {
-        self.by_position.remove(&pos).map(|eids| {
+        if let Some(eids) = self.by_position.remove(&pos) {
             for eid in eids {
                 self.by_id.remove(&eid).expect(BY_POS_INVARIANT);
             }
-        });
+        }
     }
 
-    pub fn get<'a>(&'a self, id: EntityID) -> Option<&'a A> {
+    pub fn get(&self, id: EntityID) -> Option<&A> {
         self.by_id.get(&id)
     }
 
-    pub fn get_mut<'a>(&'a mut self, id: EntityID) -> Option<&'a mut A> {
+    pub fn get_mut(&mut self, id: EntityID) -> Option<&mut A> {
         self.by_id.get_mut(&id)
     }
 
-    pub fn entities<'a>(&'a self) -> impl Iterator<Item = &'a A> {
+    pub fn entities(&self) -> impl Iterator<Item = &A> {
         self.by_id.values()
     }
 
-    pub fn entities_mut<'a>(&'a mut self) -> impl Iterator<Item = &'a mut A> {
+    pub fn entities_mut(&mut self) -> impl Iterator<Item = &mut A> {
         self.by_id.values_mut()
     }
 
@@ -81,8 +81,8 @@ impl<A> EntityMap<A> {
         self.by_id.keys()
     }
 
-    pub fn drain<'a>(&'a mut self) -> Drain<'a, A> {
-        let ids = self.ids().map(|e| *e).collect::<Vec<_>>();
+    pub fn drain(&mut self) -> Drain<'_, A> {
+        let ids = self.ids().copied().collect::<Vec<_>>();
         Drain {
             map: self,
             ids_iter: Box::new(ids.into_iter()),
@@ -103,7 +103,7 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
         self.by_id.entry(entity_id).or_insert(entity);
         self.by_position
             .entry(pos)
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push(entity_id);
         entity_id
     }
@@ -113,12 +113,14 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
         self.by_id.remove(&id).map(|e| {
             let mut empty = false;
             let position = e.position();
-            self.by_position.get_mut(&position).map(|es| {
+
+            if let Some(es) = self.by_position.get_mut(&position) {
                 es.retain(|e| *e != id);
-                if es.len() == 0 {
+                if es.is_empty() {
                     empty = true;
                 }
-            });
+            }
+
             if empty {
                 self.by_position.remove(&position);
             }
@@ -172,7 +174,7 @@ impl<'a, A: Positioned + Identified<EntityID>> IntoIterator
     type Item = (&'a EntityID, &'a A);
     type IntoIter = std::collections::hash_map::Iter<'a, EntityID, A>;
     fn into_iter(self) -> Self::IntoIter {
-        (&self.by_id).into_iter()
+        (&self.by_id).iter()
     }
 }
 
@@ -246,20 +248,21 @@ impl<A: PositionedMut> EntityMap<A> {
             old_pos = Some(entity.position());
             entity.set_position(new_position);
         }
-        old_pos.map(|p| {
-            self.by_position
-                .get_mut(&p)
-                .map(|es| es.retain(|e| *e != entity_id));
+
+        if let Some(p) = old_pos {
+            if let Some(es) = self.by_position.get_mut(&p) {
+                es.retain(|e| *e != entity_id);
+            }
 
             self.by_position
                 .entry(new_position)
-                .or_insert(Vec::new())
+                .or_insert_with(Vec::new)
                 .push(entity_id);
-        });
+        }
     }
 }
 
-pub struct Drain<'a, A: 'a> {
+pub struct Drain<'a, A> {
     map: &'a mut EntityMap<A>,
     ids_iter: Box<dyn Iterator<Item = EntityID> + 'a>,
 }
@@ -313,9 +316,7 @@ mod tests {
     fn gen_entity_map() -> BoxedStrategy<EntityMap<TestEntity>> {
         any::<Vec<TestEntity>>()
             .prop_map(|ents| {
-                ents.iter()
-                    .map(|e| e.clone())
-                    .collect::<EntityMap<TestEntity>>()
+                ents.iter().cloned().collect::<EntityMap<TestEntity>>()
             })
             .boxed()
     }

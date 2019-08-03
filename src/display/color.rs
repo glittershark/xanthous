@@ -16,21 +16,21 @@ impl Color {
 }
 
 impl color::Color for Color {
-    fn write_fg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn write_fg(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.write_fg(f)
     }
 
-    fn write_bg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn write_bg(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.write_bg(f)
     }
 }
 
 impl<'a> color::Color for &'a Color {
-    fn write_fg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn write_fg(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.write_fg(f)
     }
 
-    fn write_bg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn write_bg(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.write_bg(f)
     }
 }
@@ -56,7 +56,7 @@ impl ColorVisitor {
 impl<'de> Visitor<'de> for ColorVisitor {
     type Value = Color;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("A color")
     }
 

@@ -12,7 +12,7 @@ pub struct EntityChar {
 }
 
 impl Display for EntityChar {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}{}{}",

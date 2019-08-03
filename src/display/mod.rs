@@ -17,17 +17,17 @@ pub fn clear<T: Write>(out: &mut T) -> io::Result<()> {
 pub trait Draw: Positioned {
     /// Draw this entity, assuming the character is already at the correct
     /// position
-    fn do_draw(&self, out: &mut Write) -> io::Result<()>;
+    fn do_draw(&self, out: &mut dyn Write) -> io::Result<()>;
 }
 
 impl<T: Draw> Draw for &T {
-    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+    fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
         (**self).do_draw(out)
     }
 }
 
 impl<T: Draw> Draw for Box<T> {
-    fn do_draw(&self, out: &mut Write) -> io::Result<()> {
+    fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
         (**self).do_draw(out)
     }
 }
@@ -36,7 +36,7 @@ pub trait DrawWithNeighbors: Positioned {
     #[allow(clippy::borrowed_box)]
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
-        out: &'b mut Write,
+        out: &'b mut dyn Write,
         neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
     ) -> io::Result<()>;
 }
@@ -44,7 +44,7 @@ pub trait DrawWithNeighbors: Positioned {
 impl<T: Draw> DrawWithNeighbors for T {
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
-        out: &'b mut Write,
+        out: &'b mut dyn Write,
         _neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
     ) -> io::Result<()> {
         self.do_draw(out)

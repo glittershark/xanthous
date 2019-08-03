@@ -140,7 +140,7 @@ impl Stylable for Line {
 }
 
 impl Stylable for Neighbors<Option<BoxStyle>> {
-    fn style(&self, style: BoxStyle) -> char {
+    fn style(&self, _style: BoxStyle) -> char {
         use BoxStyle::*;
         match (self.left, self.right, self.top, self.bottom) {
             (None, None, None, None) => BOX,

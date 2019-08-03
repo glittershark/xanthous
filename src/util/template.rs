@@ -18,7 +18,7 @@ impl<'a> Path<'a> {
 }
 
 impl<'a> Display for Path<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.head)?;
         for part in &self.tail {
             write!(f, ".{}", part)?;
@@ -96,7 +96,7 @@ impl<'a> TemplateVisitor<'a> {
 impl<'a> serde::de::Visitor<'a> for TemplateVisitor<'a> {
     type Value = Template<'a>;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a valid template string")
     }
 
@@ -126,7 +126,7 @@ impl<'a> Template<'a> {
         input: &'a str,
     ) -> Result<Template<'a>, Err<(&'a str, ErrorKind)>> {
         let (remaining, res) = template(input)?;
-        if remaining.len() > 0 {
+        if !remaining.is_empty() {
             unreachable!();
         }
         Ok(res)
@@ -157,7 +157,7 @@ pub enum TemplateError<'a> {
 }
 
 impl<'a> Display for TemplateError<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use TemplateError::*;
         match self {
             MissingParam(path) => {
@@ -179,7 +179,7 @@ impl<'a> TemplateParams<'a> {
         match self {
             Direct(_) => None,
             Nested(m) => m.get(path.head).and_then(|next| {
-                if path.tail.len() == 0 {
+                if path.tail.is_empty() {
                     match next {
                         Direct(s) => Some(*s),
                         _ => None,

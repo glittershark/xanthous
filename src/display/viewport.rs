@@ -68,7 +68,7 @@ impl<W> Viewport<W> {
 }
 
 impl<W> Debug for Viewport<W> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Viewport {{ outer: {:?}, inner: {:?}, out: <OUT> }}",
