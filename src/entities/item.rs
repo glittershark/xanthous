@@ -4,7 +4,7 @@ use crate::entities::{Describe, EntityID};
 use crate::types::Position;
 use std::io::{self, Write};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Item {
     pub id: Option<EntityID>,
     pub typ: &'static ItemType<'static>,

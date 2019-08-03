@@ -1,5 +1,7 @@
 use crate::description::list_to_sentence;
 use crate::display::{self, Viewport};
+use crate::entities::entity::Describe;
+use crate::entities::entity::Entity;
 use crate::entities::{
     AnEntity, Character, Creature, EntityID, Identified, Item,
 };
@@ -187,13 +189,22 @@ impl<'a> Game<'a> {
         }
     }
 
-    /// Returns a list of all creature entities at the given position
-    fn creatures_at<'b>(&'b self, pos: Position) -> Vec<&'b Creature> {
+    fn downcast_entities_at<A: Entity>(&self, pos: Position) -> Vec<&A> {
         self.entities
             .at(pos)
             .iter()
             .filter_map(|e| e.downcast_ref())
             .collect()
+    }
+
+    /// Returns a list of all creature entities at the given position
+    fn creatures_at(&self, pos: Position) -> Vec<&Creature> {
+        self.downcast_entities_at(pos)
+    }
+
+    /// Returns a list of all item entities at the given position
+    fn items_at(&self, pos: Position) -> Vec<&Item> {
+        self.downcast_entities_at(pos)
     }
 
     /// Returns a collision, if any, at the given Position in the game
@@ -436,6 +447,31 @@ impl<'a> Game<'a> {
         }
     }
 
+    fn pick_up(&mut self) -> io::Result<()> {
+        let pos = self.character().position;
+        let items = self.items_at(pos);
+        match items.len() {
+            0 => Ok(()),
+            1 => {
+                let item_id = items.get(0).unwrap().id();
+                let item: Box<Item> =
+                    self.entities.remove(item_id).unwrap().downcast().unwrap();
+                let desc = item.description();
+                self.mut_character().inventory.push(item);
+                self.say(
+                    "global.pick_up",
+                    &template_params!({
+                        "item" => { "name" => &desc, },
+                    }),
+                )
+            }
+            _ => {
+                // TODO prompt with a menu of items to pick up
+                unimplemented!()
+            }
+        }
+    }
+
     fn flush_promises(&mut self) {
         unsafe {
             let game = self as *mut Self;
@@ -497,6 +533,8 @@ impl<'a> Game<'a> {
                         }
 
                         Some(PreviousMessage) => self.previous_message()?,
+
+                        Some(PickUp) => self.pick_up()?,
 
                         None => (),
                     }

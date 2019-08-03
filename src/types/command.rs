@@ -10,6 +10,9 @@ pub enum Command {
     /// Move the character in a direction
     Move(Direction),
 
+    /// Pick up any item(s) at the current position
+    PickUp,
+
     /// Display the previous message
     PreviousMessage,
 }
@@ -19,6 +22,7 @@ impl Command {
         use Command::*;
         match k {
             Char('q') => Some(Quit),
+
             Char('h') | Char('a') | Key::Left => Some(Move(Left)),
             Char('k') | Char('w') | Key::Up => Some(Move(Up)),
             Char('j') | Char('s') | Key::Down => Some(Move(Down)),
@@ -29,6 +33,8 @@ impl Command {
             Char('n') => Some(Move(DownRight)),
 
             Ctrl('p') => Some(PreviousMessage),
+            Char(',') => Some(PickUp),
+
             _ => None,
         }
     }

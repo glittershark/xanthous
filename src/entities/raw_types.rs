@@ -17,7 +17,7 @@ pub struct CreatureType<'a> {
     pub friendly: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct EdibleItem<'a> {
     #[serde(borrow)]
     pub eat_message: Option<Message<'a>>,
@@ -26,7 +26,7 @@ pub struct EdibleItem<'a> {
     pub hitpoints_healed: u16,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct ItemType<'a> {
     pub name: &'a str,
 

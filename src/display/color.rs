@@ -15,6 +15,15 @@ impl Color {
     }
 }
 
+impl PartialEq for Color {
+    fn eq(&self, other: &Self) -> bool {
+        format!("{}{}", color::Fg(self), color::Bg(self))
+            == format!("{}{}", color::Fg(other), color::Bg(other))
+    }
+}
+
+impl Eq for Color {}
+
 impl color::Color for Color {
     fn write_fg(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.write_fg(f)

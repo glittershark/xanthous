@@ -1,4 +1,5 @@
 use crate::display;
+use crate::entities::item::Item;
 use crate::types::{Position, Speed};
 use std::io::{self, Write};
 
@@ -7,6 +8,7 @@ const DEFAULT_SPEED: Speed = Speed(100);
 entity! {
     pub struct Character {
         pub o_name: Option<String>,
+        pub inventory: Vec<Box<Item>>,
     }
 }
 
@@ -18,6 +20,7 @@ impl Character {
             id: None,
             position: Position { x: 0, y: 0 },
             o_name: None,
+            inventory: Vec::new(),
         }
     }
 
