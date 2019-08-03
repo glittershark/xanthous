@@ -367,6 +367,16 @@ impl<'a> Game<'a> {
         Ok(())
     }
 
+    fn clear_message(&mut self) -> io::Result<()> {
+        debug!("{:?} {:?}", self.message_idx, self.messages);
+        if self.message_idx == self.messages.len() {
+            return Ok(());
+        }
+        self.viewport.clear_message()?;
+        self.message_idx += 1;
+        Ok(())
+    }
+
     fn creature(&self, creature_id: EntityID) -> Option<&Creature> {
         self.entities
             .get(creature_id)
@@ -500,6 +510,7 @@ impl<'a> Game<'a> {
                         self.viewport.clear(old_pos)?;
                         self.draw_entities_at(old_pos)?;
                         self.draw_entity(self.character_entity_id)?;
+                        self.clear_message()?;
                         self.describe_entities_at(
                             char_pos,
                             EntityDescriptionMode::Walk,
