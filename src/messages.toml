@@ -6,6 +6,7 @@ pick_up = "You pick up the {{item.name}}."
 
 [combat]
 attack = "You attack the {{creature.name}}."
+attack.menu = "Which creature would you like to attack?"
 killed = [
     "You've killed the {{creature.name}}.",
     "The {{creature.name}} dies.",

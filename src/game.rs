@@ -167,6 +167,11 @@ impl<'a> Game<'a> {
                 pos(10, 0),
             )));
 
+            entities.insert(Box::new(Creature::new_from_raw(
+                "gormlak",
+                pos(10, 0),
+            )));
+
             entities
                 .insert(Box::new(Item::new_from_raw("noodles", pos(0, 10))));
         }
@@ -386,6 +391,14 @@ impl<'a> Game<'a> {
         Ok(())
     }
 
+    fn menu_cancellable<T: Display>(
+        &mut self,
+        name: &'static str,
+        options: Vec<T>,
+    ) -> io::Result<Promise<Self, Result<T, Cancelled>>> {
+        unimplemented!()
+    }
+
     fn creature(&self, creature_id: EntityID) -> Option<&Creature> {
         self.entities
             .get(creature_id)
@@ -441,8 +454,14 @@ impl<'a> Game<'a> {
                 self.attack(creature_id)
             }
             _ => {
-                // TODO prompt with a menu of creatures to combat
-                unimplemented!()
+                self.menu_cancellable(
+                    "combat.attack.menu",
+                    creatures.iter().map(entity::MenuOption::new).collect(),
+                )?
+                .on_ok(|game, creature| {
+                    game.attack(creature.id());
+                });
+                Ok(())
             }
         }
     }
