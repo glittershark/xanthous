@@ -1,5 +1,6 @@
 use crate::display::utils::clone_times;
 use crate::display::utils::times;
+use crate::types::pos;
 use crate::types::BoundingBox;
 use crate::types::Dimensions;
 use crate::types::Neighbors;
@@ -215,12 +216,21 @@ pub fn draw_box<W: Write>(
     bbox: BoundingBox,
     style: BoxStyle,
 ) -> io::Result<()> {
-    write!(
-        out,
-        "{}{}",
-        bbox.position.cursor_goto(),
-        make_box(style, bbox.dimensions)
-    )
+    let box_str = make_box(style, bbox.dimensions);
+    if bbox.position.x == 0 {
+        write!(out, "{}{}", bbox.position.cursor_goto(), box_str)?;
+    } else {
+        for (i, line) in box_str.split("\n\r").enumerate() {
+            debug!("line: {:?}!", line);
+            write!(
+                out,
+                "{}{}",
+                (bbox.position + pos(0, i as i16)).cursor_goto(),
+                line
+            )?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

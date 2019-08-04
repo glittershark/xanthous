@@ -5,10 +5,13 @@ use std::cmp::max;
 use std::cmp::Ordering;
 use std::ops;
 use std::rc::Rc;
+
 pub mod collision;
 pub mod command;
 pub mod direction;
 pub mod entity_map;
+pub mod menu;
+
 pub use collision::Collision;
 pub use direction::Direction;
 pub use direction::Direction::*;
@@ -74,6 +77,14 @@ impl BoundingBox {
         self.position
             + (Position {
                 x: self.dimensions.w as i16,
+                y: self.dimensions.h as i16,
+            })
+    }
+
+    pub fn ll_corner(self) -> Position {
+        self.position
+            + (Position {
+                x: 0,
                 y: self.dimensions.h as i16,
             })
     }

@@ -3,6 +3,7 @@ use super::DrawWithNeighbors;
 use crate::display::draw_box::draw_box;
 use crate::display::utils::clone_times;
 use crate::entities::entity::Entity;
+use crate::types::menu::MenuInfo;
 use crate::types::Neighbors;
 use crate::types::{pos, BoundingBox, Direction, Position, Positioned};
 use std::fmt::{self, Debug};
@@ -192,6 +193,41 @@ impl<W: Write> Viewport<W> {
         self.cursor_state = CursorState::Game;
         Ok(())
     }
+
+    pub fn write_menu(&mut self, menu: &MenuInfo) -> io::Result<()> {
+        let menu_dims = menu.dimensions();
+
+        // TODO: check if the menu is too big
+
+        let menu_position = self.game.position + pos(1, 1);
+
+        let menu_box = BoundingBox {
+            dimensions: menu_dims,
+            position: menu_position,
+        };
+
+        debug!("writing menu at: {:?}", menu_box);
+
+        draw_box(self, menu_box, BoxStyle::Thin)?;
+
+        write!(
+            self,
+            "{}{}",
+            (menu_position + pos(2, 2)).cursor_goto(),
+            menu.prompt
+        )?;
+
+        for (idx, option) in menu.options.iter().enumerate() {
+            write!(
+                self,
+                "{}{}",
+                (menu_position + pos(2, 4 + idx as i16)).cursor_goto(),
+                option
+            )?;
+        }
+
+        Ok(())
+    }
 }
 
 impl<W> Positioned for Viewport<W> {
@@ -218,7 +254,6 @@ impl<W: Write> Write for Viewport<W> {
 mod tests {
     use super::*;
     use crate::types::Dimensions;
-    // use proptest::prelude::*;
 
     #[test]
     fn test_visible() {
@@ -243,19 +278,26 @@ mod tests {
         .visible(&Position { x: 1, y: 1 }));
     }
 
-    // proptest! {
-    //     #[test]
-    //     fn nothing_is_visible_in_viewport_off_screen(pos: Position, outer: BoundingBox) {
-    //         let invisible_viewport = Viewport {
-    //             outer,
-    //             inner: BoundingBox {
-    //                 position: Position {x: -(outer.dimensions.w as i16), y: -(outer.dimensions.h as i16)},
-    //                 dimensions: outer.dimensions,
-    //             },
-    //             out: ()
-    //         };
+    #[test]
+    fn test_write_menu() {
+        let buf: Vec<u8> = Vec::new();
 
-    //         assert!(!invisible_viewport.visible(&pos));
-    //     }
-    // }
+        let mut viewport = Viewport::new(
+            BoundingBox::at_origin(Dimensions::default()),
+            BoundingBox::at_origin(Dimensions::default()),
+            buf,
+        );
+
+        let menu = MenuInfo::new(
+            "Test menu".to_string(),
+            vec!["option 1".to_string(), "option 2".to_string()],
+        );
+
+        viewport.write_menu(&menu).unwrap();
+
+        let res = std::str::from_utf8(&viewport.out).unwrap();
+        assert!(res.contains("Test menu"));
+        assert!(res.contains("option 1"));
+        assert!(res.contains("option 2"));
+    }
 }
