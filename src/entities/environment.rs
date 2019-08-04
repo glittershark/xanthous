@@ -3,6 +3,7 @@ use crate::display::draw_box::{BoxStyle, Stylable};
 use crate::entities::Entity;
 use crate::types::{Neighbors, Position};
 use std::io::{self, Write};
+use std::rc::Rc;
 
 entity! {
     pub struct Wall {
@@ -22,7 +23,7 @@ impl display::DrawWithNeighbors for Wall {
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
         out: &'b mut dyn Write,
-        neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+        neighbors: &'a Neighbors<Vec<Rc<Box<dyn Entity>>>>,
     ) -> io::Result<()> {
         let neighbor_styles: Neighbors<Option<BoxStyle>> =
             neighbors.map(|es| {

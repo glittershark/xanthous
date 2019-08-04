@@ -4,8 +4,10 @@ use crate::types::Neighbors;
 use crate::types::Position;
 use crate::types::{Positioned, PositionedMut};
 use downcast_rs::Downcast;
-use std::fmt::Debug;
+use std::fmt::{self, Debug, Display};
 use std::io::{self, Write};
+use std::ops::Deref;
+use std::rc::Rc;
 
 pub trait Identified<ID>: Debug {
     fn opt_id(&self) -> Option<ID>;
@@ -104,7 +106,7 @@ impl DrawWithNeighbors for Box<dyn Entity> {
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
         out: &'b mut dyn Write,
-        neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+        neighbors: &'a Neighbors<Vec<Rc<Box<dyn Entity>>>>,
     ) -> io::Result<()> {
         (**self).do_draw_with_neighbors(out, neighbors)
     }
@@ -121,5 +123,29 @@ impl Positioned for AnEntity {
 impl PositionedMut for AnEntity {
     fn set_position(&mut self, pos: Position) {
         (**self).set_position(pos)
+    }
+}
+
+/// A menu option for an entity.
+///
+/// Customizes the Display impl to access the entity's Description
+pub struct MenuOption<T>(pub T);
+
+impl<T> MenuOption<T> {
+    pub fn new(val: T) -> Self {
+        MenuOption(val)
+    }
+}
+
+impl<T> Deref for MenuOption<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: Describe> Display for MenuOption<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.description())
     }
 }

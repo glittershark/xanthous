@@ -7,6 +7,7 @@ use crate::types::Neighbors;
 use crate::types::Positioned;
 pub use draw_box::{make_box, BoxStyle};
 use std::io::{self, Write};
+use std::rc::Rc;
 use termion::{clear, cursor, style};
 pub use viewport::Viewport;
 
@@ -20,6 +21,14 @@ pub trait Draw: Positioned {
     fn do_draw(&self, out: &mut dyn Write) -> io::Result<()>;
 }
 
+// ref_impl! {
+//     impl<T: Draw> Draw for &T {
+//         fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
+//             (**self).do_draw(out)
+//         }
+//     }
+// }
+
 impl<T: Draw> Draw for &T {
     fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
         (**self).do_draw(out)
@@ -32,12 +41,18 @@ impl<T: Draw> Draw for Box<T> {
     }
 }
 
+impl<T: Draw> Draw for std::rc::Rc<T> {
+    fn do_draw(&self, out: &mut dyn Write) -> io::Result<()> {
+        (**self).do_draw(out)
+    }
+}
+
 pub trait DrawWithNeighbors: Positioned {
     #[allow(clippy::borrowed_box)]
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
         out: &'b mut dyn Write,
-        neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+        neighbors: &'a Neighbors<Vec<Rc<Box<dyn Entity>>>>,
     ) -> io::Result<()>;
 }
 
@@ -45,7 +60,7 @@ impl<T: Draw> DrawWithNeighbors for T {
     fn do_draw_with_neighbors<'a, 'b>(
         &'a self,
         out: &'b mut dyn Write,
-        _neighbors: &'a Neighbors<Vec<&'a Box<dyn Entity>>>,
+        _neighbors: &'a Neighbors<Vec<Rc<Box<dyn Entity>>>>,
     ) -> io::Result<()> {
         self.do_draw(out)
     }

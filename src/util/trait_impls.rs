@@ -13,5 +13,9 @@ macro_rules! ref_impl {
         impl<T: $traitb $(+ $bound)*> $traiti for ::std::boxed::Box<T> {
             $($body)*
         }
+
+        impl<T: $traitb $(+ $bound)*> $traiti for ::std::rc::Rc<T> {
+            $($body)*
+        }
     };
 }

@@ -9,11 +9,12 @@ use alga::general::{
 };
 use std::collections::{hash_map, BTreeMap, HashMap};
 use std::iter::FromIterator;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, Default)]
 pub struct EntityMap<A> {
     by_position: BTreeMap<Position, Vec<EntityID>>,
-    by_id: HashMap<EntityID, A>,
+    by_id: HashMap<EntityID, Rc<A>>,
     last_id: EntityID,
 }
 
@@ -41,7 +42,7 @@ impl<A> EntityMap<A> {
     }
 
     /// Returns a list of all entities at the given position
-    pub fn at<'a>(&'a self, pos: Position) -> Vec<&'a A> {
+    pub fn at(&self, pos: Position) -> Vec<Rc<A>> {
         self.by_position
             .get(&pos)
             .iter()
@@ -49,6 +50,7 @@ impl<A> EntityMap<A> {
                 eids.iter()
                     .map(|eid| self.by_id.get(eid).expect(BY_POS_INVARIANT))
             })
+            .cloned()
             .collect()
     }
 
@@ -61,23 +63,23 @@ impl<A> EntityMap<A> {
         }
     }
 
-    pub fn get(&self, id: EntityID) -> Option<&A> {
-        self.by_id.get(&id)
+    pub fn get(&self, id: EntityID) -> Option<Rc<A>> {
+        self.by_id.get(&id).cloned()
     }
 
     pub fn get_mut(&mut self, id: EntityID) -> Option<&mut A> {
-        self.by_id.get_mut(&id)
+        self.by_id.get_mut(&id).and_then(Rc::get_mut)
     }
 
-    pub fn entities(&self) -> impl Iterator<Item = &A> {
-        self.by_id.values()
+    pub fn entities<'a>(&'a self) -> impl Iterator<Item = Rc<A>> + 'a {
+        self.by_id.values().cloned()
     }
 
-    pub fn entities_mut(&mut self) -> impl Iterator<Item = &mut A> {
-        self.by_id.values_mut()
+    pub fn entities_mut(&mut self) -> impl Iterator<Item = Option<&mut A>> {
+        self.by_id.values_mut().map(Rc::get_mut)
     }
 
-    pub fn ids(&self) -> hash_map::Keys<'_, EntityID, A> {
+    pub fn ids(&self) -> hash_map::Keys<'_, EntityID, Rc<A>> {
         self.by_id.keys()
     }
 
@@ -100,7 +102,7 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
         let pos = entity.position();
         let entity_id = self.next_id();
         entity.set_id(entity_id);
-        self.by_id.entry(entity_id).or_insert(entity);
+        self.by_id.entry(entity_id).or_insert(Rc::new(entity));
         self.by_position
             .entry(pos)
             .or_insert_with(Vec::new)
@@ -108,8 +110,8 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
         entity_id
     }
 
-    /// Remove the entity with the given ID
-    pub fn remove(&mut self, id: EntityID) -> Option<A> {
+    /// Remove the entity with the given ID, returning an owned reference to it
+    pub fn remove(&mut self, id: EntityID) -> Option<Rc<A>> {
         self.by_id.remove(&id).map(|e| {
             let mut empty = false;
             let position = e.position();
@@ -133,7 +135,7 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
         // TODO there's probably some perf opportunities here by calling
         // reserve() on stuff
         for (_, entity) in other.drain() {
-            self.insert(entity);
+            self.insert(Rc::try_unwrap(entity).unwrap());
         }
     }
 
@@ -141,17 +143,17 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
     pub fn neighbors<'a>(
         &'a self,
         position: Position,
-    ) -> Neighbors<Vec<(EntityID, &'a A)>> {
+    ) -> Neighbors<Vec<(EntityID, Rc<A>)>> {
         Neighbors::of_position(position)
             .map(|pos| self.at(*pos))
-            .mapmap(&|e| (e.id(), *e))
+            .mapmap(&|e| (e.id(), e.clone()))
     }
 
     pub fn neighbor_entities<'a>(
         &'a self,
         position: Position,
-    ) -> Neighbors<Vec<&'a A>> {
-        self.neighbors(position).mapmap(&|(_eid, ent)| *ent)
+    ) -> Neighbors<Vec<Rc<A>>> {
+        self.neighbors(position).mapmap(&|(_eid, ent)| ent.clone())
     }
 
     pub fn check_invariants(&self) {
@@ -171,16 +173,16 @@ impl<A: Positioned + Identified<EntityID>> EntityMap<A> {
 impl<'a, A: Positioned + Identified<EntityID>> IntoIterator
     for &'a EntityMap<A>
 {
-    type Item = (&'a EntityID, &'a A);
-    type IntoIter = std::collections::hash_map::Iter<'a, EntityID, A>;
+    type Item = (&'a EntityID, &'a Rc<A>);
+    type IntoIter = std::collections::hash_map::Iter<'a, EntityID, Rc<A>>;
     fn into_iter(self) -> Self::IntoIter {
         (&self.by_id).iter()
     }
 }
 
 impl<A: Positioned + Identified<EntityID>> IntoIterator for EntityMap<A> {
-    type Item = (EntityID, A);
-    type IntoIter = std::collections::hash_map::IntoIter<EntityID, A>;
+    type Item = (EntityID, Rc<A>);
+    type IntoIter = std::collections::hash_map::IntoIter<EntityID, Rc<A>>;
     fn into_iter(self) -> Self::IntoIter {
         self.by_id.into_iter()
     }
@@ -246,7 +248,7 @@ impl<A: PositionedMut> EntityMap<A> {
                 return;
             }
             old_pos = Some(entity.position());
-            entity.set_position(new_position);
+            Rc::get_mut(entity).unwrap().set_position(new_position);
         }
 
         if let Some(p) = old_pos {
@@ -268,7 +270,7 @@ pub struct Drain<'a, A> {
 }
 
 impl<A: Positioned + Identified<EntityID>> Iterator for Drain<'_, A> {
-    type Item = (EntityID, A);
+    type Item = (EntityID, Rc<A>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.ids_iter

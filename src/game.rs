@@ -1,7 +1,6 @@
 use crate::description::list_to_sentence;
 use crate::display::{self, Viewport};
-use crate::entities::entity::Describe;
-use crate::entities::entity::Entity;
+use crate::entities::entity::{self, Describe, Entity};
 use crate::entities::{
     AnEntity, Character, Creature, EntityID, Identified, Item,
 };
@@ -9,6 +8,10 @@ use crate::messages::message;
 use crate::settings::Settings;
 use crate::types::command::Command;
 use crate::types::entity_map::EntityMap;
+use crate::types::menu::Menu;
+use std::fmt::Display;
+use std::rc::Rc;
+
 use crate::types::{
     pos, BoundingBox, Collision, Dimensions, Position, Positioned, Ticks,
 };
@@ -194,21 +197,22 @@ impl<'a> Game<'a> {
         }
     }
 
-    fn downcast_entities_at<A: Entity>(&self, pos: Position) -> Vec<&A> {
+    fn downcast_entities_at<A: Entity>(&self, pos: Position) -> Vec<Rc<A>> {
         self.entities
             .at(pos)
             .iter()
-            .filter_map(|e| e.downcast_ref())
+            .cloned()
+            .filter_map(|e| Rc::downcast(e).ok())
             .collect()
     }
 
     /// Returns a list of all creature entities at the given position
-    fn creatures_at(&self, pos: Position) -> Vec<&Creature> {
+    fn creatures_at(&self, pos: Position) -> Vec<Rc<Creature>> {
         self.downcast_entities_at(pos)
     }
 
     /// Returns a list of all item entities at the given position
-    fn items_at(&self, pos: Position) -> Vec<&Item> {
+    fn items_at(&self, pos: Position) -> Vec<Rc<Item>> {
         self.downcast_entities_at(pos)
     }
 
@@ -223,9 +227,8 @@ impl<'a> Game<'a> {
         }
     }
 
-    fn character(&self) -> &Character {
-        (*self.entities.get(self.character_entity_id).unwrap())
-            .downcast_ref()
+    fn character(&self) -> Rc<Character> {
+        Rc::downcast(self.entities.get(self.character_entity_id).unwrap())
             .unwrap()
     }
 
@@ -239,7 +242,7 @@ impl<'a> Game<'a> {
     fn draw_entities(&mut self) -> io::Result<()> {
         for entity in self.entities.entities() {
             self.viewport.draw(
-                entity,
+                entity.as_ref(),
                 &self.entities.neighbor_entities(entity.position()),
             )?;
         }
@@ -250,7 +253,7 @@ impl<'a> Game<'a> {
     fn draw_entities_at(&mut self, pos: Position) -> io::Result<()> {
         for entity in self.entities.at(pos) {
             self.viewport.draw(
-                entity,
+                entity.as_ref(),
                 &self.entities.neighbor_entities(entity.position()),
             )?;
         }
@@ -261,7 +264,7 @@ impl<'a> Game<'a> {
     fn draw_entity(&mut self, entity_id: EntityID) -> io::Result<bool> {
         if let Some(entity) = self.entities.get(entity_id) {
             self.viewport.draw(
-                entity,
+                entity.as_ref(),
                 &self.entities.neighbor_entities(entity.position()),
             )?;
             Ok(true)
@@ -399,13 +402,13 @@ impl<'a> Game<'a> {
         unimplemented!()
     }
 
-    fn creature(&self, creature_id: EntityID) -> Option<&Creature> {
+    fn creature(&self, creature_id: EntityID) -> Option<Rc<Creature>> {
         self.entities
             .get(creature_id)
-            .and_then(|e| e.downcast_ref::<Creature>())
+            .and_then(|e| Rc::downcast(e).ok())
     }
 
-    fn expect_creature(&self, creature_id: EntityID) -> &Creature {
+    fn expect_creature(&self, creature_id: EntityID) -> Rc<Creature> {
         self.creature(creature_id).unwrap_or_else(|| {
             panic!("Creature ID went away: {:?}", creature_id)
         })
@@ -473,8 +476,9 @@ impl<'a> Game<'a> {
             0 => Ok(()),
             1 => {
                 let item_id = items.get(0).unwrap().id();
-                let item: Box<Item> =
-                    self.entities.remove(item_id).unwrap().downcast().unwrap();
+                let item_e: Rc<AnEntity> =
+                    self.entities.remove(item_id).unwrap();
+                let item: Rc<Item> = Rc::downcast(item_e).unwrap();
                 let desc = item.description();
                 self.mut_character().inventory.push(item);
                 self.say(
