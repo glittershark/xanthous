@@ -1,16 +1,19 @@
 use crate::types::Dimensions;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MenuInfo {
+pub struct Menu<T> {
     pub prompt: String,
-    pub options: Vec<String>,
+    pub options: Vec<T>,
 }
 
-impl MenuInfo {
-    pub fn new(prompt: String, options: Vec<String>) -> Self {
-        MenuInfo { prompt, options }
+impl<T> Menu<T> {
+    pub fn new(prompt: String, options: Vec<T>) -> Self {
+        Menu { prompt, options }
     }
+}
 
+impl<T: Display> Menu<T> {
     /// Returns the inner dimensions of a box necessary to draw this menu. Will
     /// not trim either dimension to the size of the terminal
     pub fn dimensions(&self) -> Dimensions {
@@ -18,7 +21,7 @@ impl MenuInfo {
             w: self
                 .options
                 .iter()
-                .map(|s| s.len())
+                .map(|s| format!("{}", s).len())
                 .max()
                 .unwrap_or(0)
                 .max(self.prompt.len()) as u16

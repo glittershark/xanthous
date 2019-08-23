@@ -221,7 +221,6 @@ pub fn draw_box<W: Write>(
         write!(out, "{}{}", bbox.position.cursor_goto(), box_str)?;
     } else {
         for (i, line) in box_str.split("\n\r").enumerate() {
-            debug!("line: {:?}!", line);
             write!(
                 out,
                 "{}{}",

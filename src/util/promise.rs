@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll, Waker};
@@ -35,8 +36,24 @@ pub fn promise<Env, T>() -> (Complete<T>, Promise<Env, T>) {
     (complete, promise)
 }
 
-impl<T> Complete<T> {
-    pub fn fulfill(&self, val: T) {
+pub trait Fulfillable {
+    type Result;
+
+    fn fulfill(&self, val: Self::Result);
+}
+
+ref_impl! {
+    impl<T: Fulfillable> Fulfillable for &T {
+        type Result = T::Result;
+        fn fulfill(&self, val: Self::Result) {
+            (**self).fulfill(val)
+        }
+    }
+}
+
+impl<T> Fulfillable for Complete<T> {
+    type Result = T;
+    fn fulfill(&self, val: T) {
         let mut inner = self.inner.write().unwrap();
         inner.value = Some(Arc::new(val));
         if let Some(waker) = inner.waker.take() {
@@ -45,18 +62,90 @@ impl<T> Complete<T> {
     }
 }
 
-impl<T> Complete<Result<T, Cancelled>> {
-    pub fn cancel(&mut self) {
+pub struct CompleteContramap<A, B, F> {
+    complete: Complete<B>,
+    f: F,
+    marker: PhantomData<A>,
+}
+
+impl<A, B, F: FnOnce(A) -> B + Copy> Fulfillable
+    for CompleteContramap<A, B, F>
+{
+    type Result = A;
+    fn fulfill(&self, val: A) {
+        let b = (self.f)(val);
+        self.complete.fulfill(b)
+    }
+}
+
+pub struct CompleteContramapOpt<A, B, F> {
+    complete: Complete<B>,
+    f: F,
+    marker: PhantomData<A>,
+}
+
+impl<A, B, F: FnOnce(A) -> Option<B> + Copy> Fulfillable
+    for CompleteContramapOpt<A, B, F>
+{
+    type Result = A;
+    fn fulfill(&self, val: A) {
+        match (self.f)(val) {
+            Some(b) => self.complete.fulfill(b),
+            None => (),
+        }
+    }
+}
+
+impl<T> Complete<T> {
+    pub fn contramap<A, F: FnOnce(A) -> T>(
+        self,
+        f: F,
+    ) -> CompleteContramap<A, T, F> {
+        CompleteContramap {
+            complete: self,
+            f,
+            marker: PhantomData,
+        }
+    }
+
+    pub fn contramap_opt<A, F: Fn(A) -> Option<T>>(
+        self,
+        f: F,
+    ) -> CompleteContramapOpt<A, T, F> {
+        CompleteContramapOpt {
+            complete: self,
+            f,
+            marker: PhantomData,
+        }
+    }
+}
+
+pub trait Cancellable {
+    fn cancel(&mut self);
+}
+
+impl<T, A: Fulfillable<Result = Result<T, Cancelled>>> Cancellable for A {
+    fn cancel(&mut self) {
         self.fulfill(Err(Cancelled))
     }
 }
 
-impl<E, T> Complete<Result<T, E>> {
-    pub fn ok(&mut self, val: T) {
+pub trait ResultFulfillable: Fulfillable {
+    type Okay;
+    type Error;
+    fn ok(&mut self, val: Self::Okay);
+    fn err(&mut self, e: Self::Error);
+}
+
+impl<E, T, A: Fulfillable<Result = Result<T, E>>> ResultFulfillable for A {
+    type Okay = T;
+    type Error = E;
+
+    fn ok(&mut self, val: T) {
         self.fulfill(Ok(val))
     }
 
-    pub fn err(&mut self, e: E) {
+    fn err(&mut self, e: E) {
         self.fulfill(Err(e))
     }
 }

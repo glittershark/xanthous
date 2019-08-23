@@ -3,10 +3,11 @@ use super::DrawWithNeighbors;
 use crate::display::draw_box::draw_box;
 use crate::display::utils::clone_times;
 use crate::entities::entity::Entity;
-use crate::types::menu::MenuInfo;
-use crate::types::Neighbors;
-use crate::types::{pos, BoundingBox, Direction, Position, Positioned};
-use std::fmt::{self, Debug};
+use crate::types::menu::Menu;
+use crate::types::{
+    pos, BoundingBox, Direction, Neighbors, Position, Positioned,
+};
+use std::fmt::{self, Debug, Display};
 use std::io::{self, Write};
 
 pub enum CursorState {
@@ -194,7 +195,7 @@ impl<W: Write> Viewport<W> {
         Ok(())
     }
 
-    pub fn write_menu(&mut self, menu: &MenuInfo) -> io::Result<()> {
+    pub fn write_menu<T: Display>(&mut self, menu: &Menu<T>) -> io::Result<()> {
         let menu_dims = menu.dimensions();
 
         // TODO: check if the menu is too big
@@ -288,7 +289,7 @@ mod tests {
             buf,
         );
 
-        let menu = MenuInfo::new(
+        let menu = Menu::new(
             "Test menu".to_string(),
             vec!["option 1".to_string(), "option 2".to_string()],
         );

@@ -1,7 +1,6 @@
 use crate::description::list_to_sentence;
 use crate::display::{self, Viewport};
-use crate::entities::entity::Describe;
-use crate::entities::entity::Entity;
+use crate::entities::entity::{self, Describe, Entity};
 use crate::entities::{
     AnEntity, Character, Creature, EntityID, Identified, Item,
 };
@@ -9,15 +8,18 @@ use crate::messages::message;
 use crate::settings::Settings;
 use crate::types::command::Command;
 use crate::types::entity_map::EntityMap;
+use crate::types::menu::Menu;
 use crate::types::{
     pos, BoundingBox, Collision, Dimensions, Position, Positioned, Ticks,
 };
 use crate::util::promise::Cancelled;
-use crate::util::promise::{promise, Complete, Promise, Promises};
+use crate::util::promise::{promise, Complete, Fulfillable, Promise, Promises};
 use crate::util::template::TemplateParams;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
+use std::fmt::Display;
 use std::io::{self, StdinLock, StdoutLock, Write};
+use std::rc::Rc;
 use termion::input::Keys;
 use termion::input::TermRead;
 use termion::raw::RawTerminal;
@@ -25,11 +27,6 @@ use termion::raw::RawTerminal;
 type Stdout<'a> = RawTerminal<StdoutLock<'a>>;
 
 type Rng = SmallRng;
-
-enum PromptResolution {
-    Uncancellable(Complete<String>),
-    Cancellable(Complete<Result<String, Cancelled>>),
-}
 
 /// The mode to use when describing entities on a tile to the user
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,31 +47,39 @@ enum EntityDescriptionMode {
     Look,
 }
 
-impl PromptResolution {
+enum UserInputResolution<T> {
+    Uncancellable(Complete<T>),
+    Cancellable(Box<dyn Fulfillable<Result = Result<T, Cancelled>>>),
+}
+
+impl<T> UserInputResolution<T> {
     fn is_cancellable(&self) -> bool {
-        use PromptResolution::*;
+        use UserInputResolution::*;
         match self {
             Uncancellable(_) => false,
             Cancellable(_) => true,
         }
     }
 
-    fn fulfill(&mut self, val: String) {
-        use PromptResolution::*;
+    fn fulfill(&mut self, val: T) {
+        use UserInputResolution::*;
         match self {
-            Cancellable(complete) => complete.ok(val),
+            Cancellable(complete) => complete.fulfill(Ok(val)),
             Uncancellable(complete) => complete.fulfill(val),
         }
     }
 
     fn cancel(&mut self) {
-        use PromptResolution::*;
+        use UserInputResolution::*;
         match self {
-            Cancellable(complete) => complete.cancel(),
+            Cancellable(complete) => complete.fulfill(Err(Cancelled)),
             Uncancellable(_complete) => {}
         }
     }
 }
+
+type PromptResolution = UserInputResolution<String>;
+type MenuResolution = UserInputResolution<char>;
 
 /// The kind of input the game is waiting to receive
 enum InputState {
@@ -88,6 +93,9 @@ enum InputState {
         complete: PromptResolution,
         buffer: String,
     },
+
+    /// A menu has been shown to the user
+    Menu { complete: MenuResolution },
 }
 
 impl InputState {
@@ -102,8 +110,16 @@ impl InputState {
         complete: Complete<Result<String, Cancelled>>,
     ) -> Self {
         InputState::Prompt {
-            complete: PromptResolution::Cancellable(complete),
+            complete: PromptResolution::Cancellable(Box::new(complete)),
             buffer: String::new(),
+        }
+    }
+
+    fn cancellable_menu(
+        complete: Box<dyn Fulfillable<Result = Result<char, Cancelled>>>,
+    ) -> Self {
+        InputState::Menu {
+            complete: MenuResolution::Cancellable(complete),
         }
     }
 }
@@ -162,6 +178,11 @@ impl<'a> Game<'a> {
 
         // TODO make this dynamic
         {
+            entities.insert(Box::new(Creature::new_from_raw(
+                "gormlak",
+                pos(10, 0),
+            )));
+
             entities.insert(Box::new(Creature::new_from_raw(
                 "gormlak",
                 pos(10, 0),
@@ -377,13 +398,36 @@ impl<'a> Game<'a> {
     }
 
     fn clear_message(&mut self) -> io::Result<()> {
-        debug!("{:?} {:?}", self.message_idx, self.messages);
         if self.message_idx == self.messages.len() {
             return Ok(());
         }
         self.viewport.clear_message()?;
         self.message_idx += 1;
         Ok(())
+    }
+
+    fn menu_cancellable<T: 'a + 'static + Clone + Display>(
+        &mut self,
+        name: &'static str,
+        params: &TemplateParams<'_>,
+        options: Vec<T>,
+    ) -> io::Result<Promise<Self, Result<T, Cancelled>>> {
+        let (complete, promise) = promise();
+        let prompt = self.message(name, params);
+        let menu = Menu::new(prompt, options.to_vec());
+        self.viewport.write_menu(&menu)?;
+        let opts = Rc::pin(Rc::new(options.clone()));
+        self.input_state =
+            InputState::cancellable_menu(Box::new(complete.contramap_opt(
+                move |res: Result<char, Cancelled>| match res {
+                    Ok(chr) => {
+                        opts.get((chr as usize) - 97).map(|a| a.clone()).map(Ok)
+                    }
+                    Err(e) => Some(Err(e)),
+                },
+            )));
+        self.promises.push(Box::new(promise.clone()));
+        Ok(promise)
     }
 
     fn creature(&self, creature_id: EntityID) -> Option<&Creature> {
@@ -441,8 +485,18 @@ impl<'a> Game<'a> {
                 self.attack(creature_id)
             }
             _ => {
-                // TODO prompt with a menu of creatures to combat
-                unimplemented!()
+                self.menu_cancellable(
+                    "combat.attack_menu",
+                    &template_params!(),
+                    creatures
+                        .iter()
+                        .map(|e| entity::MenuOption::new(*e))
+                        .collect(),
+                )?
+                .on_ok(|game, creature| {
+                    game.attack(creature.id()).unwrap();
+                });
+                Ok(())
             }
         }
     }
@@ -580,6 +634,8 @@ impl<'a> Game<'a> {
                         _ => {}
                     }
                 }
+
+                InputState::Menu { complete } => unimplemented!(),
             }
 
             self.flush()?;

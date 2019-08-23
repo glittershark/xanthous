@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! ref_impl {
     (impl<T: $traitb: ident $(+ $bound:ident)*> $traiti:ident for &T {
         $($body:tt)*

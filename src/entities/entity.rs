@@ -4,7 +4,7 @@ use crate::types::Neighbors;
 use crate::types::Position;
 use crate::types::{Positioned, PositionedMut};
 use downcast_rs::Downcast;
-use std::fmt::Debug;
+use std::fmt::{self, Debug, Display};
 use std::io::{self, Write};
 
 pub trait Identified<ID>: Debug {
@@ -121,5 +121,45 @@ impl Positioned for AnEntity {
 impl PositionedMut for AnEntity {
     fn set_position(&mut self, pos: Position) {
         (**self).set_position(pos)
+    }
+}
+
+/// A menu option for an entity.
+///
+/// Customizes the Display impl to access the entity's Description
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MenuOption {
+    description: String,
+    entity_id: EntityID,
+}
+
+impl MenuOption {
+    pub fn new<T: Describe + Identified<EntityID>>(val: &T) -> Self {
+        MenuOption {
+            entity_id: val.id(),
+            description: val.description(),
+        }
+    }
+}
+
+impl Identified<EntityID> for MenuOption {
+    fn opt_id(&self) -> Option<EntityID> {
+        Some(self.entity_id)
+    }
+
+    fn set_id(&mut self, id: EntityID) {
+        self.entity_id = id
+    }
+}
+
+impl Describe for MenuOption {
+    fn description(&self) -> String {
+        self.description.clone()
+    }
+}
+
+impl Display for MenuOption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.description)
     }
 }
