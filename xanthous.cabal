@@ -1,0 +1,113 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 82abd26f60a9ec818eed37784bf7d873658bb40772a67205c42977a98a108566
+
+name:           xanthous
+version:        0.1.0.0
+synopsis:       A WIP TUI RPG
+description:    Please see the README on GitHub at <https://github.com/glittershark/xanthous>
+category:       Game
+homepage:       https://github.com/glittershark/xanthous#readme
+bug-reports:    https://github.com/glittershark/xanthous/issues
+author:         Griffin Smith
+maintainer:     root@gws.fyi
+copyright:      2019 Griffin Smith
+license:        GPL-3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.org
+
+source-repository head
+  type: git
+  location: https://github.com/glittershark/xanthous
+
+library
+  exposed-modules:
+      Main
+      Xanthous.App
+      Xanthous.Game
+      Xanthous.Game.Draw
+      Xanthous.Prelude
+      Xanthous.Resource
+  other-modules:
+      Paths_xanthous
+  hs-source-dirs:
+      src
+  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
+  ghc-options: -Wall -threaded
+  build-depends:
+      QuickCheck
+    , ascii-art-to-unicode
+    , base
+    , brick
+    , classy-prelude
+    , constraints
+    , containers
+    , data-default
+    , deepseq
+    , lens
+    , mtl
+    , vty
+  default-language: Haskell2010
+
+executable xanthous
+  main-is: Main.hs
+  other-modules:
+      Xanthous.App
+      Xanthous.Game
+      Xanthous.Game.Draw
+      Xanthous.Prelude
+      Xanthous.Resource
+      Paths_xanthous
+  hs-source-dirs:
+      src
+  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
+  ghc-options: -Wall -threaded
+  build-depends:
+      QuickCheck
+    , ascii-art-to-unicode
+    , base
+    , brick
+    , classy-prelude
+    , constraints
+    , containers
+    , data-default
+    , deepseq
+    , lens
+    , mtl
+    , vty
+    , xanthous
+  default-language: Haskell2010
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_xanthous
+  hs-source-dirs:
+      test
+  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
+  ghc-options: -Wall -threaded -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , ascii-art-to-unicode
+    , base
+    , brick
+    , classy-prelude
+    , constraints
+    , containers
+    , data-default
+    , deepseq
+    , lens
+    , mtl
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , vty
+    , xanthous
+  default-language: Haskell2010

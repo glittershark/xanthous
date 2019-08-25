@@ -1,0 +1,79 @@
+name:                xanthous
+version:             0.1.0.0
+github:              "glittershark/xanthous"
+license:             GPL-3
+author:              "Griffin Smith"
+maintainer:          "root@gws.fyi"
+copyright:           "2019 Griffin Smith"
+
+extra-source-files:
+- README.org
+
+synopsis:            A WIP TUI RPG
+category:            Game
+
+description:         Please see the README on GitHub at <https://github.com/glittershark/xanthous>
+
+dependencies:
+- base
+- lens
+- containers
+- constraints
+- QuickCheck
+- classy-prelude
+- mtl
+- data-default
+- deepseq
+- ascii-art-to-unicode
+- brick
+- vty
+
+default-extensions:
+- ConstraintKinds
+- DataKinds
+- DeriveAnyClass
+- DeriveGeneric
+- DerivingStrategies
+- FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
+- GADTSyntax
+- GeneralizedNewtypeDeriving
+- KindSignatures
+- LambdaCase
+- NoImplicitPrelude
+- NoStarIsType
+- OverloadedStrings
+- PolyKinds
+- RankNTypes
+- ScopedTypeVariables
+- TypeApplications
+- TypeFamilies
+- TypeOperators
+
+ghc-options:
+- -Wall
+- -threaded
+
+library:
+  source-dirs: src
+
+executable:
+  source-dirs: src
+  main: Main.hs
+  dependencies:
+  - xanthous
+
+tests:
+  test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - xanthous
+    - tasty
+    - tasty-hunit
+    - tasty-quickcheck
