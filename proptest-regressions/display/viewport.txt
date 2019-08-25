@@ -1,7 +1,0 @@
-# Seeds for failure cases proptest has generated in the past. It is
-# automatically read and these particular cases re-run before any
-# novel cases are generated.
-#
-# It is recommended to check this file in to source control so that
-# everyone who runs the test benefits from these saved cases.
-cc b84a5a6dbba5cfc69329a119d9e20328c0372e0db2b72e5d71d971e3f13f8749 # shrinks to pos = Position { x: 0, y: 0 }, outer = BoundingBox { dimensions: Dimensions { w: 0, h: 0 }, position: Position { x: 0, y: 0 } }
