@@ -1,8 +1,8 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc865", withHoogle ? true }:
+{ nixpkgs ? import ./nixpkgs.nix {}, compiler ? "ghc865", withHoogle ? true }:
 let
   inherit (nixpkgs) pkgs;
 
-  xan = import ./xanthous.nix;
+  pkg = import ./pkg.nix { inherit nixpkgs; };
 
   packageSet = (
     if compiler == "default"
@@ -21,7 +21,7 @@ let
     else packageSet
   );
 
-  drv = haskellPackages.callPackage xan {};
+  drv = haskellPackages.callPackage pkg {};
 
   inherit (pkgs.haskell.lib) addBuildTools;
 in
