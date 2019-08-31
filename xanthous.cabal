@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 82abd26f60a9ec818eed37784bf7d873658bb40772a67205c42977a98a108566
+-- hash: d069cdc1d0657c9b140465b8156b86722d399db49289c8352cccb2a70ab548e0
 
 name:           xanthous
 version:        0.1.0.0
@@ -30,26 +30,37 @@ library
   exposed-modules:
       Main
       Xanthous.App
+      Xanthous.Command
+      Xanthous.Data
+      Xanthous.Data.EntityMap
+      Xanthous.Entities
+      Xanthous.Entities.Character
+      Xanthous.Entities.SomeEntity
       Xanthous.Game
       Xanthous.Game.Draw
+      Xanthous.Orphans
       Xanthous.Prelude
       Xanthous.Resource
+      Xanthous.Util
   other-modules:
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
+  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded
   build-depends:
       QuickCheck
-    , ascii-art-to-unicode
     , base
     , brick
+    , checkers
     , classy-prelude
     , constraints
     , containers
     , data-default
     , deepseq
+    , generic-arbitrary
+    , generic-monoid
+    , groups
     , lens
     , mtl
     , vty
@@ -59,25 +70,36 @@ executable xanthous
   main-is: Main.hs
   other-modules:
       Xanthous.App
+      Xanthous.Command
+      Xanthous.Data
+      Xanthous.Data.EntityMap
+      Xanthous.Entities
+      Xanthous.Entities.Character
+      Xanthous.Entities.SomeEntity
       Xanthous.Game
       Xanthous.Game.Draw
+      Xanthous.Orphans
       Xanthous.Prelude
       Xanthous.Resource
+      Xanthous.Util
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
+  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded
   build-depends:
       QuickCheck
-    , ascii-art-to-unicode
     , base
     , brick
+    , checkers
     , classy-prelude
     , constraints
     , containers
     , data-default
     , deepseq
+    , generic-arbitrary
+    , generic-monoid
+    , groups
     , lens
     , mtl
     , vty
@@ -88,22 +110,30 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Test.Prelude
+      Xanthous.Data.EntityMapSpec
+      Xanthous.DataSpec
+      Xanthous.GameSpec
       Paths_xanthous
   hs-source-dirs:
       test
-  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
+  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
-    , ascii-art-to-unicode
     , base
     , brick
+    , checkers
     , classy-prelude
     , constraints
     , containers
     , data-default
     , deepseq
+    , generic-arbitrary
+    , generic-monoid
+    , groups
     , lens
+    , lens-properties
     , mtl
     , tasty
     , tasty-hunit

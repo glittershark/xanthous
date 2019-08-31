@@ -15,17 +15,20 @@ category:            Game
 description:         Please see the README on GitHub at <https://github.com/glittershark/xanthous>
 
 dependencies:
-- base
-- lens
-- containers
-- constraints
 - QuickCheck
+- base
+- brick
+- checkers
 - classy-prelude
-- mtl
+- constraints
+- containers
 - data-default
 - deepseq
-- ascii-art-to-unicode
-- brick
+- generic-arbitrary
+- generic-monoid
+- groups
+- lens
+- mtl
 - vty
 
 default-extensions:
@@ -34,6 +37,7 @@ default-extensions:
 - DeriveAnyClass
 - DeriveGeneric
 - DerivingStrategies
+- DerivingVia
 - FlexibleContexts
 - FlexibleInstances
 - FunctionalDependencies
@@ -77,3 +81,4 @@ tests:
     - tasty
     - tasty-hunit
     - tasty-quickcheck
+    - lens-properties

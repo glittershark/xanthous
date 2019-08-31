@@ -12,6 +12,6 @@ ui = str "Hello, world!"
 main :: IO ()
 main = do
   app <- makeApp
-  initialState <- getInitialState
+  let initialState = getInitialState
   _ <- defaultMain app initialState
   pure ()
