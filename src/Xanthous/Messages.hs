@@ -9,19 +9,19 @@ module Xanthous.Messages
   , messages
   , message
   ) where
-
+--------------------------------------------------------------------------------
 import Xanthous.Prelude
+
+import Control.Monad.Random.Class (MonadRandom)
+import Data.Aeson (FromJSON, ToJSON, toJSON)
+import Data.Aeson.Generic.DerivingVia
+import Data.FileEmbed
 import Data.List.NonEmpty
 import Test.QuickCheck hiding (choose)
 import Test.QuickCheck.Arbitrary.Generic
 import Test.QuickCheck.Instances.UnorderedContainers ()
 import Text.Mustache
-import Data.Aeson (FromJSON, ToJSON)
-import Data.Aeson.Generic.DerivingVia
-import Data.FileEmbed
 import qualified Data.Yaml as Yaml
-import Data.Aeson (toJSON)
-import Control.Monad.Random.Class (MonadRandom)
 
 import Xanthous.Random
 import Xanthous.Orphans ()

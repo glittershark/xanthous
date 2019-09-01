@@ -8,7 +8,6 @@ module Xanthous.Random
 
 import Xanthous.Prelude
 import Data.List.NonEmpty (NonEmpty)
-import System.Random
 import Control.Monad.Random.Class (MonadRandom(getRandomR))
 
 class Choose a where

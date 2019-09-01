@@ -8,7 +8,7 @@ module Xanthous.Prelude
   ) where
 
 import ClassyPrelude hiding
-  (return, (<|), unsnoc, uncons, cons, snoc, index, (<.>), Index)
+  (return, (<|), unsnoc, uncons, cons, snoc, index, (<.>), Index, say)
 import Data.Kind
 import GHC.TypeLits hiding (Text)
 import Control.Lens
