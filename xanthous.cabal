@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d069cdc1d0657c9b140465b8156b86722d399db49289c8352cccb2a70ab548e0
+-- hash: d86e44c1f3fe890c699f9af19ae10b013973d1cb6e79cc403d6e1c35a74c99c1
 
 name:           xanthous
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Aeson.Generic.DerivingVia
       Main
       Xanthous.App
       Xanthous.Command
@@ -38,18 +39,22 @@ library
       Xanthous.Entities.SomeEntity
       Xanthous.Game
       Xanthous.Game.Draw
+      Xanthous.Messages
       Xanthous.Orphans
       Xanthous.Prelude
+      Xanthous.Random
       Xanthous.Resource
       Xanthous.Util
   other-modules:
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  ghc-options: -Wall
   build-depends:
-      QuickCheck
+      MonadRandom
+    , QuickCheck
+    , aeson
     , base
     , brick
     , checkers
@@ -58,17 +63,28 @@ library
     , containers
     , data-default
     , deepseq
+    , file-embed
     , generic-arbitrary
     , generic-monoid
     , groups
     , lens
+    , megaparsec
     , mtl
+    , quickcheck-instances
+    , quickcheck-text
+    , random
+    , raw-strings-qq
+    , reflection
+    , stache
+    , tomland
     , vty
+    , yaml
   default-language: Haskell2010
 
 executable xanthous
   main-is: Main.hs
   other-modules:
+      Data.Aeson.Generic.DerivingVia
       Xanthous.App
       Xanthous.Command
       Xanthous.Data
@@ -78,17 +94,21 @@ executable xanthous
       Xanthous.Entities.SomeEntity
       Xanthous.Game
       Xanthous.Game.Draw
+      Xanthous.Messages
       Xanthous.Orphans
       Xanthous.Prelude
+      Xanthous.Random
       Xanthous.Resource
       Xanthous.Util
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck
+      MonadRandom
+    , QuickCheck
+    , aeson
     , base
     , brick
     , checkers
@@ -97,13 +117,23 @@ executable xanthous
     , containers
     , data-default
     , deepseq
+    , file-embed
     , generic-arbitrary
     , generic-monoid
     , groups
     , lens
+    , megaparsec
     , mtl
+    , quickcheck-instances
+    , quickcheck-text
+    , random
+    , raw-strings-qq
+    , reflection
+    , stache
+    , tomland
     , vty
     , xanthous
+    , yaml
   default-language: Haskell2010
 
 test-suite test
@@ -114,13 +144,17 @@ test-suite test
       Xanthous.Data.EntityMapSpec
       Xanthous.DataSpec
       Xanthous.GameSpec
+      Xanthous.MessageSpec
+      Xanthous.OrphansSpec
       Paths_xanthous
   hs-source-dirs:
       test
-  default-extensions: ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TypeApplications TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck
+      MonadRandom
+    , QuickCheck
+    , aeson
     , base
     , brick
     , checkers
@@ -129,15 +163,25 @@ test-suite test
     , containers
     , data-default
     , deepseq
+    , file-embed
     , generic-arbitrary
     , generic-monoid
     , groups
     , lens
     , lens-properties
+    , megaparsec
     , mtl
+    , quickcheck-instances
+    , quickcheck-text
+    , random
+    , raw-strings-qq
+    , reflection
+    , stache
     , tasty
     , tasty-hunit
     , tasty-quickcheck
+    , tomland
     , vty
     , xanthous
+    , yaml
   default-language: Haskell2010

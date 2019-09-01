@@ -4,6 +4,7 @@ module Xanthous.Prelude
   , Constraint
   , module GHC.TypeLits
   , module Control.Lens
+  , module Data.Void
   ) where
 
 import ClassyPrelude hiding
@@ -11,3 +12,4 @@ import ClassyPrelude hiding
 import Data.Kind
 import GHC.TypeLits hiding (Text)
 import Control.Lens
+import Data.Void

@@ -4,7 +4,7 @@ import Xanthous.Prelude
 import Brick hiding (App)
 import qualified Brick
 import Graphics.Vty.Attributes (defAttr)
-import Graphics.Vty.Input.Events (Event(EvResize, EvKey))
+import Graphics.Vty.Input.Events (Event(EvKey))
 
 import Xanthous.Game
 import Xanthous.Game.Draw (drawGame)
@@ -32,4 +32,4 @@ handleEvent game _ = continue game
 handleCommand :: Command -> GameState -> EventM Name (Next GameState)
 handleCommand Quit = halt
 handleCommand (Move dir) = continue . (characterPosition %~ move dir)
-handleCommand _ = undefined
+handleCommand _ = error "unimplemented"

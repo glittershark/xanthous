@@ -16,7 +16,6 @@ import Test.QuickCheck.Arbitrary
 import Xanthous.Data.EntityMap (EntityMap, EntityID)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import Xanthous.Data (Positioned, Position(..), positioned, position)
-import Xanthous.Entities
 import Xanthous.Entities.SomeEntity
 import Xanthous.Entities.Character
 
