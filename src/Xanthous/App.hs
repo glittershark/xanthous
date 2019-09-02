@@ -1,18 +1,25 @@
 module Xanthous.App (makeApp) where
 
-import Xanthous.Prelude
-import Brick hiding (App, halt, continue)
+import           Xanthous.Prelude
+import           Brick hiding (App, halt, continue, raw)
 import qualified Brick
-import Graphics.Vty.Attributes (defAttr)
-import Graphics.Vty.Input.Events (Event(EvKey))
-import Control.Monad.State (get)
+import           Graphics.Vty.Attributes (defAttr)
+import           Graphics.Vty.Input.Events (Event(EvKey))
+import           Control.Monad.State (get)
 
-import Xanthous.Game
-import Xanthous.Game.Draw (drawGame)
-import Xanthous.Resource (Name)
-import Xanthous.Command
-import Xanthous.Data (move)
-import Xanthous.Monad
+import           Xanthous.Command
+import           Xanthous.Data (move, Position(..))
+import qualified Xanthous.Data.EntityMap as EntityMap
+import           Xanthous.Game
+import           Xanthous.Game.Draw (drawGame)
+import           Xanthous.Monad
+import           Xanthous.Resource (Name)
+
+import           Xanthous.Entities.Creature (Creature)
+import qualified Xanthous.Entities.Creature as Creature
+import           Xanthous.Entities.RawTypes (EntityRaw(..))
+import           Xanthous.Entities.Raws (raw)
+import           Xanthous.Entities.SomeEntity
 
 type App = Brick.App GameState () Name
 type AppM a = AppT (EventM Name) a
@@ -29,8 +36,15 @@ makeApp = pure $ Brick.App
 runAppM :: AppM a -> GameState -> EventM Name a
 runAppM appm = fmap fst . runAppT appm
 
+testGormlak :: Creature
+testGormlak =
+  let Just (Creature gormlak) = raw "gormlak"
+  in Creature.newWithType gormlak
+
 startEvent :: AppM ()
-startEvent = say ["welcome"]
+startEvent = do
+  () <- say ["welcome"]
+  entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
 
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
 handleEvent (VtyEvent (EvKey k mods))

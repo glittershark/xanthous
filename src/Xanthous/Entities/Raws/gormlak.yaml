@@ -6,7 +6,7 @@ Creature:
   char:
     char: g
     style:
-      color: red
+      foreground: red
   maxHitpoints: 5
   speed: 120
   friendly: false

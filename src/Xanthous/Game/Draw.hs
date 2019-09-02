@@ -35,16 +35,15 @@ drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
 --   (MessageHistory (lastMessage :| _) True) -> txt lastMessage
 
 drawEntities :: (Draw a, Show a) => EntityMap a -> Widget Name
-drawEntities em@(fromNullable . positions -> Just entityPositions)
+drawEntities em
   = vBox rows
   where
-    maxPosition = maximum entityPositions
-    maxY = maxPosition ^. y
-    maxX = maxPosition ^. x
+    entityPositions = positions em
+    maxY = fromMaybe 0 $ maximumOf (folded . y) entityPositions
+    maxX = fromMaybe 0 $ maximumOf (folded . x) entityPositions
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
     renderEntityAt pos = maybe (str " ") draw $ em ^? atPosition pos . folded
-drawEntities _ = emptyWidget
 
 drawMap :: GameState -> Widget Name
 drawMap game
