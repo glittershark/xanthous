@@ -1,6 +1,6 @@
 -- |
 
-module Xanthous.DataSpec where
+module Xanthous.DataSpec (main, test) where
 
 import Test.Prelude hiding (Right, Left, Down)
 import Xanthous.Data

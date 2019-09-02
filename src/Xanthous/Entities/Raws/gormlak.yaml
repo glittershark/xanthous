@@ -1,0 +1,12 @@
+Creature:
+  name: gormlak
+  description: |
+    A chittering imp-like creature with bright yellow horns. It adores shiny objects
+    and gathers in swarms.
+  char:
+    char: g
+    style:
+      color: red
+  maxHitpoints: 5
+  speed: 120
+  friendly: false

@@ -29,6 +29,7 @@ dependencies:
 - data-default
 - deepseq
 - file-embed
+- filepath
 - generic-arbitrary
 - generic-monoid
 - groups

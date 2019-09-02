@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -20,15 +21,23 @@ module Xanthous.Data
   , opposite
   , move
   , asPosition
+
+    -- *
+  , EntityChar(..)
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude hiding (Left, Down, Right)
-import Test.QuickCheck (Arbitrary, CoArbitrary, Function)
-import Test.QuickCheck.Arbitrary.Generic
-import Data.Group
-import Brick (Location(Location))
+import           Xanthous.Prelude hiding (Left, Down, Right)
+import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
+import           Test.QuickCheck.Arbitrary.Generic
+import           Data.Group
+import           Brick (Location(Location), raw)
+import           Graphics.Vty.Attributes
+import qualified Graphics.Vty.Image as Vty
+import           Data.Aeson
 --------------------------------------------------------------------------------
-import Xanthous.Util (EqEqProp(..), EqProp)
+import           Xanthous.Util (EqEqProp(..), EqProp)
+import           Xanthous.Orphans ()
+import           Xanthous.Entities (Draw(..))
 --------------------------------------------------------------------------------
 
 data Position where
@@ -116,3 +125,30 @@ move DownRight = move Down . move Right
 
 asPosition :: Direction -> Position
 asPosition dir = move dir mempty
+
+--------------------------------------------------------------------------------
+
+data EntityChar = EntityChar
+  { _char :: Char
+  , _style :: Attr
+  }
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData)
+
+instance FromJSON EntityChar where
+  parseJSON (String (chr :< Empty)) = pure $ EntityChar chr defAttr
+  parseJSON (Object o) = do
+    (EntityChar _char _) <- o .: "char"
+    _style <- o .:? "style" >>= \case
+      Just styleO -> do
+        let attrStyle = Default -- TODO
+            attrURL = Default
+        attrForeColor <- styleO .:? "foreground" .!= Default
+        attrBackColor <- styleO .:? "background" .!= Default
+        pure Attr {..}
+      Nothing -> pure defAttr
+    pure EntityChar {..}
+  parseJSON _ = fail "Invalid type, expected string or object"
+
+instance Draw EntityChar where
+  draw EntityChar{..} = raw $ Vty.string _style [_char]

@@ -18,6 +18,7 @@ import Text.Mustache.Type ( showKey )
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Aeson
+import Graphics.Vty.Attributes
 
 instance forall s a.
   ( Cons s s a a
@@ -152,3 +153,31 @@ instance Function Text where
 
 deriving anyclass instance NFData Node
 deriving anyclass instance NFData Template
+
+instance FromJSON Color where
+  parseJSON = withText "Color" $ \case
+    "black" -> pure black
+    "red" -> pure red
+    "green" -> pure green
+    "yellow" -> pure yellow
+    "blue" -> pure blue
+    "magenta" -> pure magenta
+    "cyan" -> pure cyan
+    "white" -> pure white
+    _       -> fail "Invalid color"
+
+instance ToJSON Color where
+  toJSON color
+    | color == black = "black"
+    | color == red = "red"
+    | color == green = "green"
+    | color == yellow = "yellow"
+    | color == blue = "blue"
+    | color == magenta = "magenta"
+    | color == cyan = "cyan"
+    | color == white = "white"
+    | otherwise = error "unimplemented"
+
+instance (Eq a, Show a, Read a, FromJSON a) => FromJSON (MaybeDefault a) where
+  parseJSON Null = pure Default
+  parseJSON x    = SetTo <$> parseJSON x
