@@ -17,6 +17,10 @@ commandFromKey (KChar 'h') [] = Just $ Move Left
 commandFromKey (KChar 'j') [] = Just $ Move Down
 commandFromKey (KChar 'k') [] = Just $ Move Up
 commandFromKey (KChar 'l') [] = Just $ Move Right
+commandFromKey (KChar 'y') [] = Just $ Move UpLeft
+commandFromKey (KChar 'u') [] = Just $ Move UpRight
+commandFromKey (KChar 'b') [] = Just $ Move DownLeft
+commandFromKey (KChar 'n') [] = Just $ Move DownRight
 
 commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
 
