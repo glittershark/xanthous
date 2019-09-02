@@ -26,7 +26,13 @@ import Xanthous.Orphans ()
 drawMessages :: MessageHistory -> Widget Name
 drawMessages NoMessageHistory = emptyWidget
 drawMessages (MessageHistory _ False) = emptyWidget
-drawMessages (MessageHistory (lastMessage :| _) True) = str $ unpack lastMessage
+drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
+
+-- an attempt to still take up a row even when no messages
+-- drawMessages msgs = vLimit 1 . Widget Greedy Fixed . render $ case msgs of
+--   NoMessageHistory -> padTop (Pad 2) $ str " "
+--   (MessageHistory _ False) -> padTop (Pad 2) $ str " "
+--   (MessageHistory (lastMessage :| _) True) -> txt lastMessage
 
 drawEntities :: (Draw a, Show a) => EntityMap a -> Widget Name
 drawEntities em@(fromNullable . positions -> Just entityPositions)

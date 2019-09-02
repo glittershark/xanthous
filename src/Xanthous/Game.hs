@@ -14,6 +14,8 @@ module Xanthous.Game
 
   , MessageHistory(..)
   , pushMessage
+  , popMessage
+  , hideMessage
   ) where
 
 import           Data.List.NonEmpty ( NonEmpty((:|)))
@@ -42,6 +44,16 @@ instance Arbitrary MessageHistory where
 pushMessage :: Text -> MessageHistory -> MessageHistory
 pushMessage msg NoMessageHistory = MessageHistory (msg :| []) True
 pushMessage msg (MessageHistory msgs _) = MessageHistory (NonEmpty.cons msg msgs) True
+
+popMessage :: MessageHistory -> MessageHistory
+popMessage NoMessageHistory = NoMessageHistory
+popMessage (MessageHistory msgs False) = MessageHistory msgs True
+popMessage (MessageHistory msgs@(_ :| []) _) = MessageHistory msgs True
+popMessage (MessageHistory (_ :| (msg : msgs)) True) = MessageHistory (msg :| msgs) True
+
+hideMessage :: MessageHistory -> MessageHistory
+hideMessage NoMessageHistory = NoMessageHistory
+hideMessage (MessageHistory msgs _) = MessageHistory msgs False
 
 data GameState = GameState
   { _entities          :: EntityMap SomeEntity

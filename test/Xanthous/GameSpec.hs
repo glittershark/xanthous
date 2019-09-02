@@ -15,8 +15,8 @@ test = testGroup "Xanthous.Game"
   [ testGroup "positionedCharacter"
     [ testProperty "lens laws" $ isLens positionedCharacter
     , testCase "updates the position of the character" $ do
-      let initialGame = getInitialState
-          initialPos = initialGame ^. characterPosition
+      initialGame <- getInitialState
+      let initialPos = initialGame ^. characterPosition
           updatedGame = initialGame & characterPosition %~ move Down
           updatedPos = updatedGame ^. characterPosition
       updatedPos @?= move Down initialPos

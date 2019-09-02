@@ -35,7 +35,8 @@ startEvent = say ["welcome"]
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
 handleEvent (VtyEvent (EvKey k mods))
   | Just command <- commandFromKey k mods
-  = handleCommand command
+  = do messageHistory %= hideMessage
+       handleCommand command
 handleEvent _ = continue
 
 handleCommand :: Command -> AppM (Next GameState)
@@ -43,4 +44,7 @@ handleCommand Quit = halt
 handleCommand (Move dir) = do
   characterPosition %= move dir
   continue
-handleCommand _ = error "unimplemented"
+
+handleCommand PreviousMessage = do
+  messageHistory %= popMessage
+  continue
