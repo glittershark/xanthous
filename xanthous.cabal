@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1e2605418faf05255c5de59433688704543e21d7d3edf669e7e18a99977c0241
+-- hash: e01963f3bf85136fe2b6993775d225999898d4c478efef6f917056f726d72e33
 
 name:           xanthous
 version:        0.1.0.0
@@ -42,6 +42,9 @@ library
       Xanthous.Entities.SomeEntity
       Xanthous.Game
       Xanthous.Game.Draw
+      Xanthous.Generators
+      Xanthous.Generators.CaveAutomata
+      Xanthous.Generators.Util
       Xanthous.Messages
       Xanthous.Monad
       Xanthous.Orphans
@@ -59,6 +62,7 @@ library
       MonadRandom
     , QuickCheck
     , aeson
+    , array
     , base
     , brick
     , checkers
@@ -75,6 +79,7 @@ library
     , lens
     , megaparsec
     , mtl
+    , optparse-applicative
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -102,6 +107,9 @@ executable xanthous
       Xanthous.Entities.SomeEntity
       Xanthous.Game
       Xanthous.Game.Draw
+      Xanthous.Generators
+      Xanthous.Generators.CaveAutomata
+      Xanthous.Generators.Util
       Xanthous.Messages
       Xanthous.Monad
       Xanthous.Orphans
@@ -118,6 +126,7 @@ executable xanthous
       MonadRandom
     , QuickCheck
     , aeson
+    , array
     , base
     , brick
     , checkers
@@ -134,6 +143,7 @@ executable xanthous
     , lens
     , megaparsec
     , mtl
+    , optparse-applicative
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -155,6 +165,7 @@ test-suite test
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
       Xanthous.GameSpec
+      Xanthous.Generators.UtilSpec
       Xanthous.MessageSpec
       Xanthous.OrphansSpec
       Paths_xanthous
@@ -166,6 +177,7 @@ test-suite test
       MonadRandom
     , QuickCheck
     , aeson
+    , array
     , base
     , brick
     , checkers
@@ -183,6 +195,7 @@ test-suite test
     , lens-properties
     , megaparsec
     , mtl
+    , optparse-applicative
     , quickcheck-instances
     , quickcheck-text
     , random

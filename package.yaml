@@ -18,6 +18,7 @@ dependencies:
 - base
 
 - aeson
+- array
 - QuickCheck
 - quickcheck-text
 - quickcheck-instances
@@ -37,6 +38,7 @@ dependencies:
 - megaparsec
 - MonadRandom
 - mtl
+- optparse-applicative
 - random
 - raw-strings-qq
 - reflection

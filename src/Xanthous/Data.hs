@@ -17,6 +17,12 @@ module Xanthous.Data
   , loc
 
     -- *
+  , Dimensions'(..)
+  , Dimensions
+  , HasWidth(..)
+  , HasHeight(..)
+
+    -- *
   , Direction(..)
   , opposite
   , move
@@ -85,6 +91,21 @@ loc = iso hither yon
   where
     hither (Position px py) = Location (px, py)
     yon (Location (lx, ly)) = Position lx ly
+
+--------------------------------------------------------------------------------
+
+data Dimensions' a = Dimensions
+  { _width :: a
+  , _height :: a
+  }
+  deriving stock (Show, Eq, Functor, Generic)
+  deriving anyclass (CoArbitrary, Function)
+makeFieldsNoPrefix ''Dimensions'
+
+instance Arbitrary a => Arbitrary (Dimensions' a) where
+  arbitrary = Dimensions <$> arbitrary <*> arbitrary
+
+type Dimensions = Dimensions' Word
 
 --------------------------------------------------------------------------------
 
