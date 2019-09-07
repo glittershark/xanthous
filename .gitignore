@@ -22,8 +22,12 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 
+
 # from nix-build
 result
 
 # grr
 *_flymake.hs
+
+# app-specific
+debug.log
