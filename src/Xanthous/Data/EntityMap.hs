@@ -15,6 +15,7 @@ module Xanthous.Data.EntityMap
   , lookup
   , lookupWithPosition
   -- , positionedEntities
+  , neighbors
   ) where
 
 import Data.Monoid (Endo(..))
@@ -22,7 +23,14 @@ import Test.QuickCheck (Arbitrary(..))
 import Test.QuickCheck.Checkers (EqProp)
 
 import Xanthous.Prelude hiding (lookup)
-import Xanthous.Data (Position, Positioned(..), positioned, position)
+import Xanthous.Data
+  ( Position
+  , Positioned(..)
+  , positioned
+  , position
+  , Neighbors(..)
+  , neighborPositions
+  )
 import Xanthous.Orphans ()
 import Xanthous.Util (EqEqProp(..))
 
@@ -139,3 +147,6 @@ lookup eid = fmap (view positioned) . lookupWithPosition eid
 -- unlawful :(
 -- positionedEntities :: IndexedTraversal EntityID (EntityMap a) (EntityMap b) (Positioned a) (Positioned b)
 -- positionedEntities = byID . itraversed
+
+neighbors :: Position -> EntityMap a -> Neighbors (Vector a)
+neighbors pos em = (\p -> view (atPosition p) em) <$> neighborPositions pos

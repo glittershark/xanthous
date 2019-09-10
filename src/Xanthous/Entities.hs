@@ -1,23 +1,65 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
-
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+--------------------------------------------------------------------------------
 module Xanthous.Entities
   ( Draw(..)
   , DrawCharacter(..)
   , DrawStyledCharacter(..)
   , Entity
+  , SomeEntity(..)
+  , downcastEntity
+  , entityIs
 
   , Color(..)
   , KnownColor(..)
-  ) where
 
-import Xanthous.Prelude
-import Brick
-import Data.Typeable
+  , EntityChar(..)
+  ) where
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude
+--------------------------------------------------------------------------------
+import           Brick
+import           Data.Typeable
 import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
+import           Data.Aeson
+--------------------------------------------------------------------------------
+import           Xanthous.Data
+--------------------------------------------------------------------------------
+
+class (Show a, Eq a, Draw a) => Entity a
+instance (Show a, Eq a, Draw a) => Entity a
+
+--------------------------------------------------------------------------------
+data SomeEntity where
+  SomeEntity :: forall a. (Entity a, Typeable a) => a -> SomeEntity
+
+instance Show SomeEntity where
+  show (SomeEntity e) = "SomeEntity (" <> show e <> ")"
+
+instance Eq SomeEntity where
+  (SomeEntity (a :: ea)) == (SomeEntity (b :: eb)) = case eqT @ea @eb of
+    Just Refl -> a == b
+    _ -> False
+
+instance Draw SomeEntity where
+  drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
+
+downcastEntity :: (Entity a, Typeable a) => SomeEntity -> Maybe a
+downcastEntity (SomeEntity e) = cast e
+
+entityIs :: forall a. (Entity a, Typeable a) => SomeEntity -> Bool
+entityIs = isJust . downcastEntity @a
+--------------------------------------------------------------------------------
 
 class Draw a where
+  drawWithNeighbors :: Neighbors (Vector SomeEntity) -> a -> Widget n
+  drawWithNeighbors = const draw
+
   draw :: a -> Widget n
+  draw = drawWithNeighbors $ pure mempty
 
 newtype DrawCharacter (char :: Symbol) (a :: Type) where
   DrawCharacter :: a -> DrawCharacter char a
@@ -57,8 +99,30 @@ instance
             , Vty.attrBackColor = Vty.SetTo $ colorVal @bg Proxy
             , Vty.attrURL = Vty.Default
             }
+--------------------------------------------------------------------------------
+data EntityChar = EntityChar
+  { _char :: Char
+  , _style :: Vty.Attr
+  }
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData)
+
+instance FromJSON EntityChar where
+  parseJSON (String (chr :< Empty)) = pure $ EntityChar chr Vty.defAttr
+  parseJSON (Object o) = do
+    (EntityChar _char _) <- o .: "char"
+    _style <- o .:? "style" >>= \case
+      Just styleO -> do
+        let attrStyle = Vty.Default -- TODO
+            attrURL = Vty.Default
+        attrForeColor <- styleO .:? "foreground" .!= Vty.Default
+        attrBackColor <- styleO .:? "background" .!= Vty.Default
+        pure Vty.Attr {..}
+      Nothing -> pure Vty.defAttr
+    pure EntityChar {..}
+  parseJSON _ = fail "Invalid type, expected string or object"
+
+instance Draw EntityChar where
+  draw EntityChar{..} = raw $ Vty.string _style [_char]
 
 --------------------------------------------------------------------------------
-
-class (Show a, Eq a, Draw a) => Entity a
-instance (Show a, Eq a, Draw a) => Entity a

@@ -5,6 +5,7 @@ module Xanthous.Generators.Util
   , CellM
   , randInitialize
   , numAliveNeighborsM
+  , numAliveNeighbors
   , cloneMArray
   ) where
 
@@ -54,6 +55,34 @@ numAliveNeighborsM cells (x, y) = do
         let nx = fromIntegral $ fromIntegral x + i
             ny = fromIntegral $ fromIntegral y + j
         in readArray cells (nx, ny)
+
+    neighborPositions :: [(Int, Int)]
+    neighborPositions = [(i, j) | i <- [-1..1], j <- [-1..1], (i, j) /= (0, 0)]
+
+numAliveNeighbors
+  :: forall a i j
+  . (IArray a Bool, Ix (i, j), Integral i, Integral j)
+  => a (i, j) Bool
+  -> (i, j)
+  -> Word
+numAliveNeighbors cells (x, y) =
+  let cellBounds = bounds cells
+  in getSum $ foldMap
+      (Sum . fromIntegral . fromEnum . boundedGet cellBounds)
+      neighborPositions
+
+  where
+    boundedGet :: ((i, j), (i, j)) -> (Int, Int) -> Bool
+    boundedGet ((minX, minY), (maxX, maxY)) (i, j)
+      | x <= minX
+        || y <= minY
+        || x >= maxX
+        || y >= maxY
+      = True
+      | otherwise =
+        let nx = fromIntegral $ fromIntegral x + i
+            ny = fromIntegral $ fromIntegral y + j
+        in cells ! (nx, ny)
 
     neighborPositions :: [(Int, Int)]
     neighborPositions = [(i, j) | i <- [-1..1], j <- [-1..1], (i, j) /= (0, 0)]

@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
+--------------------------------------------------------------------------------
 module Xanthous.Game
   ( GameState(..)
   , entities
@@ -17,20 +18,23 @@ module Xanthous.Game
   , popMessage
   , hideMessage
   ) where
-
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude
+--------------------------------------------------------------------------------
 import           Data.List.NonEmpty ( NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
 import           System.Random
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
-import           Xanthous.Prelude
-
+--------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data (Positioned, Position(..), positioned, position)
-import           Xanthous.Entities.SomeEntity
+import           Xanthous.Entities (SomeEntity(..), downcastEntity)
 import           Xanthous.Entities.Character
+import           Xanthous.Entities.Arbitrary ()
 import           Xanthous.Orphans ()
+--------------------------------------------------------------------------------
 
 data MessageHistory
   = NoMessageHistory

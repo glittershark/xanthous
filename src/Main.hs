@@ -31,7 +31,7 @@ parseDimensions = Dimensions
        )
 
 parseCommand :: Opt.Parser Command
-parseCommand = Opt.subparser
+parseCommand = (<|> pure Run) $ Opt.subparser
   $ Opt.command "run"
       (Opt.info
        (pure Run)

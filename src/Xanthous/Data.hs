@@ -29,21 +29,20 @@ module Xanthous.Data
   , asPosition
 
     -- *
-  , EntityChar(..)
+  , Neighbors(..)
+  , edges
+  , neighborDirections
+  , neighborPositions
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (Left, Down, Right)
 import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
-import           Brick (Location(Location), raw)
-import           Graphics.Vty.Attributes
-import qualified Graphics.Vty.Image as Vty
-import           Data.Aeson
+import           Brick (Location(Location), Edges(..))
 --------------------------------------------------------------------------------
 import           Xanthous.Util (EqEqProp(..), EqProp)
 import           Xanthous.Orphans ()
-import           Xanthous.Entities (Draw(..))
 --------------------------------------------------------------------------------
 
 data Position where
@@ -149,27 +148,61 @@ asPosition dir = move dir mempty
 
 --------------------------------------------------------------------------------
 
-data EntityChar = EntityChar
-  { _char :: Char
-  , _style :: Attr
+data Neighbors a = Neighbors
+  { _topLeft
+  , _top
+  , _topRight
+  , _left
+  , _right
+  , _bottomLeft
+  , _bottom
+  , _bottomRight :: a
   }
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (NFData)
+makeLenses ''Neighbors
 
-instance FromJSON EntityChar where
-  parseJSON (String (chr :< Empty)) = pure $ EntityChar chr defAttr
-  parseJSON (Object o) = do
-    (EntityChar _char _) <- o .: "char"
-    _style <- o .:? "style" >>= \case
-      Just styleO -> do
-        let attrStyle = Default -- TODO
-            attrURL = Default
-        attrForeColor <- styleO .:? "foreground" .!= Default
-        attrBackColor <- styleO .:? "background" .!= Default
-        pure Attr {..}
-      Nothing -> pure defAttr
-    pure EntityChar {..}
-  parseJSON _ = fail "Invalid type, expected string or object"
+instance Applicative Neighbors where
+  pure α = Neighbors
+    { _topLeft     = α
+    , _top         = α
+    , _topRight    = α
+    , _left        = α
+    , _right       = α
+    , _bottomLeft  = α
+    , _bottom      = α
+    , _bottomRight = α
+    }
+  nf <*> nx = Neighbors
+    { _topLeft     = nf ^. topLeft     $ nx ^. topLeft
+    , _top         = nf ^. top         $ nx ^. top
+    , _topRight    = nf ^. topRight    $ nx ^. topRight
+    , _left        = nf ^. left        $ nx ^. left
+    , _right       = nf ^. right       $ nx ^. right
+    , _bottomLeft  = nf ^. bottomLeft  $ nx ^. bottomLeft
+    , _bottom      = nf ^. bottom      $ nx ^. bottom
+    , _bottomRight = nf ^. bottomRight $ nx ^. bottomRight
+    }
 
-instance Draw EntityChar where
-  draw EntityChar{..} = raw $ Vty.string _style [_char]
+edges :: Neighbors a -> Edges a
+edges neighs = Edges
+  { eTop = neighs ^. top
+  , eBottom = neighs ^. bottom
+  , eLeft = neighs ^. left
+  , eRight = neighs ^. right
+  }
+
+neighborDirections :: Neighbors Direction
+neighborDirections = Neighbors
+  { _topLeft     = UpLeft
+  , _top         = Up
+  , _topRight    = UpRight
+  , _left        = Left
+  , _right       = Right
+  , _bottomLeft  = DownLeft
+  , _bottom      = Down
+  , _bottomRight = DownRight
+  }
+
+neighborPositions :: Position -> Neighbors Position
+neighborPositions pos = (`move` pos) <$> neighborDirections

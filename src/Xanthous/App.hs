@@ -1,25 +1,30 @@
 module Xanthous.App (makeApp) where
-
+--------------------------------------------------------------------------------
 import           Xanthous.Prelude
 import           Brick hiding (App, halt, continue, raw)
 import qualified Brick
 import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey))
 import           Control.Monad.State (get)
-
+import           Control.Monad.Random (getRandom)
+--------------------------------------------------------------------------------
 import           Xanthous.Command
-import           Xanthous.Data (move, Position(..))
+import           Xanthous.Data (move, Position(..), Dimensions'(Dimensions), Dimensions)
 import qualified Xanthous.Data.EntityMap as EntityMap
+import           Xanthous.Data.EntityMap (EntityMap)
 import           Xanthous.Game
 import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Monad
 import           Xanthous.Resource (Name)
-
+--------------------------------------------------------------------------------
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.RawTypes (EntityRaw(..))
 import           Xanthous.Entities.Raws (raw)
-import           Xanthous.Entities.SomeEntity
+import           Xanthous.Entities
+import           Xanthous.Generators
+import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
+--------------------------------------------------------------------------------
 
 type App = Brick.App GameState () Name
 type AppM a = AppT (EventM Name) a
@@ -43,7 +48,10 @@ testGormlak =
 
 startEvent :: AppM ()
 startEvent = do
-  () <- say ["welcome"]
+  say_ ["welcome"]
+  level <- generateLevel SCaveAutomata CaveAutomata.defaultParams
+          $ Dimensions 120 80
+  entities <>= level
   entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
 
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
@@ -62,3 +70,12 @@ handleCommand (Move dir) = do
 handleCommand PreviousMessage = do
   messageHistory %= popMessage
   continue
+
+--------------------------------------------------------------------------------
+
+generateLevel :: SGenerator gen -> Params gen -> Dimensions -> AppM (EntityMap SomeEntity)
+generateLevel g ps dims = do
+  gen <- use randomGen
+  let cells = generate g ps dims gen
+  _ <- getRandom @_ @Int -- perturb the generator, so we don't get the same level twice
+  pure $ SomeEntity <$> cellsToWalls cells

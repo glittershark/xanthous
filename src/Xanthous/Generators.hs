@@ -1,14 +1,19 @@
 {-# LANGUAGE GADTs #-}
-
+--------------------------------------------------------------------------------
 module Xanthous.Generators where
-
-import Xanthous.Prelude
-import Data.Array.Unboxed
-import System.Random (RandomGen)
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude
+import           Data.Array.Unboxed
+import           System.Random (RandomGen)
 import qualified Options.Applicative as Opt
-
+--------------------------------------------------------------------------------
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
-import Xanthous.Data (Dimensions)
+import           Xanthous.Generators.Util
+import           Xanthous.Data (Dimensions, Position(Position))
+import           Xanthous.Data.EntityMap (EntityMap)
+import qualified Xanthous.Data.EntityMap as EntityMap
+import           Xanthous.Entities.Environment
+--------------------------------------------------------------------------------
 
 data Generator = CaveAutomata
   deriving stock (Show, Eq)
@@ -52,3 +57,14 @@ showCells arr =
       row r = foldMap (showCell . (, r)) [minX..maxX]
       rows = row <$> [minY..maxY]
   in intercalate "\n" rows
+
+cellsToWalls :: UArray (Word, Word) Bool -> EntityMap Wall
+cellsToWalls cells = foldl' maybeInsertWall mempty . assocs $ cells
+  where
+    maybeInsertWall em (pos@(x, y), True)
+      | not (surroundedOnAllSides pos) =
+        let x' = fromIntegral x
+            y' = fromIntegral y
+        in EntityMap.insertAt (Position x' y') Wall em
+    maybeInsertWall em _ = em
+    surroundedOnAllSides pos = numAliveNeighbors cells pos == 8

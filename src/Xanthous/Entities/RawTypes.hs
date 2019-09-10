@@ -20,7 +20,7 @@ import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (FromJSON)
 import Data.Word
 
-import Xanthous.Data
+import Xanthous.Entities (EntityChar)
 
 data CreatureType = CreatureType
   { _name :: Text

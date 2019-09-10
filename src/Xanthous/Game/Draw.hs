@@ -11,7 +11,8 @@ import Brick.Widgets.Border.Style
 import Data.List.NonEmpty(NonEmpty((:|)))
 
 import Xanthous.Data (Position(Position), x, y, loc)
-import Xanthous.Data.EntityMap
+import Xanthous.Data.EntityMap (EntityMap, atPosition)
+import qualified Xanthous.Data.EntityMap as EntityMap
 import Xanthous.Entities
 import Xanthous.Game
   ( GameState(..)
@@ -34,16 +35,19 @@ drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
 --   (MessageHistory _ False) -> padTop (Pad 2) $ str " "
 --   (MessageHistory (lastMessage :| _) True) -> txt lastMessage
 
-drawEntities :: (Draw a, Show a) => EntityMap a -> Widget Name
+drawEntities :: EntityMap SomeEntity -> Widget Name
 drawEntities em
   = vBox rows
   where
-    entityPositions = positions em
+    entityPositions = EntityMap.positions em
     maxY = fromMaybe 0 $ maximumOf (folded . y) entityPositions
     maxX = fromMaybe 0 $ maximumOf (folded . x) entityPositions
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
-    renderEntityAt pos = maybe (str " ") draw $ em ^? atPosition pos . folded
+    renderEntityAt pos =
+      let neighbors = EntityMap.neighbors pos em
+      in maybe (str " ") (drawWithNeighbors neighbors)
+         $ em ^? atPosition pos . folded
 
 drawMap :: GameState -> Widget Name
 drawMap game

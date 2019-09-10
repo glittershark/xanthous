@@ -5,7 +5,7 @@ import Xanthous.Game
 import Control.Lens.Properties
 import Xanthous.Data (move, Direction(Down))
 import Xanthous.Data.EntityMap (atPosition)
-import Xanthous.Entities.SomeEntity
+import Xanthous.Entities (SomeEntity(SomeEntity))
 
 main :: IO ()
 main = defaultMain test

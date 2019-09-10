@@ -41,7 +41,7 @@ test = testGroup "Xanthous.Generators.Util"
                 $ randInitialize dims aliveChance
         in bounds res === ((0, 0), (dims ^. width, dims ^. height))
     ]
-  , testGroup "numAliveNeighbors"
+  , testGroup "numAliveNeighborsM"
     [ testProperty "maxes out at 8" $ \(GenArray (arr :: Array (Word, Word) Bool)) loc ->
         let
           act :: forall s. ST s Word
@@ -50,6 +50,17 @@ test = testGroup "Xanthous.Generators.Util"
             numAliveNeighborsM mArr loc
           res = runST act
         in counterexample (show res) $ between 0 8 res
+    ]
+  , testGroup "numAliveNeighbors"
+    [ testProperty "is equivalient to runST . numAliveNeighborsM . thaw" $
+      \(GenArray (arr :: Array (Word, Word) Bool)) loc ->
+        let
+          act :: forall s. ST s Word
+          act = do
+            mArr <- thaw @_ @_ @_ @(STUArray s) arr
+            numAliveNeighborsM mArr loc
+          res = runST act
+        in numAliveNeighbors arr loc === res
     ]
   , testGroup "cloneMArray"
       [ testCase "clones the array" $ runST $

@@ -4,6 +4,7 @@ module Xanthous.Monad
   , continue
   , halt
   , say
+  , say_
   ) where
 
 import Xanthous.Prelude
@@ -56,3 +57,6 @@ instance (Monad m, ToJSON params) => SayR (params -> AppT m ()) where
   say msgPath params = do
     msg <- message msgPath params
     messageHistory %= pushMessage msg
+
+say_ :: Monad m => [Text] -> AppT m ()
+say_ = say

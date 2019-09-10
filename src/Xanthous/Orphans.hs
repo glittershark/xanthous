@@ -2,23 +2,24 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances, PatternSynonyms #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
--- |
-
+--------------------------------------------------------------------------------
 module Xanthous.Orphans
   ( ppTemplate
   ) where
-
-import Xanthous.Prelude hiding (elements)
-import Text.Mustache
-import Test.QuickCheck
-import Data.Text.Arbitrary ()
-import Text.Megaparsec (errorBundlePretty)
-import Text.Megaparsec.Pos
-import Text.Mustache.Type ( showKey )
-import Data.List.NonEmpty (NonEmpty(..))
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude hiding (elements)
+--------------------------------------------------------------------------------
+import           Data.Aeson
+import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Aeson
-import Graphics.Vty.Attributes
+import           Data.Text.Arbitrary ()
+import           Graphics.Vty.Attributes
+import           Test.QuickCheck
+import           Text.Megaparsec (errorBundlePretty)
+import           Text.Megaparsec.Pos
+import           Text.Mustache
+import           Text.Mustache.Type ( showKey )
+--------------------------------------------------------------------------------
 
 instance forall s a.
   ( Cons s s a a
@@ -181,3 +182,4 @@ instance ToJSON Color where
 instance (Eq a, Show a, Read a, FromJSON a) => FromJSON (MaybeDefault a) where
   parseJSON Null = pure Default
   parseJSON x    = SetTo <$> parseJSON x
+
