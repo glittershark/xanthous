@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3fbeb53b2706e3f0186fa3c80619a166f64eb52cf045006ac993074fa7f3e9d1
+-- hash: a79caccff8895730c394c19244f068830759636d17f55f3b6d1d8a9ebe43ecdd
 
 name:           xanthous
 version:        0.1.0.0
@@ -46,6 +46,7 @@ library
       Xanthous.Game.Draw
       Xanthous.Generators
       Xanthous.Generators.CaveAutomata
+      Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
       Xanthous.Messages
       Xanthous.Monad
@@ -113,6 +114,7 @@ executable xanthous
       Xanthous.Game.Draw
       Xanthous.Generators
       Xanthous.Generators.CaveAutomata
+      Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
       Xanthous.Messages
       Xanthous.Monad

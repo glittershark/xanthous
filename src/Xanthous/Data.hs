@@ -15,6 +15,7 @@ module Xanthous.Data
   , position
   , positioned
   , loc
+  , positionFromPair
 
     -- *
   , Dimensions'(..)
@@ -90,6 +91,9 @@ loc = iso hither yon
   where
     hither (Position px py) = Location (px, py)
     yon (Location (lx, ly)) = Position lx ly
+
+positionFromPair :: (Integral i, Integral j) => (i, j) -> Position
+positionFromPair (i, j) = Position (fromIntegral i) (fromIntegral j)
 
 --------------------------------------------------------------------------------
 

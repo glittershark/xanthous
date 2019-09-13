@@ -9,7 +9,13 @@ import           Control.Monad.State (get)
 import           Control.Monad.Random (getRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Command
-import           Xanthous.Data (move, Position(..), Dimensions'(Dimensions), Dimensions)
+import           Xanthous.Data
+                 ( move
+                 , Position(..)
+                 , Dimensions'(Dimensions)
+                 , Dimensions
+                 , positionFromPair
+                 )
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap (EntityMap)
 import           Xanthous.Game
@@ -24,6 +30,7 @@ import           Xanthous.Entities.Raws (raw)
 import           Xanthous.Entities
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
+import           Xanthous.Generators.LevelContents
 --------------------------------------------------------------------------------
 
 type App = Brick.App GameState () Name
@@ -49,10 +56,13 @@ testGormlak =
 startEvent :: AppM ()
 startEvent = do
   say_ ["welcome"]
-  level <- generateLevel SCaveAutomata CaveAutomata.defaultParams
-          $ Dimensions 120 80
+  (level, charPos) <-
+    generateLevel SCaveAutomata CaveAutomata.defaultParams
+    $ Dimensions 80 80
   entities <>= level
-  entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
+  characterPosition .= charPos
+  -- entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
+
 
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
 handleEvent (VtyEvent (EvKey k mods))
@@ -73,9 +83,15 @@ handleCommand PreviousMessage = do
 
 --------------------------------------------------------------------------------
 
-generateLevel :: SGenerator gen -> Params gen -> Dimensions -> AppM (EntityMap SomeEntity)
+generateLevel
+  :: SGenerator gen
+  -> Params gen
+  -> Dimensions
+  -> AppM (EntityMap SomeEntity, Position)
 generateLevel g ps dims = do
   gen <- use randomGen
   let cells = generate g ps dims gen
   _ <- getRandom @_ @Int -- perturb the generator, so we don't get the same level twice
-  pure $ SomeEntity <$> cellsToWalls cells
+  charPos <- positionFromPair <$> chooseCharacterPosition cells
+  let level = SomeEntity <$> cellsToWalls cells
+  pure (level, charPos)

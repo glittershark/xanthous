@@ -92,7 +92,7 @@ generate params dims gen
   $ flip runRandT gen
   $ generate' params dims
 
-generate' :: RandomGen g => Params -> Dimensions -> CellM g s (Cells s)
+generate' :: RandomGen g => Params -> Dimensions -> CellM g s (MCells s)
 generate' params dims = do
   cells <- randInitialize dims $ params ^. aliveStartChance
   let steps' = params ^. steps
@@ -100,7 +100,7 @@ generate' params dims = do
    $ for_ [0 .. pred steps'] . const $ stepAutomata cells dims params
   pure cells
 
-stepAutomata :: forall s g. Cells s -> Dimensions -> Params -> CellM g s ()
+stepAutomata :: forall s g. MCells s -> Dimensions -> Params -> CellM g s ()
 stepAutomata cells dims params = do
   origCells <- lift $ cloneMArray @_ @(STUArray s) cells
   for_ (range ((0, 0), (dims ^. width, dims ^. height))) $ \pos -> do

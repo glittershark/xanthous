@@ -1,20 +1,23 @@
-module Main where
-
-import Xanthous.Prelude
-import Brick
+module Main ( main ) where
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude
+import           Brick
 import qualified Options.Applicative as Opt
-import System.Random
-
-import Xanthous.Game (getInitialState)
-import Xanthous.App (makeApp)
-import Xanthous.Generators
+import           System.Random
+--------------------------------------------------------------------------------
+import           Xanthous.Game (getInitialState)
+import           Xanthous.App (makeApp)
+import           Xanthous.Generators
   ( GeneratorInput(..)
   , parseGeneratorInput
   , generateFromInput
   , showCells
   )
-import Xanthous.Data (Dimensions, Dimensions'(Dimensions))
-
+import           Xanthous.Generators.Util (regions)
+import           Xanthous.Generators.LevelContents
+import           Xanthous.Data (Dimensions, Dimensions'(Dimensions))
+import           Data.Array.IArray ( amap )
+--------------------------------------------------------------------------------
 data Command
   = Run
   | Generate GeneratorInput Dimensions
@@ -61,6 +64,13 @@ runGenerate :: GeneratorInput -> Dimensions -> IO ()
 runGenerate input dims = do
   randGen <- getStdGen
   let res = generateFromInput input dims randGen
+      rs = regions $ amap not res
+  putStr "num regions: "
+  print $ length rs
+  putStr "region lengths: "
+  print $ length <$> rs
+  putStr "character position: "
+  print =<< chooseCharacterPosition res
   putStrLn $ showCells res
 
 runCommand :: Command -> IO ()

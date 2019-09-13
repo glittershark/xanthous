@@ -101,7 +101,7 @@ _EntityMap = iso hither yon
     yon poses = alaf Endo foldMap (uncurry insertAt) poses emptyEntityMap
 
 instance Semigroup (EntityMap a) where
-  em₁ <> em₂ = alaf Endo foldMap (uncurry insertAt) (em₁ ^. _EntityMap) em₂
+  em₁ <> em₂ = alaf Endo foldMap (uncurry insertAt) (em₂ ^. _EntityMap) em₁
 
 instance Monoid (EntityMap a) where
   mempty = emptyEntityMap

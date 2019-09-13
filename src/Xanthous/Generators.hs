@@ -33,13 +33,13 @@ generate
   -> Params gen
   -> Dimensions
   -> g
-  -> UArray (Word, Word) Bool
+  -> Cells
 generate SCaveAutomata = CaveAutomata.generate
 
 data GeneratorInput where
   GeneratorInput :: forall gen. SGenerator gen -> Params gen -> GeneratorInput
 
-generateFromInput :: RandomGen g => GeneratorInput -> Dimensions -> g -> UArray (Word, Word) Bool
+generateFromInput :: RandomGen g => GeneratorInput -> Dimensions -> g -> Cells
 generateFromInput (GeneratorInput sg ps) = generate sg ps
 
 parseGeneratorInput :: Opt.Parser GeneratorInput
@@ -48,7 +48,7 @@ parseGeneratorInput = Opt.subparser $
                       (GeneratorInput <$> pure SCaveAutomata <*> CaveAutomata.parseParams)
                       (Opt.progDesc "cellular-automata based cave generator"))
 
-showCells :: UArray (Word, Word) Bool -> Text
+showCells :: Cells -> Text
 showCells arr =
   let ((minX, minY), (maxX, maxY)) = bounds arr
       showCellVal True = "x"
@@ -58,7 +58,7 @@ showCells arr =
       rows = row <$> [minY..maxY]
   in intercalate "\n" rows
 
-cellsToWalls :: UArray (Word, Word) Bool -> EntityMap Wall
+cellsToWalls :: Cells -> EntityMap Wall
 cellsToWalls cells = foldl' maybeInsertWall mempty . assocs $ cells
   where
     maybeInsertWall em (pos@(x, y), True)
