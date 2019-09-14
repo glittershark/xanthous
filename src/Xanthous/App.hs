@@ -16,7 +16,6 @@ import           Xanthous.Data
                  , Dimensions
                  , positionFromPair
                  )
-import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap (EntityMap)
 import           Xanthous.Game
 import           Xanthous.Game.Draw (drawGame)
@@ -74,7 +73,11 @@ handleEvent _ = continue
 handleCommand :: Command -> AppM (Next GameState)
 handleCommand Quit = halt
 handleCommand (Move dir) = do
-  characterPosition %= move dir
+  newPos <- uses characterPosition $ move dir
+  collisionAt newPos >>= \case
+    Nothing -> characterPosition .= newPos
+    Just Combat -> undefined
+    Just Stop -> pure ()
   continue
 
 handleCommand PreviousMessage = do

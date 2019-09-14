@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 --------------------------------------------------------------------------------
@@ -17,6 +18,10 @@ module Xanthous.Game
   , pushMessage
   , popMessage
   , hideMessage
+
+    -- * collisions
+  , Collision(..)
+  , collisionAt
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -26,12 +31,14 @@ import qualified Data.List.NonEmpty as NonEmpty
 import           System.Random
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
+import           Control.Monad.State.Class
 --------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data (Positioned, Position(..), positioned, position)
-import           Xanthous.Entities (SomeEntity(..), downcastEntity)
+import           Xanthous.Entities (SomeEntity(..), downcastEntity, entityIs)
 import           Xanthous.Entities.Character
+import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Arbitrary ()
 import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
@@ -122,3 +129,19 @@ character = positionedCharacter . positioned
 
 characterPosition :: Lens' GameState Position
 characterPosition = positionedCharacter . position
+
+--------------------------------------------------------------------------------
+
+data Collision
+  = Stop
+  | Combat
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData)
+
+collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
+collisionAt pos = do
+  ents <- use $ entities . EntityMap.atPosition pos
+  pure $
+    if | null ents -> Nothing
+       | any (entityIs @Creature) ents -> pure Combat
+       | otherwise -> pure Stop
