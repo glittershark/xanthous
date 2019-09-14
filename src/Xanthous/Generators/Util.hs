@@ -7,6 +7,7 @@ module Xanthous.Generators.Util
   , randInitialize
   , numAliveNeighborsM
   , numAliveNeighbors
+  , fillOuterEdgesM
   , cloneMArray
   , floodFill
   , regions
@@ -20,7 +21,7 @@ import Control.Monad.Random
 import Data.Monoid
 import Data.Foldable (Foldable, toList)
 --------------------------------------------------------------------------------
-import Xanthous.Util (foldlMapM', between)
+import Xanthous.Util (foldlMapM')
 import Xanthous.Data (Dimensions, width, height)
 --------------------------------------------------------------------------------
 
@@ -92,6 +93,16 @@ numAliveNeighbors cells (x, y) =
 
     neighborPositions :: [(Int, Int)]
     neighborPositions = [(i, j) | i <- [-1..1], j <- [-1..1], (i, j) /= (0, 0)]
+
+fillOuterEdgesM :: (MArray a Bool m, Ix i, Ix j) => a (i, j) Bool -> m ()
+fillOuterEdgesM arr = do
+  ((minX, minY), (maxX, maxY)) <- getBounds arr
+  for_ (range (minX, maxX)) $ \x -> do
+    writeArray arr (x, minY) True
+    writeArray arr (x, maxY) True
+  for_ (range (minY, maxY)) $ \y -> do
+    writeArray arr (minX, y) True
+    writeArray arr (maxX, y) True
 
 safeGet :: (IArray a e, Ix i) => a i e -> i -> Maybe e
 safeGet arr idx =

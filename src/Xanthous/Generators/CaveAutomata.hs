@@ -98,6 +98,7 @@ generate' params dims = do
   let steps' = params ^. steps
   when (steps' > 0)
    $ for_ [0 .. pred steps'] . const $ stepAutomata cells dims params
+  lift $ fillOuterEdgesM cells
   pure cells
 
 stepAutomata :: forall s g. MCells s -> Dimensions -> Params -> CellM g s ()
