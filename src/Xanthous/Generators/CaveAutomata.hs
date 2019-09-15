@@ -99,6 +99,9 @@ generate' params dims = do
   when (steps' > 0)
    $ for_ [0 .. pred steps'] . const $ stepAutomata cells dims params
   lift $ fillOuterEdgesM cells
+  -- Remove all but the largest contiguous region of unfilled space
+  (_: smallerRegions) <- lift $ regions @UArray . amap not <$> freeze cells
+  lift $ fillAllM (fold smallerRegions) cells
   pure cells
 
 stepAutomata :: forall s g. MCells s -> Dimensions -> Params -> CellM g s ()

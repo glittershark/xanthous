@@ -11,15 +11,17 @@ module Xanthous.Generators.Util
   , cloneMArray
   , floodFill
   , regions
+  , fillAll
+  , fillAllM
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude hiding (Foldable, toList)
+import Xanthous.Prelude hiding (Foldable, toList, for_)
 import Data.Array.ST
 import Data.Array.Unboxed
 import Control.Monad.ST
 import Control.Monad.Random
 import Data.Monoid
-import Data.Foldable (Foldable, toList)
+import Data.Foldable (Foldable, toList, for_)
 --------------------------------------------------------------------------------
 import Xanthous.Util (foldlMapM')
 import Xanthous.Data (Dimensions, width, height)
@@ -177,5 +179,8 @@ regions arr
     findFirstPoint :: a (i, j) Bool -> Maybe (i, j)
     findFirstPoint = fmap fst . headMay . filter snd . assocs
 
-    fillAll :: Foldable f => f (i, j) -> a (i, j) Bool -> a (i, j) Bool
-    fillAll ixes a = accum (const fst) a $ (, (False, ())) <$> toList ixes
+fillAll :: (IArray a Bool, Ix i, Foldable f) => f i -> a i Bool -> a i Bool
+fillAll ixes a = accum (const fst) a $ (, (False, ())) <$> toList ixes
+
+fillAllM :: (MArray a Bool m, Ix i, Foldable f) => f i -> a i Bool -> m ()
+fillAllM ixes a = for_ ixes $ \i -> writeArray a i False
