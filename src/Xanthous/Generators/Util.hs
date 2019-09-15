@@ -104,14 +104,6 @@ fillOuterEdgesM arr = do
     writeArray arr (minX, y) True
     writeArray arr (maxX, y) True
 
-safeGet :: (IArray a e, Ix i) => a i e -> i -> Maybe e
-safeGet arr idx =
-  let (minIdx, maxIdx) = bounds arr
-  in if idx < minIdx || idx > maxIdx
-     then Nothing
-     else Just $ arr ! idx
-
-
 cloneMArray
   :: forall a a' i e m.
   ( Ix i

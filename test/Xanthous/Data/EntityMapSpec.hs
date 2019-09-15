@@ -11,8 +11,12 @@ main :: IO ()
 main = defaultMain test
 
 test :: TestTree
-test = testGroup "Xanthous.Data.EntityMap"
+test = localOption (QuickCheckTests 20)
+  $ testGroup "Xanthous.Data.EntityMap"
   [ testBatch $ monoid @(EntityMap Int) mempty
+  , testGroup "Deduplicate"
+    [ testBatch $ monoid @(Deduplicate Int) mempty
+    ]
   , testGroup "Eq laws"
     [ testProperty "reflexivity" $ \(em :: EntityMap Int) ->
         em == em

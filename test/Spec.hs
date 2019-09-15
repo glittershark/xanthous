@@ -6,6 +6,7 @@ import qualified Xanthous.GameSpec
 import qualified Xanthous.Generators.UtilSpec
 import qualified Xanthous.MessageSpec
 import qualified Xanthous.OrphansSpec
+import qualified Xanthous.Util.GraphicsSpec
 
 main :: IO ()
 main = defaultMain test
@@ -19,4 +20,5 @@ test = testGroup "Xanthous"
   , Xanthous.MessageSpec.test
   , Xanthous.OrphansSpec.test
   , Xanthous.DataSpec.test
+  , Xanthous.Util.GraphicsSpec.test
   ]

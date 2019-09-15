@@ -1,27 +1,31 @@
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveTraversable  #-}
+{-# LANGUAGE TupleSections      #-}
+{-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveFunctor #-}
-
+{-# LANGUAGE DeriveFunctor      #-}
+--------------------------------------------------------------------------------
 module Xanthous.Data.EntityMap
   ( EntityMap
+  , _EntityMap
   , EntityID
   , emptyEntityMap
   , insertAt
   , insertAtReturningID
+  , fromEIDsAndPositioned
   , atPosition
+  , atPositionWithIDs
   , positions
   , lookup
   , lookupWithPosition
   -- , positionedEntities
   , neighbors
+  , Deduplicate(..)
+
+    -- * Querying an entityMap
   ) where
-
-import Data.Monoid (Endo(..))
-import Test.QuickCheck (Arbitrary(..))
-import Test.QuickCheck.Checkers (EqProp)
-
+--------------------------------------------------------------------------------
 import Xanthous.Prelude hiding (lookup)
 import Xanthous.Data
   ( Position
@@ -33,7 +37,11 @@ import Xanthous.Data
   )
 import Xanthous.Orphans ()
 import Xanthous.Util (EqEqProp(..))
-
+--------------------------------------------------------------------------------
+import Data.Monoid (Endo(..))
+import Test.QuickCheck (Arbitrary(..))
+import Test.QuickCheck.Checkers (EqProp)
+--------------------------------------------------------------------------------
 type EntityID = Word32
 type NonNullVector a = NonNull (Vector a)
 
@@ -43,7 +51,7 @@ data EntityMap a where
     , _byID       :: HashMap EntityID (Positioned a)
     , _lastID     :: EntityID
     } -> EntityMap a
-  deriving stock (Functor, Foldable, Traversable)
+  deriving stock (Functor, Foldable, Traversable, Generic)
 deriving via (EqEqProp (EntityMap a)) instance Eq a => EqProp (EntityMap a)
 makeLenses ''EntityMap
 
@@ -85,8 +93,35 @@ instance At (EntityMap a) where
       removeEIDAtPos pos =
         byPosition . at pos %~ (>>= fromNullable . nfilter (/= eid))
 
+instance Semigroup (EntityMap a) where
+  em₁ <> em₂ = alaf Endo foldMap (uncurry insertAt) (em₂ ^. _EntityMap) em₁
+
+instance Monoid (EntityMap a) where
+  mempty = emptyEntityMap
+
 emptyEntityMap :: EntityMap a
 emptyEntityMap = EntityMap mempty mempty 0
+
+newtype Deduplicate a = Deduplicate (EntityMap a)
+  deriving stock (Show, Traversable, Generic)
+  deriving newtype (Eq, Functor, Foldable, EqProp, Arbitrary)
+
+instance Semigroup (Deduplicate a) where
+  (Deduplicate em₁) <> (Deduplicate em₂) =
+    let _byID = em₁ ^. byID <> em₂ ^. byID
+        _byPosition = mempty &~ do
+          ifor_ _byID $ \eid (Positioned pos _) ->
+            at pos %= \case
+              Just eids -> Just $ eid <| eids
+              Nothing -> Just $ ncons eid mempty
+        _lastID = fromMaybe 1 $ maximumOf (ifolded . asIndex) _byID
+    in Deduplicate EntityMap{..}
+
+instance Monoid (Deduplicate a) where
+  mempty = Deduplicate emptyEntityMap
+
+
+--------------------------------------------------------------------------------
 
 _EntityMap :: Iso' (EntityMap a) [(Position, a)]
 _EntityMap = iso hither yon
@@ -99,12 +134,6 @@ _EntityMap = iso hither yon
        pure (pos, ent)
     yon :: [(Position, a)] -> EntityMap a
     yon poses = alaf Endo foldMap (uncurry insertAt) poses emptyEntityMap
-
-instance Semigroup (EntityMap a) where
-  em₁ <> em₂ = alaf Endo foldMap (uncurry insertAt) (em₂ ^. _EntityMap) em₁
-
-instance Monoid (EntityMap a) where
-  mempty = emptyEntityMap
 
 
 insertAtReturningID :: forall a. Position -> a -> EntityMap a -> (EntityID, EntityMap a)
@@ -124,16 +153,36 @@ atPosition :: forall a. Position -> Lens' (EntityMap a) (Vector a)
 atPosition pos = lens getter setter
   where
     getter em =
-      let
-        eids :: Vector EntityID
-        eids = maybe mempty toNullable $ em ^. byPosition . at pos
-
-        getEIDAssume :: EntityID -> a
-        getEIDAssume eid = fromMaybe byIDInvariantError
-          $ em ^? byID . ix eid . positioned
-      in getEIDAssume <$> eids
+      let eids :: Vector EntityID
+          eids = maybe mempty toNullable $ em ^. byPosition . at pos
+      in getEIDAssume em <$> eids
     setter em Empty = em & byPosition . at pos .~ Nothing
     setter em entities = alaf Endo foldMap (insertAt pos) entities em
+
+getEIDAssume :: EntityMap a -> EntityID -> a
+getEIDAssume em eid = fromMaybe byIDInvariantError
+  $ em ^? byID . ix eid . positioned
+
+atPositionWithIDs :: Position -> EntityMap a -> Vector (EntityID, Positioned a)
+atPositionWithIDs pos em =
+  let eids = maybe mempty toNullable $ em ^. byPosition . at pos
+  in (id &&& Positioned pos . getEIDAssume em) <$> eids
+
+fromEIDsAndPositioned
+  :: (MonoFoldable mono, Element mono ~ (EntityID, Positioned a))
+  => mono
+  -> EntityMap a
+fromEIDsAndPositioned eps = newLastID $ alaf Endo foldMap insert' eps mempty
+  where
+    insert' (eid, pe@(Positioned pos _))
+      = (byID . at eid ?~ pe)
+      . (byPosition . at pos %~ \case
+            Just eids -> Just $ eid <| eids
+            Nothing   -> Just $ ncons eid mempty
+        )
+    newLastID em = em & lastID
+      .~ fromMaybe 1
+         (maximumOf (ifolded . asIndex) (em ^. byID))
 
 positions :: EntityMap a -> [Position]
 positions = toListOf $ byPosition . to keys . folded
@@ -150,3 +199,6 @@ lookup eid = fmap (view positioned) . lookupWithPosition eid
 
 neighbors :: Position -> EntityMap a -> Neighbors (Vector a)
 neighbors pos em = (\p -> view (atPosition p) em) <$> neighborPositions pos
+
+--------------------------------------------------------------------------------
+makeWrapped ''Deduplicate

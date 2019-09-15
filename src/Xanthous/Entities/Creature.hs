@@ -8,7 +8,7 @@ import Data.Word
 
 import Xanthous.Prelude
 import Xanthous.Entities.RawTypes hiding (Creature)
-import Xanthous.Entities (Draw(..))
+import Xanthous.Entities (Draw(..), Entity(..))
 
 data Creature = Creature
   { _creatureType :: CreatureType
@@ -16,6 +16,9 @@ data Creature = Creature
   }
   deriving stock (Eq, Show, Generic)
 makeLenses ''Creature
+
+instance Entity Creature where
+  blocksVision _ = False
 
 instance Draw Creature where
   draw = draw .view (creatureType . char)

@@ -14,6 +14,9 @@ data Character = Character
   deriving anyclass (CoArbitrary, Function)
   deriving Draw via (DrawCharacter "@" Character)
 
+instance Entity Character where
+  blocksVision _ = False
+
 instance Arbitrary Character where
   arbitrary = pure Character
 

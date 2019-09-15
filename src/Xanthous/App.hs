@@ -6,6 +6,7 @@ import qualified Brick
 import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey))
 import           Control.Monad.State (get)
+import           Control.Monad.State.Class (modify)
 import           Control.Monad.Random (getRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Command
@@ -60,6 +61,7 @@ startEvent = do
     $ Dimensions 80 80
   entities <>= level
   characterPosition .= charPos
+  modify updateCharacterVision
   -- entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
 
 
@@ -75,7 +77,9 @@ handleCommand Quit = halt
 handleCommand (Move dir) = do
   newPos <- uses characterPosition $ move dir
   collisionAt newPos >>= \case
-    Nothing -> characterPosition .= newPos
+    Nothing -> do
+      characterPosition .= newPos
+      modify updateCharacterVision
     Just Combat -> undefined
     Just Stop -> pure ()
   continue

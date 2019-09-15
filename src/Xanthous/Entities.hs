@@ -7,7 +7,7 @@ module Xanthous.Entities
   ( Draw(..)
   , DrawCharacter(..)
   , DrawStyledCharacter(..)
-  , Entity
+  , Entity(..)
   , SomeEntity(..)
   , downcastEntity
   , entityIs
@@ -29,8 +29,11 @@ import           Data.Aeson
 import           Xanthous.Data
 --------------------------------------------------------------------------------
 
-class (Show a, Eq a, Draw a) => Entity a
-instance (Show a, Eq a, Draw a) => Entity a
+class (Show a, Eq a, Draw a) => Entity a where
+  blocksVision :: a -> Bool
+
+instance Entity a => Entity (Positioned a) where
+  blocksVision (Positioned _ ent) = blocksVision ent
 
 --------------------------------------------------------------------------------
 data SomeEntity where
@@ -47,6 +50,9 @@ instance Eq SomeEntity where
 instance Draw SomeEntity where
   drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
 
+instance Entity SomeEntity where
+  blocksVision (SomeEntity ent) = blocksVision ent
+
 downcastEntity :: (Entity a, Typeable a) => SomeEntity -> Maybe a
 downcastEntity (SomeEntity e) = cast e
 
@@ -60,6 +66,10 @@ class Draw a where
 
   draw :: a -> Widget n
   draw = drawWithNeighbors $ pure mempty
+
+instance Draw a => Draw (Positioned a) where
+  drawWithNeighbors ns (Positioned _ a) = drawWithNeighbors ns a
+  draw (Positioned _ a) = draw a
 
 newtype DrawCharacter (char :: Symbol) (a :: Type) where
   DrawCharacter :: a -> DrawCharacter char a

@@ -12,9 +12,11 @@ module Xanthous.Data
   , y
 
   , Positioned(..)
+  , _Positioned
   , position
   , positioned
   , loc
+  , _Position
   , positionFromPair
 
     -- *
@@ -73,6 +75,12 @@ data Positioned a where
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (CoArbitrary, Function)
 
+_Positioned :: Iso (Position, a) (Position, b) (Positioned a) (Positioned b)
+_Positioned = iso hither yon
+  where
+    hither (pos, a) = Positioned pos a
+    yon (Positioned pos b) = (pos, b)
+
 instance Arbitrary a => Arbitrary (Positioned a) where
   arbitrary = Positioned <$> arbitrary <*> arbitrary
 
@@ -91,6 +99,12 @@ loc = iso hither yon
   where
     hither (Position px py) = Location (px, py)
     yon (Location (lx, ly)) = Position lx ly
+
+_Position :: Iso' Position (Int, Int)
+_Position = iso hither yon
+  where
+    hither (Position px py) = (px, py)
+    yon (lx, ly) = Position lx ly
 
 positionFromPair :: (Integral i, Integral j) => (i, j) -> Position
 positionFromPair (i, j) = Position (fromIntegral i) (fromIntegral j)

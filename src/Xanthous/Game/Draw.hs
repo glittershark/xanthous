@@ -17,6 +17,7 @@ import Xanthous.Entities
 import Xanthous.Game
   ( GameState(..)
   , entities
+  , revealedEntities
   , characterPosition
   , MessageHistory(..)
   , messageHistory
@@ -35,8 +36,11 @@ drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
 --   (MessageHistory _ False) -> padTop (Pad 2) $ str " "
 --   (MessageHistory (lastMessage :| _) True) -> txt lastMessage
 
-drawEntities :: EntityMap SomeEntity -> Widget Name
-drawEntities em
+drawEntities
+  :: EntityMap SomeEntity -- ^ visible entities
+  -> EntityMap SomeEntity -- ^ all entities
+  -> Widget Name
+drawEntities em allEnts
   = vBox rows
   where
     entityPositions = EntityMap.positions em
@@ -45,7 +49,7 @@ drawEntities em
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
     renderEntityAt pos =
-      let neighbors = EntityMap.neighbors pos em
+      let neighbors = EntityMap.neighbors pos allEnts
       in maybe (str " ") (drawWithNeighbors neighbors)
          $ em ^? atPosition pos . folded
 
@@ -53,8 +57,9 @@ drawMap :: GameState -> Widget Name
 drawMap game
   = viewport MapViewport Both
   . showCursor Character (game ^. characterPosition . loc)
-  . drawEntities
-  $ game ^. entities
+  $ drawEntities
+    (game ^. revealedEntities)
+    (game ^. entities)
 
 drawGame :: GameState -> [Widget Name]
 drawGame game
