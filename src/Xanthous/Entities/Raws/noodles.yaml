@@ -1,0 +1,8 @@
+Item:
+  name: noodles
+  description: a big bowl o' noodles
+  longDescription: You know exactly what kind of noodles
+  char:
+    char: 'n'
+    style:
+      foreground: yellow

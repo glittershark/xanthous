@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-
+--------------------------------------------------------------------------------
 module Xanthous.Entities.RawTypes
   ( CreatureType(..)
   , ItemType(..)
@@ -9,19 +9,20 @@ module Xanthous.Entities.RawTypes
   , HasName(..)
   , HasDescription(..)
   , HasLongDescription(..)
-  , HasChar(..)
   , HasMaxHitpoints(..)
   , HasFriendly(..)
   , _Creature
   ) where
-
+--------------------------------------------------------------------------------
 import Xanthous.Prelude
+import Test.QuickCheck
+import Test.QuickCheck.Arbitrary.Generic
 import Data.Aeson.Generic.DerivingVia
-import Data.Aeson (FromJSON)
+import Data.Aeson (ToJSON, FromJSON)
 import Data.Word
-
-import Xanthous.Entities (EntityChar)
-
+--------------------------------------------------------------------------------
+import Xanthous.Entities (EntityChar, HasChar(..))
+--------------------------------------------------------------------------------
 data CreatureType = CreatureType
   { _name :: Text
   , _description :: Text
@@ -35,7 +36,7 @@ data CreatureType = CreatureType
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        CreatureType
 makeFieldsNoPrefix ''CreatureType
-
+--------------------------------------------------------------------------------
 data ItemType = ItemType
   { _name :: Text
   , _description :: Text
@@ -43,11 +44,14 @@ data ItemType = ItemType
   , _char :: EntityChar
   }
   deriving stock (Show, Eq, Generic)
-  deriving anyclass (NFData)
-  deriving (FromJSON)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        ItemType
 makeFieldsNoPrefix ''ItemType
+
+instance Arbitrary ItemType where
+  arbitrary = genericArbitrary
 
 data EntityRaw
   = Creature CreatureType

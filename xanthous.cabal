@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 86b7d3047b95fc65f4c6489a21e8c89883981c8c5bd552b5ea83aaf70de8a7cf
+-- hash: 78a45f3d5eb8c2993c219fd4214f61e9842177fa4d97667aeaedbfe3d0842165
 
 name:           xanthous
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
       Xanthous.Entities.Creature
       Xanthous.Entities.Draw.Util
       Xanthous.Entities.Environment
+      Xanthous.Entities.Item
       Xanthous.Entities.Raws
       Xanthous.Entities.RawTypes
       Xanthous.Game
@@ -79,6 +80,7 @@ library
     , file-embed
     , filepath
     , generic-arbitrary
+    , generic-lens
     , generic-monoid
     , groups
     , lens
@@ -111,6 +113,7 @@ executable xanthous
       Xanthous.Entities.Creature
       Xanthous.Entities.Draw.Util
       Xanthous.Entities.Environment
+      Xanthous.Entities.Item
       Xanthous.Entities.Raws
       Xanthous.Entities.RawTypes
       Xanthous.Game
@@ -148,6 +151,7 @@ executable xanthous
     , file-embed
     , filepath
     , generic-arbitrary
+    , generic-lens
     , generic-monoid
     , groups
     , lens
@@ -200,6 +204,7 @@ test-suite test
     , file-embed
     , filepath
     , generic-arbitrary
+    , generic-lens
     , generic-monoid
     , groups
     , lens

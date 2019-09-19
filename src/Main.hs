@@ -8,7 +8,7 @@ import           System.Random
 import           Xanthous.Game (getInitialState)
 import           Xanthous.App (makeApp)
 import           Xanthous.Generators
-  ( GeneratorInput(..)
+  ( GeneratorInput
   , parseGeneratorInput
   , generateFromInput
   , showCells

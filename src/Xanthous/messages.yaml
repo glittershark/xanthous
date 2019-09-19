@@ -1,1 +1,4 @@
 welcome: Welcome to Xanthous! It's dangerous out there, why not stay inside?
+items:
+  pickUp: You pick up the {{item.itemType.name}}
+  nothingToPickUp: There's nothing here to pick up

@@ -5,7 +5,7 @@
 module Xanthous.Game
   ( GameState(..)
   , entities
-  , revealedEntities
+  , revealedPositions
   , messageHistory
   , randomGen
 
@@ -35,7 +35,6 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 import           Control.Monad.State.Class
 --------------------------------------------------------------------------------
-import           Xanthous.Util (appendVia)
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics
@@ -43,6 +42,7 @@ import           Xanthous.Data (Positioned, Position(..), positioned, position)
 import           Xanthous.Entities (SomeEntity(..), downcastEntity, entityIs)
 import           Xanthous.Entities.Character
 import           Xanthous.Entities.Creature
+import           Xanthous.Entities.Item
 import           Xanthous.Entities.Arbitrary ()
 import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
@@ -71,12 +71,11 @@ hideMessage NoMessageHistory = NoMessageHistory
 hideMessage (MessageHistory msgs _) = MessageHistory msgs False
 
 data GameState = GameState
-  { _entities          :: EntityMap SomeEntity
-    -- | A subset of the overall set of entities
-  , _revealedEntities  :: EntityMap SomeEntity
-  , _characterEntityID :: EntityID
-  , _messageHistory    :: MessageHistory
-  , _randomGen         :: StdGen
+  { _entities          :: !(EntityMap SomeEntity)
+  , _revealedPositions :: !(Set Position)
+  , _characterEntityID :: !EntityID
+  , _messageHistory    :: !MessageHistory
+  , _randomGen         :: !StdGen
   }
   deriving stock (Show)
 makeLenses ''GameState
@@ -84,7 +83,7 @@ makeLenses ''GameState
 instance Eq GameState where
   (==) = (==) `on` \gs ->
     ( gs ^. entities
-    , gs ^. revealedEntities
+    , gs ^. revealedPositions
     , gs ^. characterEntityID
     , gs ^. messageHistory
     )
@@ -96,11 +95,7 @@ instance Arbitrary GameState where
     _messageHistory <- arbitrary
     (_characterEntityID, _entities) <- arbitrary <&>
       EntityMap.insertAtReturningID charPos (SomeEntity char)
-    revealedPositions <- sublistOf $ EntityMap.positions _entities
-    let _revealedEntities = mempty &~ do
-          for_ revealedPositions $ \pos -> do
-            let ents = _entities ^. EntityMap.atPosition pos
-            EntityMap.atPosition pos <>= ents
+    _revealedPositions <- fmap setFromList . sublistOf $ EntityMap.positions _entities
     _randomGen <- mkStdGen <$> arbitrary
     pure $ GameState {..}
 
@@ -114,7 +109,7 @@ getInitialState = do
           (SomeEntity char)
           mempty
       _messageHistory = NoMessageHistory
-      _revealedEntities = _entities
+      _revealedPositions = mempty
   pure GameState {..}
 
 positionedCharacter :: Lens' GameState (Positioned Character)
@@ -151,8 +146,8 @@ visionRadius = 12 -- TODO make this dynamic
 updateCharacterVision :: GameState -> GameState
 updateCharacterVision game =
   let charPos = game ^. characterPosition
-      visible = visibleEntities charPos visionRadius $ game ^. entities
-  in game & revealedEntities %~ appendVia EntityMap.Deduplicate visible
+      visible = visiblePositions charPos visionRadius $ game ^. entities
+  in game & revealedPositions <>~ visible
 
 
 --------------------------------------------------------------------------------
@@ -169,4 +164,5 @@ collisionAt pos = do
   pure $
     if | null ents -> Nothing
        | any (entityIs @Creature) ents -> pure Combat
+       | all (entityIs @Item) ents -> Nothing
        | otherwise -> pure Stop

@@ -1,23 +1,30 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Xanthous.Entities.Character
   ( Character(..)
   , mkCharacter
+  , pickUpItem
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 import Test.QuickCheck
+import Test.QuickCheck.Instances.Vector ()
+import Test.QuickCheck.Arbitrary.Generic
 import Brick
 --------------------------------------------------------------------------------
 import Xanthous.Entities
+import Xanthous.Entities.Item
 --------------------------------------------------------------------------------
 
 data Character = Character
-  deriving stock (Show, Eq, Ord, Generic)
+  { _inventory :: !(Vector Item)
+  }
+  deriving stock (Show, Eq, Generic)
   deriving anyclass (CoArbitrary, Function)
+makeLenses ''Character
 
 scrollOffset :: Int
 scrollOffset = 5
 
--- deriving Draw via (DrawCharacter "@" Character)
 instance Draw Character where
   draw _ = visibleRegion rloc rreg $ str "@"
     where
@@ -28,7 +35,13 @@ instance Entity Character where
   blocksVision _ = False
 
 instance Arbitrary Character where
-  arbitrary = pure Character
+  arbitrary = genericArbitrary
 
 mkCharacter :: Character
 mkCharacter = Character
+  { _inventory = mempty
+  }
+
+pickUpItem :: Item -> Character -> Character
+pickUpItem item = inventory %~ (item <|)
+

@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 module Xanthous.App (makeApp) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -7,17 +8,16 @@ import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey))
 import           Control.Monad.State (get)
 import           Control.Monad.State.Class (modify)
-import           Control.Monad.Random (getRandom)
+import           Data.Aeson (object)
+import qualified Data.Aeson as A
 --------------------------------------------------------------------------------
 import           Xanthous.Command
 import           Xanthous.Data
                  ( move
-                 , Position(..)
                  , Dimensions'(Dimensions)
-                 , Dimensions
-                 , positionFromPair
+                 , positioned
                  )
-import           Xanthous.Data.EntityMap (EntityMap)
+import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game
 import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Monad
@@ -25,12 +25,13 @@ import           Xanthous.Resource (Name)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
+import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.RawTypes (EntityRaw(..))
 import           Xanthous.Entities.Raws (raw)
 import           Xanthous.Entities
+import           Xanthous.Entities.Item (Item)
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
-import           Xanthous.Generators.LevelContents
 --------------------------------------------------------------------------------
 
 type App = Brick.App GameState () Name
@@ -56,11 +57,12 @@ testGormlak =
 startEvent :: AppM ()
 startEvent = do
   say_ ["welcome"]
-  (level, charPos) <-
+  level <-
     generateLevel SCaveAutomata CaveAutomata.defaultParams
     $ Dimensions 80 80
-  entities <>= level
-  characterPosition .= charPos
+  entities <>= (SomeEntity <$> level ^. levelWalls)
+  entities <>= (SomeEntity <$> level ^. levelItems)
+  characterPosition .= level ^. levelCharacterPosition
   modify updateCharacterVision
   -- entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
 
@@ -84,21 +86,23 @@ handleCommand (Move dir) = do
     Just Stop -> pure ()
   continue
 
+handleCommand PickUp = do
+  pos <- use characterPosition
+  ents <- uses entities $ EntityMap.atPositionWithIDs pos
+  let items = flip foldMap ents $ \(eid, view positioned -> se) ->
+        case downcastEntity @Item se of
+          Just item -> [(eid, item)]
+          Nothing   -> []
+  case items of
+    [] -> say_ ["items", "nothingToPickUp"]
+    [(itemID, item)] -> do
+      character %= Character.pickUpItem item
+      entities . at itemID .= Nothing
+      say ["items", "pickUp"] $ object [ "item" A..= item ]
+    _ -> undefined
+  continue
+
 handleCommand PreviousMessage = do
   messageHistory %= popMessage
   continue
 
---------------------------------------------------------------------------------
-
-generateLevel
-  :: SGenerator gen
-  -> Params gen
-  -> Dimensions
-  -> AppM (EntityMap SomeEntity, Position)
-generateLevel g ps dims = do
-  gen <- use randomGen
-  let cells = generate g ps dims gen
-  _ <- getRandom @_ @Int -- perturb the generator, so we don't get the same level twice
-  charPos <- positionFromPair <$> chooseCharacterPosition cells
-  let level = SomeEntity <$> cellsToWalls cells
-  pure (level, charPos)

@@ -33,6 +33,7 @@ dependencies:
 - filepath
 - generic-arbitrary
 - generic-monoid
+- generic-lens
 - groups
 - lens
 - megaparsec

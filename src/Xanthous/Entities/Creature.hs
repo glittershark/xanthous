@@ -1,27 +1,32 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
--- |
-
-module Xanthous.Entities.Creature where
-
-import Data.Word
-
+--------------------------------------------------------------------------------
+module Xanthous.Entities.Creature
+  ( Creature(..)
+  , creatureType
+  , hitpoints
+  , newWithType
+  , damage
+  ) where
+--------------------------------------------------------------------------------
 import Xanthous.Prelude
+--------------------------------------------------------------------------------
+import Data.Word
+--------------------------------------------------------------------------------
 import Xanthous.Entities.RawTypes hiding (Creature)
-import Xanthous.Entities (Draw(..), Entity(..))
+import Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
+--------------------------------------------------------------------------------
 
 data Creature = Creature
   { _creatureType :: CreatureType
   , _hitpoints :: Word16
   }
   deriving stock (Eq, Show, Generic)
+  deriving Draw via DrawRawChar "_creatureType" Creature
 makeLenses ''Creature
 
 instance Entity Creature where
   blocksVision _ = False
-
-instance Draw Creature where
-  draw = draw .view (creatureType . char)
 
 newWithType :: CreatureType -> Creature
 newWithType _creatureType =

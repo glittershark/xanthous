@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances, PatternSynonyms #-}
@@ -15,6 +16,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Text.Arbitrary ()
 import           Graphics.Vty.Attributes
 import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary.Generic
 import           Text.Megaparsec (errorBundlePretty)
 import           Text.Megaparsec.Pos
 import           Text.Mustache
@@ -157,15 +159,15 @@ deriving anyclass instance NFData Template
 
 instance FromJSON Color where
   parseJSON = withText "Color" $ \case
-    "black" -> pure black
-    "red" -> pure red
-    "green" -> pure green
-    "yellow" -> pure yellow
-    "blue" -> pure blue
+    "black"   -> pure black
+    "red"     -> pure red
+    "green"   -> pure green
+    "yellow"  -> pure yellow
+    "blue"    -> pure blue
     "magenta" -> pure magenta
-    "cyan" -> pure cyan
-    "white" -> pure white
-    _       -> fail "Invalid color"
+    "cyan"    -> pure cyan
+    "white"   -> pure white
+    _         -> fail "Invalid color"
 
 instance ToJSON Color where
   toJSON color
@@ -180,6 +182,44 @@ instance ToJSON Color where
     | otherwise = error "unimplemented"
 
 instance (Eq a, Show a, Read a, FromJSON a) => FromJSON (MaybeDefault a) where
-  parseJSON Null = pure Default
-  parseJSON x    = SetTo <$> parseJSON x
+  parseJSON Null                   = pure Default
+  parseJSON (String "keepCurrent") = pure KeepCurrent
+  parseJSON x                      = SetTo <$> parseJSON x
 
+instance ToJSON a => ToJSON (MaybeDefault a) where
+  toJSON Default     = Null
+  toJSON KeepCurrent = String "keepCurrent"
+  toJSON (SetTo x)   = toJSON x
+
+--------------------------------------------------------------------------------
+
+instance Arbitrary Color where
+  arbitrary = genericArbitrary
+
+deriving anyclass instance CoArbitrary Color
+deriving anyclass instance Function Color
+
+instance (Eq a, Show a, Read a, Arbitrary a) => Arbitrary (MaybeDefault a) where
+  arbitrary = oneof [ pure Default
+                    , pure KeepCurrent
+                    , SetTo <$> arbitrary
+                    ]
+
+instance CoArbitrary a => CoArbitrary (MaybeDefault a) where
+  coarbitrary Default = variant @Int 1
+  coarbitrary KeepCurrent = variant @Int 2
+  coarbitrary (SetTo x) = variant @Int 3 . coarbitrary x
+
+instance (Eq a, Show a, Read a, Function a) => Function (MaybeDefault a) where
+  function = functionShow
+
+instance Arbitrary Attr where
+  arbitrary = do
+    attrStyle <- arbitrary
+    attrForeColor <- arbitrary
+    attrBackColor <- arbitrary
+    attrURL <- arbitrary
+    pure Attr {..}
+
+deriving anyclass instance CoArbitrary Attr
+deriving anyclass instance Function Attr

@@ -7,26 +7,33 @@ module Xanthous.Entities
   ( Draw(..)
   , DrawCharacter(..)
   , DrawStyledCharacter(..)
+  , DrawRawChar(..)
   , Entity(..)
   , SomeEntity(..)
   , downcastEntity
   , entityIs
+  , _SomeEntity
 
   , Color(..)
   , KnownColor(..)
 
   , EntityChar(..)
+  , HasChar(..)
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude
+import           Xanthous.Prelude hiding ((.=))
 --------------------------------------------------------------------------------
 import           Brick
 import           Data.Typeable
 import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
 import           Data.Aeson
+import           Data.Generics.Product.Fields
+import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
 import           Xanthous.Data
+import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
 
 class (Show a, Eq a, Draw a) => Entity a where
@@ -58,6 +65,10 @@ downcastEntity (SomeEntity e) = cast e
 
 entityIs :: forall a. (Entity a, Typeable a) => SomeEntity -> Bool
 entityIs = isJust . downcastEntity @a
+
+_SomeEntity :: forall a. (Entity a, Typeable a) => Prism' SomeEntity a
+_SomeEntity = prism' SomeEntity downcastEntity
+
 --------------------------------------------------------------------------------
 
 class Draw a where
@@ -109,13 +120,33 @@ instance
             , Vty.attrBackColor = Vty.SetTo $ colorVal @bg Proxy
             , Vty.attrURL = Vty.Default
             }
+
 --------------------------------------------------------------------------------
+
+class HasChar s a | s -> a where
+  char :: Lens' s a
+  {-# MINIMAL char #-}
+
+newtype DrawRawChar (rawField :: Symbol) (a :: Type) = DrawRawChar a
+
+instance
+  forall rawField a raw.
+  ( HasField rawField a a raw raw
+  , HasChar raw EntityChar
+  ) => Draw (DrawRawChar rawField a) where
+  draw (DrawRawChar e) = draw $ e ^. field @rawField . char
+
+--------------------------------------------------------------------------------
+
 data EntityChar = EntityChar
   { _char :: Char
   , _style :: Vty.Attr
   }
   deriving stock (Show, Eq, Generic)
-  deriving anyclass (NFData)
+  deriving anyclass (NFData, CoArbitrary, Function)
+
+instance Arbitrary EntityChar where
+  arbitrary = genericArbitrary
 
 instance FromJSON EntityChar where
   parseJSON (String (chr :< Empty)) = pure $ EntityChar chr Vty.defAttr
@@ -132,7 +163,16 @@ instance FromJSON EntityChar where
     pure EntityChar {..}
   parseJSON _ = fail "Invalid type, expected string or object"
 
+instance ToJSON EntityChar where
+  toJSON (EntityChar chr styl)
+    | styl == Vty.defAttr = String $ chr <| Empty
+    | otherwise = object
+      [ "char" .= chr
+      , "style" .= object
+        [ "foreground" .= Vty.attrForeColor styl
+        , "background" .= Vty.attrBackColor styl
+        ]
+      ]
+
 instance Draw EntityChar where
   draw EntityChar{..} = raw $ Vty.string _style [_char]
-
---------------------------------------------------------------------------------

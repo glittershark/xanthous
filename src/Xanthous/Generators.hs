@@ -1,18 +1,35 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE GADTs           #-}
+{-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
-module Xanthous.Generators where
+module Xanthous.Generators
+  ( generate
+  , SGenerator(..)
+  , GeneratorInput
+  , generateFromInput
+  , parseGeneratorInput
+  , showCells
+  , Level(..)
+  , levelWalls
+  , levelItems
+  , levelCharacterPosition
+  , generateLevel
+  ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude
+import           Xanthous.Prelude hiding (Level)
 import           Data.Array.Unboxed
 import           System.Random (RandomGen)
 import qualified Options.Applicative as Opt
+import           Control.Monad.Random
 --------------------------------------------------------------------------------
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 import           Xanthous.Generators.Util
+import           Xanthous.Generators.LevelContents
 import           Xanthous.Data (Dimensions, Position(Position))
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Environment
+import           Xanthous.Entities.Item
 --------------------------------------------------------------------------------
 
 data Generator = CaveAutomata
@@ -68,3 +85,21 @@ cellsToWalls cells = foldl' maybeInsertWall mempty . assocs $ cells
         in EntityMap.insertAt (Position x' y') Wall em
     maybeInsertWall em _ = em
     surroundedOnAllSides pos = numAliveNeighbors cells pos == 8
+
+--------------------------------------------------------------------------------
+
+data Level = Level
+  { _levelWalls :: EntityMap Wall
+  , _levelItems :: EntityMap Item
+  , _levelCharacterPosition :: Position
+  }
+makeLenses ''Level
+
+generateLevel :: MonadRandom m => SGenerator gen -> Params gen -> Dimensions -> m Level
+generateLevel gen ps dims = do
+  rand <- mkStdGen <$> getRandom
+  let cells = generate gen ps dims rand
+      _levelWalls = cellsToWalls cells
+  _levelItems <- randomItems cells
+  _levelCharacterPosition <- chooseCharacterPosition cells
+  pure Level {..}

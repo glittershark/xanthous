@@ -9,10 +9,11 @@ data Command
   = Quit
   | Move Direction
   | PreviousMessage
-  -- | PickUp
+  | PickUp
 
 commandFromKey :: Key -> [Modifier] -> Maybe Command
 commandFromKey (KChar 'q') [] = Just Quit
+
 commandFromKey (KChar 'h') [] = Just $ Move Left
 commandFromKey (KChar 'j') [] = Just $ Move Down
 commandFromKey (KChar 'k') [] = Just $ Move Up
@@ -23,5 +24,7 @@ commandFromKey (KChar 'b') [] = Just $ Move DownLeft
 commandFromKey (KChar 'n') [] = Just $ Move DownRight
 
 commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
+
+commandFromKey (KChar ',') [] = Just PickUp
 
 commandFromKey _ _ = Nothing

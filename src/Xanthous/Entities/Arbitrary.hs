@@ -14,6 +14,6 @@ import           Xanthous.Entities.Environment
 
 instance Arbitrary SomeEntity where
   arbitrary = Gen.oneof
-    [ pure $ SomeEntity Character
+    [ SomeEntity <$> arbitrary @Character
     , pure $ SomeEntity Wall
     ]

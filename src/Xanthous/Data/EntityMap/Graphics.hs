@@ -1,6 +1,9 @@
 {-# LANGUAGE ViewPatterns #-}
 --------------------------------------------------------------------------------
-module Xanthous.Data.EntityMap.Graphics where
+module Xanthous.Data.EntityMap.Graphics
+  ( visiblePositions
+  , visibleEntities
+  ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
@@ -10,6 +13,10 @@ import Xanthous.Data.EntityMap
 import Xanthous.Entities
 import Xanthous.Util.Graphics (circle, line)
 --------------------------------------------------------------------------------
+
+visiblePositions :: Position -> Word -> EntityMap SomeEntity -> Set Position
+visiblePositions pos radius = setFromList . positions . visibleEntities pos radius
+
 
 -- | Given a point and a radius of vision, returns a list of all entities that
 -- are *visible* (eg, not blocked by an entity that obscures vision) from that

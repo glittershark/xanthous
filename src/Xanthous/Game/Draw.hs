@@ -17,7 +17,7 @@ import Xanthous.Entities
 import Xanthous.Game
   ( GameState(..)
   , entities
-  , revealedEntities
+  , revealedPositions
   , characterPosition
   , MessageHistory(..)
   , messageHistory
@@ -37,28 +37,34 @@ drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
 --   (MessageHistory (lastMessage :| _) True) -> txt lastMessage
 
 drawEntities
-  :: EntityMap SomeEntity -- ^ visible entities
+  :: Set Position
+    -- ^ Positions the character has seen
+    -- FIXME: this will break down as soon as creatures can walk around on their
+    -- own, since we don't want to render things walking around when the
+    -- character can't see them
   -> EntityMap SomeEntity -- ^ all entities
   -> Widget Name
-drawEntities em allEnts
+drawEntities visiblePositions allEnts
   = vBox rows
   where
-    entityPositions = EntityMap.positions em
+    entityPositions = EntityMap.positions allEnts
     maxY = fromMaybe 0 $ maximumOf (folded . y) entityPositions
     maxX = fromMaybe 0 $ maximumOf (folded . x) entityPositions
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
-    renderEntityAt pos =
-      let neighbors = EntityMap.neighbors pos allEnts
-      in maybe (str " ") (drawWithNeighbors neighbors)
-         $ em ^? atPosition pos . folded
+    renderEntityAt pos
+      | pos `member` visiblePositions
+      = let neighbors = EntityMap.neighbors pos allEnts
+        in maybe (str " ") (drawWithNeighbors neighbors)
+           $ allEnts ^? atPosition pos . folded
+      | otherwise = str " "
 
 drawMap :: GameState -> Widget Name
 drawMap game
   = viewport MapViewport Both
   . showCursor Character (game ^. characterPosition . loc)
   $ drawEntities
-    (game ^. revealedEntities)
+    (game ^. revealedPositions)
     (game ^. entities)
 
 drawGame :: GameState -> [Widget Name]
