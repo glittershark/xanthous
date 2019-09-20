@@ -8,6 +8,8 @@ module Xanthous.Game
   , revealedPositions
   , messageHistory
   , randomGen
+  , promptState
+  , GamePromptState(..)
 
   , getInitialState
 
@@ -24,6 +26,9 @@ module Xanthous.Game
     -- * collisions
   , Collision(..)
   , collisionAt
+
+    -- * App monad
+  , AppT(..)
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -34,6 +39,8 @@ import           System.Random
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 import           Control.Monad.State.Class
+import           Control.Monad.State
+import           Control.Monad.Random.Class
 --------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import qualified Xanthous.Data.EntityMap as EntityMap
@@ -45,6 +52,7 @@ import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Item
 import           Xanthous.Entities.Arbitrary ()
 import           Xanthous.Orphans ()
+import           Xanthous.Game.Prompt
 --------------------------------------------------------------------------------
 
 data MessageHistory
@@ -70,12 +78,33 @@ hideMessage :: MessageHistory -> MessageHistory
 hideMessage NoMessageHistory = NoMessageHistory
 hideMessage (MessageHistory msgs _) = MessageHistory msgs False
 
+--------------------------------------------------------------------------------
+
+data GamePromptState m where
+  NoPrompt :: GamePromptState m
+  WaitingPrompt :: Text -> Prompt m -> GamePromptState m
+  deriving stock (Show)
+
+--------------------------------------------------------------------------------
+
+newtype AppT m a
+  = AppT { unAppT :: StateT GameState m a }
+  deriving ( Functor
+           , Applicative
+           , Monad
+           , MonadState GameState
+           )
+       via (StateT GameState m)
+
+--------------------------------------------------------------------------------
+
 data GameState = GameState
   { _entities          :: !(EntityMap SomeEntity)
   , _revealedPositions :: !(Set Position)
   , _characterEntityID :: !EntityID
   , _messageHistory    :: !MessageHistory
   , _randomGen         :: !StdGen
+  , _promptState       :: !(GamePromptState (AppT Identity))
   }
   deriving stock (Show)
 makeLenses ''GameState
@@ -88,6 +117,7 @@ instance Eq GameState where
     , gs ^. messageHistory
     )
 
+
 instance Arbitrary GameState where
   arbitrary = do
     char <- arbitrary @Character
@@ -97,7 +127,9 @@ instance Arbitrary GameState where
       EntityMap.insertAtReturningID charPos (SomeEntity char)
     _revealedPositions <- fmap setFromList . sublistOf $ EntityMap.positions _entities
     _randomGen <- mkStdGen <$> arbitrary
+    let _promptState = NoPrompt -- TODO
     pure $ GameState {..}
+
 
 getInitialState :: IO GameState
 getInitialState = do
@@ -110,6 +142,7 @@ getInitialState = do
           mempty
       _messageHistory = NoMessageHistory
       _revealedPositions = mempty
+      _promptState = NoPrompt
   pure GameState {..}
 
 positionedCharacter :: Lens' GameState (Positioned Character)
@@ -166,3 +199,14 @@ collisionAt pos = do
        | any (entityIs @Creature) ents -> pure Combat
        | all (entityIs @Item) ents -> Nothing
        | otherwise -> pure Stop
+
+--------------------------------------------------------------------------------
+
+instance MonadTrans AppT where
+  lift = AppT . lift
+
+instance (Monad m) => MonadRandom (AppT m) where
+  getRandomR rng = randomGen %%= randomR rng
+  getRandom = randomGen %%= random
+  getRandomRs rng = uses randomGen $ randomRs rng
+  getRandoms = uses randomGen randoms

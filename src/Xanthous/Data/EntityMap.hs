@@ -23,7 +23,10 @@ module Xanthous.Data.EntityMap
   , neighbors
   , Deduplicate(..)
 
-    -- * Querying an entityMap
+  -- * debug
+  , byID
+  , byPosition
+
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude hiding (lookup)
@@ -31,7 +34,6 @@ import Xanthous.Data
   ( Position
   , Positioned(..)
   , positioned
-  , position
   , Neighbors(..)
   , neighborPositions
   )
@@ -81,15 +83,15 @@ instance At (EntityMap a) where
         pure $ m
           & removeEIDAtPos pos
           & byID . at eid .~ Nothing
-      setter m (Just (Positioned pos e)) =
-        case lookupWithPosition eid m of
-          Nothing -> insertAt pos e m
-          Just (Positioned origPos _) -> m
-            & removeEIDAtPos origPos
-            & byID . ix eid . position .~ pos
-            & byPosition . at pos %~ \case
-              Nothing -> Just $ ncons eid mempty
-              Just es -> Just $ eid <| es
+      setter m (Just pe@(Positioned pos _)) = m
+        & (case lookupWithPosition eid m of
+             Nothing -> id
+             Just (Positioned origPos _) -> removeEIDAtPos origPos
+          )
+        & byID . at eid ?~ pe
+        & byPosition . at pos %~ \case
+            Nothing -> Just $ ncons eid mempty
+            Just es -> Just $ eid <| es
       removeEIDAtPos pos =
         byPosition . at pos %~ (>>= fromNullable . nfilter (/= eid))
 
@@ -116,9 +118,6 @@ instance Semigroup (Deduplicate a) where
               Nothing -> Just $ ncons eid mempty
         _lastID = fromMaybe 1 $ maximumOf (ifolded . asIndex) _byID
     in Deduplicate EntityMap{..}
-
-instance Monoid (Deduplicate a) where
-  mempty = Deduplicate emptyEntityMap
 
 
 --------------------------------------------------------------------------------

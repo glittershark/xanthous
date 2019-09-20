@@ -27,4 +27,7 @@ test = testGroup "Xanthous.Game"
   , testGroup "characterPosition"
     [ testProperty "lens laws" $ isLens characterPosition
     ]
+  , testGroup "character"
+    [ testProperty "lens laws" $ isLens character
+    ]
   ]

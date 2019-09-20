@@ -15,7 +15,10 @@ test = localOption (QuickCheckTests 20)
   $ testGroup "Xanthous.Data.EntityMap"
   [ testBatch $ monoid @(EntityMap Int) mempty
   , testGroup "Deduplicate"
-    [ testBatch $ monoid @(Deduplicate Int) mempty
+    [ testGroup "Semigroup laws"
+      [ testProperty "associative" $ \(a :: Deduplicate (EntityMap Int)) b c ->
+          a <> (b <> c) === (a <> b) <> c
+      ]
     ]
   , testGroup "Eq laws"
     [ testProperty "reflexivity" $ \(em :: EntityMap Int) ->

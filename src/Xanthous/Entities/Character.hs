@@ -1,6 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Xanthous.Entities.Character
   ( Character(..)
+  , characterName
+  , inventory
   , mkCharacter
   , pickUpItem
   ) where
@@ -10,6 +12,8 @@ import Test.QuickCheck
 import Test.QuickCheck.Instances.Vector ()
 import Test.QuickCheck.Arbitrary.Generic
 import Brick
+import Data.Aeson.Generic.DerivingVia
+import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Entities
 import Xanthous.Entities.Item
@@ -17,9 +21,13 @@ import Xanthous.Entities.Item
 
 data Character = Character
   { _inventory :: !(Vector Item)
+  , _characterName :: !(Maybe Text)
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (CoArbitrary, Function)
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+           Character
 makeLenses ''Character
 
 scrollOffset :: Int
@@ -40,6 +48,7 @@ instance Arbitrary Character where
 mkCharacter :: Character
 mkCharacter = Character
   { _inventory = mempty
+  , _characterName = Nothing
   }
 
 pickUpItem :: Item -> Character -> Character

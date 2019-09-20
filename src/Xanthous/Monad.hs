@@ -17,24 +17,6 @@ import Data.Aeson
 import Xanthous.Game
 import Xanthous.Messages (message)
 
-newtype AppT m a
-  = AppT { unAppT :: StateT GameState m a }
-  deriving ( Functor
-           , Applicative
-           , Monad
-           , MonadState GameState
-           )
-       via (StateT GameState m)
-
-instance MonadTrans AppT where
-  lift = AppT . lift
-
-instance (Monad m) => MonadRandom (AppT m) where
-  getRandomR rng = randomGen %%= randomR rng
-  getRandom = randomGen %%= random
-  getRandomRs rng = uses randomGen $ randomRs rng
-  getRandoms = uses randomGen randoms
-
 runAppT :: Monad m => AppT m a -> GameState -> m (a, GameState)
 runAppT appt initialState = flip runStateT initialState . unAppT $ appt
 
@@ -44,19 +26,12 @@ halt = lift . Brick.halt =<< get
 continue :: AppT (EventM n) (Next GameState)
 continue = lift . Brick.continue =<< get
 
--- say :: [Text] -> AppT m ()
--- say :: [Text] -> params -> AppT m ()
 
-class SayR a where
-  say :: [Text] -> a
+say :: (MonadRandom m, ToJSON params, MonadState GameState m)
+    => [Text] -> params -> m ()
+say msgPath params = do
+  msg <- message msgPath params
+  messageHistory %= pushMessage msg
 
-instance Monad m => SayR (AppT m ()) where
-  say msgPath = say msgPath $ object []
-
-instance (Monad m, ToJSON params) => SayR (params -> AppT m ()) where
-  say msgPath params = do
-    msg <- message msgPath params
-    messageHistory %= pushMessage msg
-
-say_ :: Monad m => [Text] -> AppT m ()
-say_ = say
+say_ :: (MonadRandom m, MonadState GameState m) => [Text] -> m ()
+say_ msgPath = say msgPath $ object []

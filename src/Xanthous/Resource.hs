@@ -10,4 +10,5 @@ data Name = MapViewport
             -- ^ The character
           | MessageBox
             -- ^ The box where we display messages to the user
+          | Prompt
   deriving stock (Show, Eq, Ord)

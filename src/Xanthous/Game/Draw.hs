@@ -1,40 +1,47 @@
-{-# LANGUAGE ViewPatterns #-}
-
+--------------------------------------------------------------------------------
 module Xanthous.Game.Draw
   ( drawGame
   ) where
-
-import Xanthous.Prelude
-import Brick hiding (loc)
-import Brick.Widgets.Border
-import Brick.Widgets.Border.Style
-import Data.List.NonEmpty(NonEmpty((:|)))
-
-import Xanthous.Data (Position(Position), x, y, loc)
-import Xanthous.Data.EntityMap (EntityMap, atPosition)
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude
+import           Brick hiding (loc)
+import           Brick.Widgets.Border
+import           Brick.Widgets.Border.Style
+import           Brick.Widgets.Edit
+import           Data.List.NonEmpty(NonEmpty((:|)))
+--------------------------------------------------------------------------------
+import           Xanthous.Data (Position(Position), x, y, loc)
+import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
-import Xanthous.Entities
-import Xanthous.Game
-  ( GameState(..)
-  , entities
-  , revealedPositions
-  , characterPosition
-  , MessageHistory(..)
-  , messageHistory
-  )
-import Xanthous.Resource (Name(..))
-import Xanthous.Orphans ()
+import           Xanthous.Entities
+import           Xanthous.Game
+                 ( GameState(..)
+                 , entities
+                 , revealedPositions
+                 , characterPosition
+                 , MessageHistory(..)
+                 , messageHistory
+                 , GamePromptState(..)
+                 , promptState
+                 )
+import           Xanthous.Game.Prompt
+import           Xanthous.Resource (Name)
+import qualified Xanthous.Resource as Resource
+import           Xanthous.Orphans ()
+--------------------------------------------------------------------------------
 
 drawMessages :: MessageHistory -> Widget Name
 drawMessages NoMessageHistory = emptyWidget
-drawMessages (MessageHistory _ False) = emptyWidget
+drawMessages (MessageHistory _ False) = str " "
 drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
 
--- an attempt to still take up a row even when no messages
--- drawMessages msgs = vLimit 1 . Widget Greedy Fixed . render $ case msgs of
---   NoMessageHistory -> padTop (Pad 2) $ str " "
---   (MessageHistory _ False) -> padTop (Pad 2) $ str " "
---   (MessageHistory (lastMessage :| _) True) -> txt lastMessage
+drawPromptState :: GamePromptState m -> Widget Name
+drawPromptState NoPrompt = emptyWidget
+drawPromptState (WaitingPrompt msg (Prompt _ pt ps _)) =
+  case (pt, ps) of
+    (SStringPrompt, StringPromptState edit) ->
+      txt msg <+> renderEditor (txt . fold) True edit
+    _ -> undefined
 
 drawEntities
   :: Set Position
@@ -61,8 +68,8 @@ drawEntities visiblePositions allEnts
 
 drawMap :: GameState -> Widget Name
 drawMap game
-  = viewport MapViewport Both
-  . showCursor Character (game ^. characterPosition . loc)
+  = viewport Resource.MapViewport Both
+  . showCursor Resource.Character (game ^. characterPosition . loc)
   $ drawEntities
     (game ^. revealedPositions)
     (game ^. entities)
@@ -72,4 +79,5 @@ drawGame game
   = pure
   . withBorderStyle unicode
   $   drawMessages (game ^. messageHistory)
+  <=> drawPromptState (game ^. promptState)
   <=> border (drawMap game)

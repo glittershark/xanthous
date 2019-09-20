@@ -4,11 +4,13 @@ module Xanthous.App (makeApp) where
 import           Xanthous.Prelude
 import           Brick hiding (App, halt, continue, raw)
 import qualified Brick
+import           Brick.Widgets.Edit (handleEditorEvent)
 import           Graphics.Vty.Attributes (defAttr)
-import           Graphics.Vty.Input.Events (Event(EvKey))
-import           Control.Monad.State (get)
+import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
+import           Control.Monad.State (get, state, StateT(..))
+import           Data.Coerce
 import           Control.Monad.State.Class (modify)
-import           Data.Aeson (object)
+import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
 --------------------------------------------------------------------------------
 import           Xanthous.Command
@@ -20,14 +22,13 @@ import           Xanthous.Data
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game
 import           Xanthous.Game.Draw (drawGame)
+import           Xanthous.Game.Prompt
 import           Xanthous.Monad
 import           Xanthous.Resource (Name)
+import           Xanthous.Messages (message)
 --------------------------------------------------------------------------------
-import           Xanthous.Entities.Creature (Creature)
-import qualified Xanthous.Entities.Creature as Creature
 import qualified Xanthous.Entities.Character as Character
-import           Xanthous.Entities.RawTypes (EntityRaw(..))
-import           Xanthous.Entities.Raws (raw)
+import           Xanthous.Entities.Character (characterName)
 import           Xanthous.Entities
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Generators
@@ -41,7 +42,7 @@ makeApp :: IO App
 makeApp = pure $ Brick.App
   { appDraw = drawGame
   , appChooseCursor = const headMay
-  , appHandleEvent = \state event -> runAppM (handleEvent event) state
+  , appHandleEvent = \game event -> runAppM (handleEvent event) game
   , appStartEvent = runAppM $ startEvent >> get
   , appAttrMap = const $ attrMap defAttr []
   }
@@ -49,14 +50,13 @@ makeApp = pure $ Brick.App
 runAppM :: AppM a -> GameState -> EventM Name a
 runAppM appm = fmap fst . runAppT appm
 
-testGormlak :: Creature
-testGormlak =
-  let Just (Creature gormlak) = raw "gormlak"
-  in Creature.newWithType gormlak
+-- testGormlak :: Creature
+-- testGormlak =
+--   let Just (Creature gormlak) = raw "gormlak"
+--   in Creature.newWithType gormlak
 
 startEvent :: AppM ()
 startEvent = do
-  say_ ["welcome"]
   level <-
     generateLevel SCaveAutomata CaveAutomata.defaultParams
     $ Dimensions 80 80
@@ -64,15 +64,23 @@ startEvent = do
   entities <>= (SomeEntity <$> level ^. levelItems)
   characterPosition .= level ^. levelCharacterPosition
   modify updateCharacterVision
-  -- entities %= EntityMap.insertAt (Position 10 10) (SomeEntity testGormlak)
-
+  prompt_ @'StringPrompt ["character", "namePrompt"] Uncancellable
+    $ \(StringResult s) -> do
+      character . characterName ?= s
+      say ["welcome"] =<< use character
 
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
-handleEvent (VtyEvent (EvKey k mods))
+handleEvent ev = use promptState >>= \case
+  NoPrompt -> handleNoPromptEvent ev
+  WaitingPrompt msg pr -> handlePromptEvent msg pr ev
+
+
+handleNoPromptEvent :: BrickEvent Name () -> AppM (Next GameState)
+handleNoPromptEvent (VtyEvent (EvKey k mods))
   | Just command <- commandFromKey k mods
   = do messageHistory %= hideMessage
        handleCommand command
-handleEvent _ = continue
+handleNoPromptEvent _ = continue
 
 handleCommand :: Command -> AppM (Next GameState)
 handleCommand Quit = halt
@@ -106,3 +114,48 @@ handleCommand PreviousMessage = do
   messageHistory %= popMessage
   continue
 
+handlePromptEvent
+  :: Text -- ^ Prompt message
+  -> Prompt (AppT Identity)
+  -> BrickEvent Name ()
+  -> AppM (Next GameState)
+handlePromptEvent _ (Prompt Cancellable _ _ _) (VtyEvent (EvKey KEsc [])) = do
+  promptState .= NoPrompt
+  continue
+handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) = do
+  () <- state . coerce $ submitPrompt pr
+  promptState .= NoPrompt
+  continue
+handlePromptEvent
+  msg
+  (Prompt c SStringPrompt (StringPromptState edit) cb)
+  (VtyEvent ev)
+  = do
+    edit' <- lift $ handleEditorEvent ev edit
+    let prompt' = Prompt c SStringPrompt (StringPromptState edit') cb
+    promptState .= WaitingPrompt msg prompt'
+    continue
+handlePromptEvent _ _ _ = undefined
+
+prompt
+  :: forall (pt :: PromptType) (params :: Type).
+    (ToJSON params, SingPromptType pt)
+  => [Text]                     -- ^ Message key
+  -> params                     -- ^ Message params
+  -> PromptCancellable
+  -> (PromptResult pt -> AppT Identity ()) -- ^ Prompt promise handler
+  -> AppM ()
+prompt msgPath params cancellable cb = do
+  let pt = singPromptType @pt
+  msg <- message msgPath params
+  let p = mkPrompt cancellable pt cb
+  promptState .= WaitingPrompt msg p
+
+prompt_
+  :: forall (pt :: PromptType) .
+    (SingPromptType pt)
+  => [Text] -- ^ Message key
+  -> PromptCancellable
+  -> (PromptResult pt -> AppT Identity ()) -- ^ Prompt promise handler
+  -> AppM ()
+prompt_ msg = prompt msg $ object []
