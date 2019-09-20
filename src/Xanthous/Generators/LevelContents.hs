@@ -27,7 +27,7 @@ randomItems cells = do
   let len = rangeSize $ bounds cells
   (numItems :: Int) <- floor . (* fromIntegral len)
                      <$> getRandomR @_ @Float (0.0004, 0.001)
-  items <- for [0..numItems] $ const do
+  items <- for [0..numItems] $ const $ do
     pos <- randomPosition cells
     itemType <- fmap (fromMaybe (error "no item raws!"))
                . choose . ChooseElement

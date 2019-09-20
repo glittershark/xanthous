@@ -36,7 +36,12 @@ data CreatureType = CreatureType
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        CreatureType
 makeFieldsNoPrefix ''CreatureType
+
+instance Arbitrary CreatureType where
+  arbitrary = genericArbitrary
+
 --------------------------------------------------------------------------------
+
 data ItemType = ItemType
   { _name :: Text
   , _description :: Text

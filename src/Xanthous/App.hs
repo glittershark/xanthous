@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
 module Xanthous.App (makeApp) where
 --------------------------------------------------------------------------------
@@ -18,7 +19,9 @@ import           Xanthous.Data
                  ( move
                  , Dimensions'(Dimensions)
                  , positioned
+                 , Position
                  )
+import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game
 import           Xanthous.Game.Draw (drawGame)
@@ -31,6 +34,7 @@ import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character (characterName)
 import           Xanthous.Entities
 import           Xanthous.Entities.Item (Item)
+import           Xanthous.Entities.Environment (Door, open, locked)
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 --------------------------------------------------------------------------------
@@ -96,11 +100,7 @@ handleCommand (Move dir) = do
 
 handleCommand PickUp = do
   pos <- use characterPosition
-  ents <- uses entities $ EntityMap.atPositionWithIDs pos
-  let items = flip foldMap ents $ \(eid, view positioned -> se) ->
-        case downcastEntity @Item se of
-          Just item -> [(eid, item)]
-          Nothing   -> []
+  items <- uses entities $ entitiesAtPositionWithType @Item pos
   case items of
     [] -> say_ ["items", "nothingToPickUp"]
     [(itemID, item)] -> do
@@ -114,11 +114,26 @@ handleCommand PreviousMessage = do
   messageHistory %= popMessage
   continue
 
+handleCommand Open = do
+  prompt_ @'DirectionPrompt ["open", "prompt"] Cancellable
+    $ \(DirectionResult dir) -> do
+      pos <- move dir <$> use characterPosition
+      doors <- uses entities $ entitiesAtPositionWithType @Door pos
+      if | null doors -> say_ ["open", "nothingToOpen"]
+         | any (view $ _2 . locked) doors -> say_ ["open", "locked"]
+         | otherwise -> do
+             for_ doors $ \(eid, _) ->
+               entities . ix eid . positioned . _SomeEntity . open .= True
+             say_ ["open", "success"]
+      pure ()
+  continue
+
 handlePromptEvent
   :: Text -- ^ Prompt message
   -> Prompt (AppT Identity)
   -> BrickEvent Name ()
   -> AppM (Next GameState)
+
 handlePromptEvent _ (Prompt Cancellable _ _ _) (VtyEvent (EvKey KEsc [])) = do
   promptState .= NoPrompt
   continue
@@ -126,6 +141,7 @@ handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) = do
   () <- state . coerce $ submitPrompt pr
   promptState .= NoPrompt
   continue
+
 handlePromptEvent
   msg
   (Prompt c SStringPrompt (StringPromptState edit) cb)
@@ -135,6 +151,15 @@ handlePromptEvent
     let prompt' = Prompt c SStringPrompt (StringPromptState edit') cb
     promptState .= WaitingPrompt msg prompt'
     continue
+
+handlePromptEvent _ (Prompt _ SDirectionPrompt _ cb)
+  (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
+  = do
+    () <- state . coerce . cb $ DirectionResult dir
+    promptState .= NoPrompt
+    continue
+handlePromptEvent _ (Prompt _ SDirectionPrompt _ _) _ = continue
+
 handlePromptEvent _ _ _ = undefined
 
 prompt
@@ -159,3 +184,17 @@ prompt_
   -> (PromptResult pt -> AppT Identity ()) -- ^ Prompt promise handler
   -> AppM ()
 prompt_ msg = prompt msg $ object []
+
+--------------------------------------------------------------------------------
+
+entitiesAtPositionWithType
+  :: forall a. (Entity a, Typeable a)
+  => Position
+  -> EntityMap SomeEntity
+  -> [(EntityMap.EntityID, a)]
+entitiesAtPositionWithType pos em =
+  let someEnts = EntityMap.atPositionWithIDs pos em
+  in flip foldMap someEnts $ \(eid, view positioned -> se) ->
+    case downcastEntity @a se of
+      Just e  -> [(eid, e)]
+      Nothing -> []

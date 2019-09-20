@@ -49,6 +49,7 @@ data SPromptType :: PromptType -> Type where
 
 class SingPromptType pt where singPromptType :: SPromptType pt
 instance SingPromptType 'StringPrompt where singPromptType = SStringPrompt
+instance SingPromptType 'DirectionPrompt where singPromptType = SDirectionPrompt
 
 instance Show (SPromptType pt) where
   show SStringPrompt    = "SStringPrompt"
@@ -75,6 +76,7 @@ data PromptResult (pt :: PromptType) where
 
 data PromptState pt where
   StringPromptState :: Editor Text Name -> PromptState 'StringPrompt
+  DirectionPromptState :: PromptState 'DirectionPrompt
 
 deriving stock instance Show (PromptState pt)
 
@@ -100,17 +102,20 @@ mkPrompt :: PromptCancellable -> SPromptType pt -> (PromptResult pt -> m ()) -> 
 mkPrompt c pt@SStringPrompt cb =
   let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
   in Prompt c pt ps cb
+mkPrompt c pt@SDirectionPrompt cb = Prompt c pt DirectionPromptState cb
 mkPrompt _ _ _ = undefined
 
 isCancellable :: Prompt m -> Bool
 isCancellable (Prompt Cancellable _ _ _)   = True
 isCancellable (Prompt Uncancellable _ _ _) = False
 
-submitPrompt :: Prompt m -> m ()
+submitPrompt :: Applicative m => Prompt m -> m ()
 submitPrompt (Prompt _ pt ps cb) =
   case (pt, ps) of
     (SStringPrompt, StringPromptState edit) ->
       cb . StringResult . mconcat . getEditContents $ edit
+    (SDirectionPrompt, DirectionPromptState) ->
+      pure () -- Don't use submit with a direction prompt
     _ -> undefined
 
 -- data PromptInput :: PromptType -> Type where

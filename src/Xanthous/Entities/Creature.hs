@@ -12,6 +12,7 @@ module Xanthous.Entities.Creature
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
 import Data.Word
+import Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
 import Xanthous.Entities.RawTypes hiding (Creature)
 import Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
@@ -24,6 +25,9 @@ data Creature = Creature
   deriving stock (Eq, Show, Generic)
   deriving Draw via DrawRawChar "_creatureType" Creature
 makeLenses ''Creature
+
+instance Arbitrary Creature where
+  arbitrary = genericArbitrary
 
 instance Entity Creature where
   blocksVision _ = False

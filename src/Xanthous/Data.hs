@@ -135,6 +135,7 @@ data Direction where
   UpRight   :: Direction
   DownLeft  :: Direction
   DownRight :: Direction
+  Here      :: Direction
   deriving stock (Show, Eq, Generic)
 
 instance Arbitrary Direction where
@@ -150,6 +151,7 @@ opposite UpLeft    = DownRight
 opposite UpRight   = DownLeft
 opposite DownLeft  = UpRight
 opposite DownRight = UpLeft
+opposite Here      = Here
 
 move :: Direction -> Position -> Position
 move Up        = y -~ 1
@@ -160,6 +162,7 @@ move UpLeft    = move Up . move Left
 move UpRight   = move Up . move Right
 move DownLeft  = move Down . move Left
 move DownRight = move Down . move Right
+move Here      = id
 
 asPosition :: Direction -> Position
 asPosition dir = move dir mempty

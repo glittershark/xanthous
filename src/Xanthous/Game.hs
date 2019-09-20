@@ -46,10 +46,12 @@ import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics
 import           Xanthous.Data (Positioned, Position(..), positioned, position)
-import           Xanthous.Entities (SomeEntity(..), downcastEntity, entityIs)
+import           Xanthous.Entities
+                 (SomeEntity(..), downcastEntity, entityIs, _SomeEntity)
 import           Xanthous.Entities.Character
 import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Item
+import           Xanthous.Entities.Environment
 import           Xanthous.Entities.Arbitrary ()
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
@@ -198,6 +200,8 @@ collisionAt pos = do
     if | null ents -> Nothing
        | any (entityIs @Creature) ents -> pure Combat
        | all (entityIs @Item) ents -> Nothing
+       | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
+       , all (view open) doors -> Nothing
        | otherwise -> pure Stop
 
 --------------------------------------------------------------------------------

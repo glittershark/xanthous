@@ -9,11 +9,16 @@ import qualified Test.QuickCheck.Gen as Gen
 --------------------------------------------------------------------------------
 import           Xanthous.Entities (SomeEntity(..))
 import           Xanthous.Entities.Character
+import           Xanthous.Entities.Item
+import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Environment
 --------------------------------------------------------------------------------
 
 instance Arbitrary SomeEntity where
   arbitrary = Gen.oneof
     [ SomeEntity <$> arbitrary @Character
-    , pure $ SomeEntity Wall
+    , SomeEntity <$> arbitrary @Item
+    , SomeEntity <$> arbitrary @Creature
+    , SomeEntity <$> arbitrary @Wall
+    , SomeEntity <$> arbitrary @Door
     ]

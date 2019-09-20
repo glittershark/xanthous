@@ -41,6 +41,8 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps _)) =
   case (pt, ps) of
     (SStringPrompt, StringPromptState edit) ->
       txt msg <+> renderEditor (txt . fold) True edit
+    (SDirectionPrompt, DirectionPromptState) ->
+      txt msg
     _ -> undefined
 
 drawEntities
