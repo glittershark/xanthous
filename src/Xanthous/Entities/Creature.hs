@@ -9,13 +9,14 @@ module Xanthous.Entities.Creature
   , damage
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
+import           Xanthous.Prelude
 --------------------------------------------------------------------------------
-import Data.Word
-import Test.QuickCheck.Arbitrary.Generic
+import           Data.Word
+import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
-import Xanthous.Entities.RawTypes hiding (Creature)
-import Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
+import           Xanthous.Entities.RawTypes hiding (Creature, description)
+import qualified Xanthous.Entities.RawTypes as Raw
+import           Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
 --------------------------------------------------------------------------------
 
 data Creature = Creature
@@ -31,6 +32,7 @@ instance Arbitrary Creature where
 
 instance Entity Creature where
   blocksVision _ = False
+  description = view $ creatureType . Raw.description
 
 newWithType :: CreatureType -> Creature
 newWithType _creatureType =

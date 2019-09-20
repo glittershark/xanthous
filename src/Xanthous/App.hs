@@ -8,7 +8,8 @@ import qualified Brick
 import           Brick.Widgets.Edit (handleEditorEvent)
 import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
-import           Control.Monad.State (get, state, StateT(..))
+import           Control.Monad.State (get, state, StateT(..), MonadState)
+import           Control.Monad.Random (MonadRandom)
 import           Data.Coerce
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
@@ -29,12 +30,14 @@ import           Xanthous.Game.Prompt
 import           Xanthous.Monad
 import           Xanthous.Resource (Name)
 import           Xanthous.Messages (message)
+import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character (characterName)
 import           Xanthous.Entities
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Environment (Door, open, locked)
+import           Xanthous.Entities.Character
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 --------------------------------------------------------------------------------
@@ -93,6 +96,7 @@ handleCommand (Move dir) = do
   collisionAt newPos >>= \case
     Nothing -> do
       characterPosition .= newPos
+      describeEntitiesAt newPos
       modify updateCharacterVision
     Just Combat -> undefined
     Just Stop -> pure ()
@@ -198,3 +202,15 @@ entitiesAtPositionWithType pos em =
     case downcastEntity @a se of
       Just e  -> [(eid, e)]
       Nothing -> []
+
+describeEntitiesAt :: (MonadState GameState m, MonadRandom m) => Position -> m ()
+describeEntitiesAt pos =
+  use ( entities
+      . EntityMap.atPosition pos
+      . to (filter (not . entityIs @Character))
+      ) >>= \case
+        Empty -> pure ()
+        ents  ->
+          let descriptions = description <$> ents
+          in say ["entities", "description"] $ object
+                 ["entityDescriptions" A..= toSentence descriptions]

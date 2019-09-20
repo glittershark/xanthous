@@ -24,6 +24,7 @@ data Wall = Wall
 
 instance Entity Wall where
   blocksVision _ = True
+  description _ = "a wall"
 
 instance Arbitrary Wall where
   arbitrary = pure Wall
@@ -65,3 +66,4 @@ instance Draw Door where
 
 instance Entity Door where
   blocksVision = not . view open
+  description _ = "a door"

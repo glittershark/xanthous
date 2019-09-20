@@ -41,6 +41,7 @@ instance Draw Character where
 
 instance Entity Character where
   blocksVision _ = False
+  description _ = "yourself"
 
 instance Arbitrary Character where
   arbitrary = genericArbitrary

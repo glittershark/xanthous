@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 40187d0301465905043b8caafec5465e644f711620c9fc1cfc57af4105ebe08c
+-- hash: cebd0598e7aa48a62741fd8a9acc462bb693bb9356947147e0604d8e4b395739
 
 name:           xanthous
 version:        0.1.0.0
@@ -59,6 +59,7 @@ library
       Xanthous.Resource
       Xanthous.Util
       Xanthous.Util.Graphics
+      Xanthous.Util.Inflection
   other-modules:
       Paths_xanthous
   hs-source-dirs:
@@ -132,6 +133,7 @@ executable xanthous
       Xanthous.Resource
       Xanthous.Util
       Xanthous.Util.Graphics
+      Xanthous.Util.Inflection
       Paths_xanthous
   hs-source-dirs:
       src
@@ -185,6 +187,7 @@ test-suite test
       Xanthous.MessageSpec
       Xanthous.OrphansSpec
       Xanthous.Util.GraphicsSpec
+      Xanthous.Util.InflectionSpec
       Paths_xanthous
   hs-source-dirs:
       test

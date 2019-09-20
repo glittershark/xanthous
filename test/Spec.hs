@@ -7,6 +7,7 @@ import qualified Xanthous.Generators.UtilSpec
 import qualified Xanthous.MessageSpec
 import qualified Xanthous.OrphansSpec
 import qualified Xanthous.Util.GraphicsSpec
+import qualified Xanthous.Util.InflectionSpec
 
 main :: IO ()
 main = defaultMain test
@@ -21,4 +22,5 @@ test = testGroup "Xanthous"
   , Xanthous.OrphansSpec.test
   , Xanthous.DataSpec.test
   , Xanthous.Util.GraphicsSpec.test
+  , Xanthous.Util.InflectionSpec.test
   ]

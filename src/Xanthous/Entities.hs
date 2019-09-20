@@ -38,9 +38,11 @@ import           Xanthous.Orphans ()
 
 class (Show a, Eq a, Draw a) => Entity a where
   blocksVision :: a -> Bool
+  description :: a -> Text
 
 instance Entity a => Entity (Positioned a) where
   blocksVision (Positioned _ ent) = blocksVision ent
+  description (Positioned _ ent) = description ent
 
 --------------------------------------------------------------------------------
 data SomeEntity where
@@ -59,6 +61,7 @@ instance Draw SomeEntity where
 
 instance Entity SomeEntity where
   blocksVision (SomeEntity ent) = blocksVision ent
+  description (SomeEntity ent) = description ent
 
 downcastEntity :: (Entity a, Typeable a) => SomeEntity -> Maybe a
 downcastEntity (SomeEntity e) = cast e

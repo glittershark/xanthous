@@ -1,5 +1,8 @@
 welcome: Welcome to Xanthous, {{characterName}}! It's dangerous out there, why not stay inside?
 
+entities:
+  description: You see here {{entityDescriptions}}
+
 items:
   pickUp: You pick up the {{item.itemType.name}}
   nothingToPickUp: "There's nothing here to pick up"
