@@ -15,3 +15,12 @@ open:
 
 character:
   namePrompt: "What's your name? "
+
+combat:
+  nothingToAttack: There's nothing to attack there
+  hit:
+    - You hit the {{creature.creatureType.name}}
+    - You attack the {{creature.creatureType.name}}
+  killed:
+    - You kill the {{creature.creatureType.name}}!
+    - You've killed the {{creature.creatureType.name}}!

@@ -19,7 +19,6 @@ import Test.QuickCheck
 import Test.QuickCheck.Arbitrary.Generic
 import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
-import Data.Word
 --------------------------------------------------------------------------------
 import Xanthous.Entities (EntityChar, HasChar(..))
 --------------------------------------------------------------------------------
@@ -27,12 +26,12 @@ data CreatureType = CreatureType
   { _name :: Text
   , _description :: Text
   , _char :: EntityChar
-  , _maxHitpoints :: Word16
+  , _maxHitpoints :: Word
   , _friendly :: Bool
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData)
-  deriving (FromJSON)
+  deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        CreatureType
 makeFieldsNoPrefix ''CreatureType

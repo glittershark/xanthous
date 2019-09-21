@@ -7,12 +7,14 @@ module Xanthous.Entities.Creature
   , hitpoints
   , newWithType
   , damage
+  , isDead
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 --------------------------------------------------------------------------------
-import           Data.Word
 import           Test.QuickCheck.Arbitrary.Generic
+import           Data.Aeson.Generic.DerivingVia
+import           Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes hiding (Creature, description)
 import qualified Xanthous.Entities.RawTypes as Raw
@@ -21,10 +23,13 @@ import           Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
 
 data Creature = Creature
   { _creatureType :: CreatureType
-  , _hitpoints :: Word16
+  , _hitpoints :: Word
   }
   deriving stock (Eq, Show, Generic)
   deriving Draw via DrawRawChar "_creatureType" Creature
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+                       Creature
 makeLenses ''Creature
 
 instance Arbitrary Creature where
@@ -39,8 +44,11 @@ newWithType _creatureType =
   let _hitpoints = _creatureType ^. maxHitpoints
   in Creature {..}
 
-damage :: Word16 -> Creature -> Creature
+damage :: Word -> Creature -> Creature
 damage amount = hitpoints %~ \hp ->
   if hp <= amount
   then 0
   else hp - amount
+
+isDead :: Creature -> Bool
+isDead = views hitpoints (== 0)

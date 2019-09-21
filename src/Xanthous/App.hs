@@ -36,6 +36,8 @@ import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character (characterName)
 import           Xanthous.Entities
 import           Xanthous.Entities.Item (Item)
+import           Xanthous.Entities.Creature (Creature)
+import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Environment (Door, open, locked)
 import           Xanthous.Entities.Character
 import           Xanthous.Generators
@@ -64,17 +66,24 @@ runAppM appm = fmap fst . runAppT appm
 
 startEvent :: AppM ()
 startEvent = do
-  level <-
-    generateLevel SCaveAutomata CaveAutomata.defaultParams
-    $ Dimensions 80 80
-  entities <>= (SomeEntity <$> level ^. levelWalls)
-  entities <>= (SomeEntity <$> level ^. levelItems)
-  characterPosition .= level ^. levelCharacterPosition
+  initLevel
   modify updateCharacterVision
   prompt_ @'StringPrompt ["character", "namePrompt"] Uncancellable
     $ \(StringResult s) -> do
       character . characterName ?= s
       say ["welcome"] =<< use character
+
+initLevel :: AppM ()
+initLevel = do
+  level <-
+    generateLevel SCaveAutomata CaveAutomata.defaultParams
+    $ Dimensions 80 80
+
+  entities <>= (SomeEntity <$> level ^. levelWalls)
+  entities <>= (SomeEntity <$> level ^. levelItems)
+  entities <>= (SomeEntity <$> level ^. levelCreatures)
+
+  characterPosition .= level ^. levelCharacterPosition
 
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
 handleEvent ev = use promptState >>= \case
@@ -98,7 +107,7 @@ handleCommand (Move dir) = do
       characterPosition .= newPos
       describeEntitiesAt newPos
       modify updateCharacterVision
-    Just Combat -> undefined
+    Just Combat -> attackAt newPos
     Just Stop -> pure ()
   continue
 
@@ -214,3 +223,22 @@ describeEntitiesAt pos =
           let descriptions = description <$> ents
           in say ["entities", "description"] $ object
                  ["entityDescriptions" A..= toSentence descriptions]
+
+attackAt :: Position -> AppM ()
+attackAt pos =
+  uses entities (entitiesAtPositionWithType @Creature pos) >>= \case
+    Empty               -> say_ ["combat", "nothingToAttack"]
+    (creature :< Empty) -> attackCreature creature
+    creatures           -> undefined
+ where
+  attackCreature (creatureID, creature) = do
+    charDamage <- use $ character . characterDamage
+    let creature' = Creature.damage charDamage creature
+        msgParams = object ["creature" A..= creature']
+    if Creature.isDead creature'
+      then do
+        say ["combat", "killed"] msgParams
+        entities . at creatureID .= Nothing
+      else do
+        say ["combat", "hit"] msgParams
+        entities . ix creatureID . positioned .= SomeEntity creature'

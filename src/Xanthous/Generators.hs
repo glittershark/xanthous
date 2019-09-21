@@ -12,6 +12,7 @@ module Xanthous.Generators
   , Level(..)
   , levelWalls
   , levelItems
+  , levelCreatures
   , levelCharacterPosition
   , generateLevel
   ) where
@@ -29,7 +30,8 @@ import           Xanthous.Data (Dimensions, Position(Position))
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Environment
-import           Xanthous.Entities.Item
+import           Xanthous.Entities.Item (Item)
+import           Xanthous.Entities.Creature (Creature)
 --------------------------------------------------------------------------------
 
 data Generator = CaveAutomata
@@ -37,9 +39,6 @@ data Generator = CaveAutomata
 
 data SGenerator (gen :: Generator) where
   SCaveAutomata :: SGenerator 'CaveAutomata
-
-data AGenerator where
-  AGenerator :: forall gen. SGenerator gen -> AGenerator
 
 type family Params (gen :: Generator) :: Type where
   Params 'CaveAutomata = CaveAutomata.Params
@@ -89,9 +88,10 @@ cellsToWalls cells = foldl' maybeInsertWall mempty . assocs $ cells
 --------------------------------------------------------------------------------
 
 data Level = Level
-  { _levelWalls :: EntityMap Wall
-  , _levelItems :: EntityMap Item
-  , _levelCharacterPosition :: Position
+  { _levelWalls             :: !(EntityMap Wall)
+  , _levelItems             :: !(EntityMap Item)
+  , _levelCreatures         :: !(EntityMap Creature)
+  , _levelCharacterPosition :: !Position
   }
 makeLenses ''Level
 
@@ -101,5 +101,6 @@ generateLevel gen ps dims = do
   let cells = generate gen ps dims rand
       _levelWalls = cellsToWalls cells
   _levelItems <- randomItems cells
+  _levelCreatures <- randomCreatures cells
   _levelCharacterPosition <- chooseCharacterPosition cells
   pure Level {..}

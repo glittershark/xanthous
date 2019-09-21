@@ -3,6 +3,7 @@ module Xanthous.Entities.Character
   ( Character(..)
   , characterName
   , inventory
+  , characterDamage
   , mkCharacter
   , pickUpItem
   ) where
@@ -22,6 +23,7 @@ import Xanthous.Entities.Item
 data Character = Character
   { _inventory :: !(Vector Item)
   , _characterName :: !(Maybe Text)
+  , _characterDamage :: !Word
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (CoArbitrary, Function)
@@ -50,6 +52,7 @@ mkCharacter :: Character
 mkCharacter = Character
   { _inventory = mempty
   , _characterName = Nothing
+  , _characterDamage = 1
   }
 
 pickUpItem :: Item -> Character -> Character

@@ -2,6 +2,7 @@
 module Xanthous.Generators.LevelContents
   ( chooseCharacterPosition
   , randomItems
+  , randomCreatures
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -13,28 +14,40 @@ import           Xanthous.Generators.Util
 import           Xanthous.Random
 import           Xanthous.Data (Position, positionFromPair)
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
-import           Xanthous.Entities.Item (Item(..))
-import           Xanthous.Entities.Raws
-import           Xanthous.Entities.RawTypes
+import           Xanthous.Entities.Raws (rawsWithType, RawType)
 import qualified Xanthous.Entities.Item as Item
+import           Xanthous.Entities.Item (Item)
+import qualified Xanthous.Entities.Creature as Creature
+import           Xanthous.Entities.Creature (Creature)
 --------------------------------------------------------------------------------
 
 chooseCharacterPosition :: MonadRandom m => Cells -> m Position
 chooseCharacterPosition = randomPosition
 
 randomItems :: MonadRandom m => Cells -> m (EntityMap Item)
-randomItems cells = do
-  let len = rangeSize $ bounds cells
-  (numItems :: Int) <- floor . (* fromIntegral len)
-                     <$> getRandomR @_ @Float (0.0004, 0.001)
-  items <- for [0..numItems] $ const $ do
-    pos <- randomPosition cells
-    itemType <- fmap (fromMaybe (error "no item raws!"))
-               . choose . ChooseElement
-               $ rawsWithType @ItemType
-    let item = Item.newWithType itemType
-    pure (pos, item)
-  pure $ _EntityMap # items
+randomItems = randomEntities Item.newWithType (0.0004, 0.001)
+
+randomCreatures :: MonadRandom m => Cells -> m (EntityMap Creature)
+randomCreatures = randomEntities Creature.newWithType (0.0007, 0.003)
+
+randomEntities
+  :: forall entity raw m. (MonadRandom m, RawType raw)
+  => (raw -> entity)
+  -> (Float, Float)
+  -> Cells
+  -> m (EntityMap entity)
+randomEntities newWithType sizeRange cells =
+  case fromNullable $ rawsWithType @raw of
+    Nothing -> pure mempty
+    Just raws -> do
+      let len = rangeSize $ bounds cells
+      (numEntities :: Int) <- floor . (* fromIntegral len) <$> getRandomR sizeRange
+      entities <- for [0..numEntities] $ const $ do
+        pos <- randomPosition cells
+        raw <- choose raws
+        let entity = newWithType raw
+        pure (pos, entity)
+      pure $ _EntityMap # entities
 
 randomPosition :: MonadRandom m => Cells -> m Position
 randomPosition cells = fmap positionFromPair . choose $ impureNonNull candidates
