@@ -1,14 +1,34 @@
-{-# LANGUAGE TupleSections #-}
+--------------------------------------------------------------------------------
 {-# LANGUAGE UndecidableInstances #-}
-
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+--------------------------------------------------------------------------------
 module Xanthous.Random
   ( Choose(..)
   , ChooseElement(..)
+  , Weighted(..)
+  , evenlyWeighted
+  , weightedBy
   ) where
-
+--------------------------------------------------------------------------------
 import Xanthous.Prelude
+--------------------------------------------------------------------------------
 import Data.List.NonEmpty (NonEmpty)
-import Control.Monad.Random.Class (MonadRandom(getRandomR))
+import Control.Monad.Random.Class (MonadRandom(getRandomR, getRandom))
+import Data.Random.Shuffle.Weighted
+import Data.Random.Distribution
+import Data.Random.Distribution.Uniform
+import Data.Random.Distribution.Uniform.Exclusive
+import Data.Random.Sample
+import qualified Data.Random.Source as DRS
+--------------------------------------------------------------------------------
+
+instance {-# INCOHERENT #-} (Monad m, MonadRandom m) => DRS.MonadRandom m where
+  getRandomWord8 = getRandom
+  getRandomWord16 = getRandom
+  getRandomWord32 = getRandom
+  getRandomWord64 = getRandom
+  getRandomDouble = getRandom
+  getRandomNByteInteger n = getRandomR (0, 256 ^ n)
 
 class Choose a where
   type RandomResult a
@@ -37,3 +57,22 @@ instance MonoFoldable a => Choose (NonNull a) where
 instance Choose (NonEmpty a) where
   type RandomResult (NonEmpty a) = a
   choose = choose . fromNonEmpty @[_]
+
+newtype Weighted w t a = Weighted (t (w, a))
+
+evenlyWeighted :: [a] -> Weighted Int [] a
+evenlyWeighted = Weighted . itoList
+
+weightedBy :: Functor t => (a -> w) -> t a -> Weighted w t a
+weightedBy weighting xs = Weighted $ (weighting &&& id) <$> xs
+
+instance (Num w, Ord w, Distribution Uniform w, Excludable w) => Choose (Weighted w [] a) where
+  type RandomResult (Weighted w [] a) = Maybe a
+  choose (Weighted ws) = sample $ headMay <$> weightedSample 1 ws
+
+instance (Num w, Ord w, Distribution Uniform w, Excludable w) => Choose (Weighted w NonEmpty a) where
+  type RandomResult (Weighted w NonEmpty a) = a
+  choose (Weighted ws) =
+    sample
+    $ fromMaybe (error "unreachable") . headMay
+    <$> weightedSample 1 (toList ws)

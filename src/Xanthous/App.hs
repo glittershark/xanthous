@@ -57,11 +57,6 @@ makeApp = pure $ Brick.App
 runAppM :: AppM a -> GameState -> EventM Name a
 runAppM appm = fmap fst . runAppT appm
 
--- testGormlak :: Creature
--- testGormlak =
---   let Just (Creature gormlak) = raw "gormlak"
---   in Creature.newWithType gormlak
-
 startEvent :: AppM ()
 startEvent = do
   initLevel
@@ -264,20 +259,3 @@ attackAt pos =
         say ["combat", "hit"] msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
     stepGame
-
-data Collision
-  = Stop
-  | Combat
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (NFData)
-
-collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
-collisionAt pos = do
-  ents <- use $ entities . EntityMap.atPosition pos
-  pure $
-    if | null ents -> Nothing
-       | any (entityIs @Creature) ents -> pure Combat
-       | all (entityIs @Item) ents -> Nothing
-       | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
-       , all (view open) doors -> Nothing
-       | otherwise -> pure Stop

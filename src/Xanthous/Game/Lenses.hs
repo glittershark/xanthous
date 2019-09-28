@@ -6,17 +6,25 @@ module Xanthous.Game.Lenses
   , characterPosition
   , updateCharacterVision
   , getInitialState
+
+    -- * Collisions
+  , Collision(..)
+  , collisionAt
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           System.Random
+import           Control.Monad.State
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
 import           Xanthous.Data
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
 import           Xanthous.Entities.Character (Character, mkCharacter)
+import           Xanthous.Entities.Environment (Door, open)
+import           Xanthous.Entities.Item (Item)
+import           Xanthous.Entities.Creature (Creature)
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState
@@ -31,6 +39,9 @@ getInitialState = do
       _messageHistory = NoMessageHistory
       _revealedPositions = mempty
       _promptState = NoPrompt
+      _debugState = DebugState
+        { _allRevealed = False
+        }
   pure GameState {..}
 
 
@@ -70,3 +81,20 @@ updateCharacterVision game =
   let charPos = game ^. characterPosition
       visible = visiblePositions charPos visionRadius $ game ^. entities
   in game & revealedPositions <>~ visible
+
+data Collision
+  = Stop
+  | Combat
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData)
+
+collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
+collisionAt pos = do
+  ents <- use $ entities . EntityMap.atPosition pos
+  pure $
+    if | null ents -> Nothing
+       | any (entityIs @Creature) ents -> pure Combat
+       | all (entityIs @Item) ents -> Nothing
+       | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
+       , all (view open) doors -> Nothing
+       | otherwise -> pure Stop

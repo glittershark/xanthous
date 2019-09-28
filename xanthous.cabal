@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 121c6fd553f5e73ac5ff4c89f17eacc3a85997255aba87390943a418b439896c
+-- hash: ad4acf50f6be0dc7ae6c68d9920b61c2d32b5d759aae7311a124d159b4a9bc7f
 
 name:           xanthous
 version:        0.1.0.0
@@ -96,6 +96,9 @@ library
     , quickcheck-instances
     , quickcheck-text
     , random
+    , random-extras
+    , random-fu
+    , random-source
     , raw-strings-qq
     , reflection
     , stache
@@ -173,6 +176,9 @@ executable xanthous
     , quickcheck-instances
     , quickcheck-text
     , random
+    , random-extras
+    , random-fu
+    , random-source
     , raw-strings-qq
     , reflection
     , stache
@@ -228,6 +234,9 @@ test-suite test
     , quickcheck-instances
     , quickcheck-text
     , random
+    , random-extras
+    , random-fu
+    , random-source
     , raw-strings-qq
     , reflection
     , stache

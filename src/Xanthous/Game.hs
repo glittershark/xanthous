@@ -19,6 +19,10 @@ module Xanthous.Game
   , popMessage
   , hideMessage
 
+    -- * Collisions
+  , Collision(..)
+  , collisionAt
+
     -- * App monad
   , AppT(..)
 

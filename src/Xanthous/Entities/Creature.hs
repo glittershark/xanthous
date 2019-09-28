@@ -52,4 +52,4 @@ isDead :: Creature -> Bool
 isDead = views hitpoints (== 0)
 
 visionRadius :: Creature -> Word
-visionRadius = const 12 -- TODO
+visionRadius = const 50 -- TODO
