@@ -24,4 +24,5 @@ instance Arbitrary GameState where
     _revealedPositions <- fmap setFromList . sublistOf $ EntityMap.positions _entities
     _randomGen <- mkStdGen <$> arbitrary
     let _promptState = NoPrompt -- TODO
+    _debugState <- arbitrary
     pure $ GameState {..}

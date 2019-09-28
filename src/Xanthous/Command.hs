@@ -17,6 +17,9 @@ data Command
   | Open
   | Wait
 
+    -- | TODO replace with `:` commands
+  | ToggleRevealAll
+
 commandFromKey :: Key -> [Modifier] -> Maybe Command
 commandFromKey (KChar 'q') [] = Just Quit
 commandFromKey (KChar '.') [] = Just Wait
@@ -24,6 +27,7 @@ commandFromKey (KChar (directionFromChar -> Just dir)) [] = Just $ Move dir
 commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
 commandFromKey (KChar ',') [] = Just PickUp
 commandFromKey (KChar 'o') [] = Just Open
+commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll
 commandFromKey _ _ = Nothing
 
 --------------------------------------------------------------------------------

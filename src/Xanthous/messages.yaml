@@ -24,3 +24,6 @@ combat:
   killed:
     - You kill the {{creature.creatureType.name}}!
     - You've killed the {{creature.creatureType.name}}!
+
+debug:
+  toggleRevealAll: revealAll now set to {{revealAll}}

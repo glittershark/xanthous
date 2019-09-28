@@ -32,6 +32,11 @@ module Xanthous.Game.State
   , downcastEntity
   , _SomeEntity
   , entityIs
+
+    -- * Debug State
+  , DebugState(..)
+  , debugState
+  , allRevealed
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -158,16 +163,25 @@ instance Entity SomeEntity where
   blocksVision (SomeEntity ent) = blocksVision ent
   description (SomeEntity ent) = description ent
 
-downcastEntity :: forall a. (Entity a, Typeable a) => SomeEntity -> Maybe a
+downcastEntity :: forall (a :: Type). (Typeable a) => SomeEntity -> Maybe a
 downcastEntity (SomeEntity e) = cast e
 
-entityIs :: forall a. (Entity a, Typeable a) => SomeEntity -> Bool
+entityIs :: forall (a :: Type). (Typeable a) => SomeEntity -> Bool
 entityIs = isJust . downcastEntity @a
 
 _SomeEntity :: forall a. (Entity a, Typeable a) => Prism' SomeEntity a
 _SomeEntity = prism' SomeEntity downcastEntity
 
 --------------------------------------------------------------------------------
+
+data DebugState = DebugState
+  { _allRevealed :: !Bool
+  }
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+
+instance Arbitrary DebugState where
+  arbitrary = genericArbitrary
 
 data GameState = GameState
   { _entities          :: !(EntityMap SomeEntity)
@@ -176,6 +190,7 @@ data GameState = GameState
   , _messageHistory    :: !MessageHistory
   , _randomGen         :: !StdGen
   , _promptState       :: !(GamePromptState AppM)
+  , _debugState        :: DebugState
   }
   deriving stock (Show)
 makeLenses ''GameState
@@ -198,3 +213,7 @@ instance (Monad m) => MonadRandom (AppT m) where
   getRandom = randomGen %%= random
   getRandomRs rng = uses randomGen $ randomRs rng
   getRandoms = uses randomGen randoms
+
+--------------------------------------------------------------------------------
+
+makeLenses ''DebugState

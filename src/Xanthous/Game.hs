@@ -21,6 +21,11 @@ module Xanthous.Game
 
     -- * App monad
   , AppT(..)
+
+    -- * Debug State
+  , DebugState(..)
+  , debugState
+  , allRevealed
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Game.State

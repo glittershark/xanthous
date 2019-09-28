@@ -23,6 +23,7 @@ import           Xanthous.Game
                  , messageHistory
                  , GamePromptState(..)
                  , promptState
+                 , debugState, allRevealed
                  )
 import           Xanthous.Game.Prompt
 import           Xanthous.Resource (Name)
@@ -46,14 +47,11 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps _)) =
     _ -> undefined
 
 drawEntities
-  :: Set Position
-    -- ^ Positions the character has seen
-    -- FIXME: this will break down as soon as creatures can walk around on their
-    -- own, since we don't want to render things walking around when the
-    -- character can't see them
+  :: (Position -> Bool)
+    -- ^ Can we render a given position?
   -> EntityMap SomeEntity -- ^ all entities
   -> Widget Name
-drawEntities visiblePositions allEnts
+drawEntities canRenderPos allEnts
   = vBox rows
   where
     entityPositions = EntityMap.positions allEnts
@@ -62,7 +60,7 @@ drawEntities visiblePositions allEnts
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
     renderEntityAt pos
-      | pos `member` visiblePositions
+      | canRenderPos pos
       = let neighbors = EntityMap.neighbors pos allEnts
         in maybe (str " ") (drawWithNeighbors neighbors)
            $ allEnts ^? atPosition pos . folded
@@ -73,7 +71,12 @@ drawMap game
   = viewport Resource.MapViewport Both
   . showCursor Resource.Character (game ^. characterPosition . loc)
   $ drawEntities
-    (game ^. revealedPositions)
+    (\pos ->
+         (game ^. debugState . allRevealed)
+       || (pos `member` (game ^. revealedPositions)))
+    -- FIXME: this will break down as soon as creatures can walk around on their
+    -- own, since we don't want to render things walking around when the
+    -- character can't see them
     (game ^. entities)
 
 drawGame :: GameState -> [Widget Name]

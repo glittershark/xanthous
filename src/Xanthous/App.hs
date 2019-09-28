@@ -155,6 +155,13 @@ handleCommand Open = do
 
 handleCommand Wait = stepGame >> continue
 
+handleCommand ToggleRevealAll = do
+  val <- debugState . allRevealed <%= not
+  say ["debug", "toggleRevealAll"] $ object [ "revealAll" A..= val ]
+  continue
+
+--------------------------------------------------------------------------------
+
 handlePromptEvent
   :: Text -- ^ Prompt message
   -> Prompt AppM
