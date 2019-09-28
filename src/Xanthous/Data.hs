@@ -1,3 +1,4 @@
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
@@ -74,6 +75,7 @@ data Positioned a where
   Positioned :: Position -> a -> Positioned a
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (CoArbitrary, Function)
+type role Positioned representational
 
 _Positioned :: Iso (Position, a) (Position, b) (Positioned a) (Positioned b)
 _Positioned = iso hither yon

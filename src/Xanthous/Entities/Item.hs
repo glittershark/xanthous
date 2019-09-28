@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE StandaloneDeriving #-}
 --------------------------------------------------------------------------------
 module Xanthous.Entities.Item
   ( Item(..)
@@ -13,7 +14,14 @@ import           Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes hiding (Item, description)
 import qualified Xanthous.Entities.RawTypes as Raw
-import           Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
+import           Xanthous.Entities
+                 ( Draw(..)
+                 , Entity(..)
+                 , DrawRawChar(..)
+                 , Brain(..)
+                 , Brainless(..)
+                 , brainVia
+                 )
 --------------------------------------------------------------------------------
 
 data Item = Item
@@ -26,6 +34,9 @@ data Item = Item
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        Item
 makeLenses ''Item
+
+-- deriving via (Brainless Item) instance Brain Item
+instance Brain Item where step = brainVia Brainless
 
 instance Arbitrary Item where
   arbitrary = Item <$> arbitrary

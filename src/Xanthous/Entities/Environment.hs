@@ -13,7 +13,15 @@ import Brick (str)
 import Brick.Widgets.Border.Style (unicode)
 import Brick.Types (Edges(..))
 --------------------------------------------------------------------------------
-import Xanthous.Entities (Draw(..), entityIs, Entity(..), SomeEntity)
+import Xanthous.Entities
+       ( Draw(..)
+       , entityIs
+       , Entity(..)
+       , SomeEntity
+       , Brain(..)
+       , Brainless(..)
+       , brainVia
+       )
 import Xanthous.Entities.Draw.Util
 import Xanthous.Data
 --------------------------------------------------------------------------------
@@ -21,6 +29,9 @@ import Xanthous.Data
 data Wall = Wall
   deriving stock (Show, Eq, Ord, Generic, Enum)
   deriving anyclass (CoArbitrary, Function)
+
+-- deriving via Brainless Wall instance Brain Wall
+instance Brain Wall where step = brainVia Brainless
 
 instance Entity Wall where
   blocksVision _ = True
@@ -63,6 +74,9 @@ instance Draw Door where
     where
       horizDoor = '␣'
       vertDoor = '['
+
+-- deriving via Brainless Door instance Brain Door
+instance Brain Door where step = brainVia Brainless
 
 instance Entity Door where
   blocksVision = not . view open

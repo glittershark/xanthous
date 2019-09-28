@@ -41,6 +41,9 @@ instance Draw Character where
       rloc = Location (negate scrollOffset, negate scrollOffset)
       rreg = (2 * scrollOffset, 2 * scrollOffset)
 
+-- the character does not (yet) have a mind of its own
+instance Brain Character where step = brainVia Brainless
+
 instance Entity Character where
   blocksVision _ = False
   description _ = "yourself"

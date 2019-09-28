@@ -63,6 +63,7 @@ default-extensions:
 - GeneralizedNewtypeDeriving
 - KindSignatures
 - LambdaCase
+- MultiWayIf
 - NoImplicitPrelude
 - NoStarIsType
 - OverloadedStrings

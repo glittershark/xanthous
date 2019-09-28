@@ -1,5 +1,6 @@
 module Xanthous.Monad
   ( AppT(..)
+  , AppM
   , runAppT
   , continue
   , halt
@@ -14,7 +15,7 @@ import qualified Brick
 import Brick (EventM, Next)
 import Data.Aeson
 
-import Xanthous.Game
+import Xanthous.Game.State
 import Xanthous.Messages (message)
 
 runAppT :: Monad m => AppT m a -> GameState -> m (a, GameState)

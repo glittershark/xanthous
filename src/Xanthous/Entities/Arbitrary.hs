@@ -12,6 +12,7 @@ import           Xanthous.Entities.Character
 import           Xanthous.Entities.Item
 import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Environment
+import           Xanthous.AI.Gormlak ()
 --------------------------------------------------------------------------------
 
 instance Arbitrary SomeEntity where

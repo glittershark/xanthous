@@ -8,6 +8,7 @@ module Xanthous.Entities.Creature
   , newWithType
   , damage
   , isDead
+  , visionRadius
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -17,8 +18,7 @@ import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes hiding (Creature, description)
-import qualified Xanthous.Entities.RawTypes as Raw
-import           Xanthous.Entities (Draw(..), Entity(..), DrawRawChar(..))
+import           Xanthous.Entities (Draw(..), DrawRawChar(..))
 --------------------------------------------------------------------------------
 
 data Creature = Creature
@@ -35,9 +35,7 @@ makeLenses ''Creature
 instance Arbitrary Creature where
   arbitrary = genericArbitrary
 
-instance Entity Creature where
-  blocksVision _ = False
-  description = view $ creatureType . Raw.description
+--------------------------------------------------------------------------------
 
 newWithType :: CreatureType -> Creature
 newWithType _creatureType =
@@ -52,3 +50,6 @@ damage amount = hitpoints %~ \hp ->
 
 isDead :: Creature -> Bool
 isDead = views hitpoints (== 0)
+
+visionRadius :: Creature -> Word
+visionRadius = const 12 -- TODO

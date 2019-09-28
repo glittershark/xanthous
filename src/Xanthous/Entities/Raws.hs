@@ -17,6 +17,7 @@ import           Xanthous.Entities.RawTypes
 import           Xanthous.Entities
 import qualified Xanthous.Entities.Creature as Creature
 import qualified Xanthous.Entities.Item as Item
+import           Xanthous.AI.Gormlak ()
 --------------------------------------------------------------------------------
 rawRaws :: [(FilePath, ByteString)]
 rawRaws = $(embedDir "src/Xanthous/Entities/Raws")

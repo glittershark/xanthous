@@ -1,5 +1,5 @@
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
+--------------------------------------------------------------------------------
 module Xanthous.App (makeApp) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -8,9 +8,8 @@ import qualified Brick
 import           Brick.Widgets.Edit (handleEditorEvent)
 import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
-import           Control.Monad.State (get, state, StateT(..), MonadState)
+import           Control.Monad.State (get, MonadState)
 import           Control.Monad.Random (MonadRandom)
-import           Data.Coerce
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
@@ -45,7 +44,6 @@ import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 --------------------------------------------------------------------------------
 
 type App = Brick.App GameState () Name
-type AppM a = AppT (EventM Name) a
 
 makeApp :: IO App
 makeApp = pure $ Brick.App
@@ -85,6 +83,17 @@ initLevel = do
 
   characterPosition .= level ^. levelCharacterPosition
 
+--------------------------------------------------------------------------------
+
+stepGame :: AppM ()
+stepGame = do
+  ents <- uses entities EntityMap.toEIDsAndPositioned
+  for_ ents $ \(eid, pEntity) -> do
+    pEntity' <- step pEntity
+    entities . ix eid .= pEntity'
+
+--------------------------------------------------------------------------------
+
 handleEvent :: BrickEvent Name () -> AppM (Next GameState)
 handleEvent ev = use promptState >>= \case
   NoPrompt -> handleNoPromptEvent ev
@@ -107,6 +116,7 @@ handleCommand (Move dir) = do
       characterPosition .= newPos
       describeEntitiesAt newPos
       modify updateCharacterVision
+      stepGame
     Just Combat -> attackAt newPos
     Just Stop -> pure ()
   continue
@@ -120,6 +130,7 @@ handleCommand PickUp = do
       character %= Character.pickUpItem item
       entities . at itemID .= Nothing
       say ["items", "pickUp"] $ object [ "item" A..= item ]
+      stepGame
     _ -> undefined
   continue
 
@@ -139,11 +150,14 @@ handleCommand Open = do
                entities . ix eid . positioned . _SomeEntity . open .= True
              say_ ["open", "success"]
       pure ()
+  stepGame
   continue
+
+handleCommand Wait = stepGame >> continue
 
 handlePromptEvent
   :: Text -- ^ Prompt message
-  -> Prompt (AppT Identity)
+  -> Prompt AppM
   -> BrickEvent Name ()
   -> AppM (Next GameState)
 
@@ -151,7 +165,7 @@ handlePromptEvent _ (Prompt Cancellable _ _ _) (VtyEvent (EvKey KEsc [])) = do
   promptState .= NoPrompt
   continue
 handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) = do
-  () <- state . coerce $ submitPrompt pr
+  submitPrompt pr
   promptState .= NoPrompt
   continue
 
@@ -168,7 +182,7 @@ handlePromptEvent
 handlePromptEvent _ (Prompt _ SDirectionPrompt _ cb)
   (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
   = do
-    () <- state . coerce . cb $ DirectionResult dir
+    cb $ DirectionResult dir
     promptState .= NoPrompt
     continue
 handlePromptEvent _ (Prompt _ SDirectionPrompt _ _) _ = continue
@@ -181,7 +195,7 @@ prompt
   => [Text]                     -- ^ Message key
   -> params                     -- ^ Message params
   -> PromptCancellable
-  -> (PromptResult pt -> AppT Identity ()) -- ^ Prompt promise handler
+  -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
   -> AppM ()
 prompt msgPath params cancellable cb = do
   let pt = singPromptType @pt
@@ -194,7 +208,7 @@ prompt_
     (SingPromptType pt)
   => [Text] -- ^ Message key
   -> PromptCancellable
-  -> (PromptResult pt -> AppT Identity ()) -- ^ Prompt promise handler
+  -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
   -> AppM ()
 prompt_ msg = prompt msg $ object []
 
@@ -242,3 +256,21 @@ attackAt pos =
       else do
         say ["combat", "hit"] msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
+    stepGame
+
+data Collision
+  = Stop
+  | Combat
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData)
+
+collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
+collisionAt pos = do
+  ents <- use $ entities . EntityMap.atPosition pos
+  pure $
+    if | null ents -> Nothing
+       | any (entityIs @Creature) ents -> pure Combat
+       | all (entityIs @Item) ents -> Nothing
+       | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
+       , all (view open) doors -> Nothing
+       | otherwise -> pure Stop

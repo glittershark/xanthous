@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cebd0598e7aa48a62741fd8a9acc462bb693bb9356947147e0604d8e4b395739
+-- hash: 121c6fd553f5e73ac5ff4c89f17eacc3a85997255aba87390943a418b439896c
 
 name:           xanthous
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
   exposed-modules:
       Data.Aeson.Generic.DerivingVia
       Main
+      Xanthous.AI.Gormlak
       Xanthous.App
       Xanthous.Command
       Xanthous.Data
@@ -45,8 +46,11 @@ library
       Xanthous.Entities.Raws
       Xanthous.Entities.RawTypes
       Xanthous.Game
+      Xanthous.Game.Arbitrary
       Xanthous.Game.Draw
+      Xanthous.Game.Lenses
       Xanthous.Game.Prompt
+      Xanthous.Game.State
       Xanthous.Generators
       Xanthous.Generators.CaveAutomata
       Xanthous.Generators.LevelContents
@@ -64,7 +68,7 @@ library
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall
   build-depends:
       MonadRandom
@@ -104,6 +108,7 @@ executable xanthous
   main-is: Main.hs
   other-modules:
       Data.Aeson.Generic.DerivingVia
+      Xanthous.AI.Gormlak
       Xanthous.App
       Xanthous.Command
       Xanthous.Data
@@ -119,8 +124,11 @@ executable xanthous
       Xanthous.Entities.Raws
       Xanthous.Entities.RawTypes
       Xanthous.Game
+      Xanthous.Game.Arbitrary
       Xanthous.Game.Draw
+      Xanthous.Game.Lenses
       Xanthous.Game.Prompt
+      Xanthous.Game.State
       Xanthous.Generators
       Xanthous.Generators.CaveAutomata
       Xanthous.Generators.LevelContents
@@ -137,7 +145,7 @@ executable xanthous
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
@@ -191,7 +199,7 @@ test-suite test
       Paths_xanthous
   hs-source-dirs:
       test
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom

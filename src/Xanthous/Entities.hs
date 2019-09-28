@@ -1,7 +1,8 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE RoleAnnotations       #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 --------------------------------------------------------------------------------
 module Xanthous.Entities
   ( Draw(..)
@@ -19,71 +20,26 @@ module Xanthous.Entities
 
   , EntityChar(..)
   , HasChar(..)
+
+  , Brain(..)
+  , Brainless(..)
+  , brainVia
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding ((.=))
 --------------------------------------------------------------------------------
 import           Brick
-import           Data.Typeable
 import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
 import           Data.Aeson
+import           Data.Typeable (Proxy(..))
 import           Data.Generics.Product.Fields
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
-import           Xanthous.Data
 import           Xanthous.Orphans ()
+import           Xanthous.Game.State
 --------------------------------------------------------------------------------
-
-class (Show a, Eq a, Draw a) => Entity a where
-  blocksVision :: a -> Bool
-  description :: a -> Text
-
-instance Entity a => Entity (Positioned a) where
-  blocksVision (Positioned _ ent) = blocksVision ent
-  description (Positioned _ ent) = description ent
-
---------------------------------------------------------------------------------
-data SomeEntity where
-  SomeEntity :: forall a. (Entity a, Typeable a) => a -> SomeEntity
-
-instance Show SomeEntity where
-  show (SomeEntity e) = "SomeEntity (" <> show e <> ")"
-
-instance Eq SomeEntity where
-  (SomeEntity (a :: ea)) == (SomeEntity (b :: eb)) = case eqT @ea @eb of
-    Just Refl -> a == b
-    _ -> False
-
-instance Draw SomeEntity where
-  drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
-
-instance Entity SomeEntity where
-  blocksVision (SomeEntity ent) = blocksVision ent
-  description (SomeEntity ent) = description ent
-
-downcastEntity :: (Entity a, Typeable a) => SomeEntity -> Maybe a
-downcastEntity (SomeEntity e) = cast e
-
-entityIs :: forall a. (Entity a, Typeable a) => SomeEntity -> Bool
-entityIs = isJust . downcastEntity @a
-
-_SomeEntity :: forall a. (Entity a, Typeable a) => Prism' SomeEntity a
-_SomeEntity = prism' SomeEntity downcastEntity
-
---------------------------------------------------------------------------------
-
-class Draw a where
-  drawWithNeighbors :: Neighbors (Vector SomeEntity) -> a -> Widget n
-  drawWithNeighbors = const draw
-
-  draw :: a -> Widget n
-  draw = drawWithNeighbors $ pure mempty
-
-instance Draw a => Draw (Positioned a) where
-  drawWithNeighbors ns (Positioned _ a) = drawWithNeighbors ns a
-  draw (Positioned _ a) = draw a
 
 newtype DrawCharacter (char :: Symbol) (a :: Type) where
   DrawCharacter :: a -> DrawCharacter char a

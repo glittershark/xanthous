@@ -14,6 +14,7 @@ module Xanthous.Data.EntityMap
   , insertAt
   , insertAtReturningID
   , fromEIDsAndPositioned
+  , toEIDsAndPositioned
   , atPosition
   , atPositionWithIDs
   , positions
@@ -101,6 +102,14 @@ instance Semigroup (EntityMap a) where
 instance Monoid (EntityMap a) where
   mempty = emptyEntityMap
 
+instance FunctorWithIndex EntityID EntityMap
+
+instance FoldableWithIndex EntityID EntityMap
+
+instance TraversableWithIndex EntityID EntityMap where
+  itraversed = byID . itraversed . rmap sequenceA . distrib
+  itraverse = itraverseOf itraversed
+
 emptyEntityMap :: EntityMap a
 emptyEntityMap = EntityMap mempty mempty 0
 
@@ -182,6 +191,9 @@ fromEIDsAndPositioned eps = newLastID $ alaf Endo foldMap insert' eps mempty
     newLastID em = em & lastID
       .~ fromMaybe 1
          (maximumOf (ifolded . asIndex) (em ^. byID))
+
+toEIDsAndPositioned :: EntityMap a -> [(EntityID, Positioned a)]
+toEIDsAndPositioned = itoListOf $ byID . ifolded
 
 positions :: EntityMap a -> [Position]
 positions = toListOf $ byPosition . to keys . folded
