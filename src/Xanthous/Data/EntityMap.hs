@@ -110,6 +110,9 @@ instance TraversableWithIndex EntityID EntityMap where
   itraversed = byID . itraversed . rmap sequenceA . distrib
   itraverse = itraverseOf itraversed
 
+type instance Element (EntityMap a) = a
+instance MonoFoldable (EntityMap a)
+
 emptyEntityMap :: EntityMap a
 emptyEntityMap = EntityMap mempty mempty 0
 

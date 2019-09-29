@@ -3,7 +3,7 @@
 module Xanthous.Util.Graphics where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
-import           Data.List                                ( unfoldr )
+import Data.List (unfoldr)
 --------------------------------------------------------------------------------
 
 -- | Generate a circle centered at the given point and with the given radius

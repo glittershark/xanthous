@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -8,7 +9,8 @@
 -- | Common data types for Xanthous
 --------------------------------------------------------------------------------
 module Xanthous.Data
-  ( Position(..)
+  ( -- *
+    Position(..)
   , x
   , y
 
@@ -19,6 +21,10 @@ module Xanthous.Data
   , loc
   , _Position
   , positionFromPair
+  , addPositions
+  , diffPositions
+  , stepTowards
+  , isUnit
 
     -- *
   , Dimensions'(..)
@@ -31,6 +37,7 @@ module Xanthous.Data
   , opposite
   , move
   , asPosition
+  , directionOf
 
     -- *
   , Neighbors(..)
@@ -47,6 +54,7 @@ import           Brick (Location(Location), Edges(..))
 --------------------------------------------------------------------------------
 import           Xanthous.Util (EqEqProp(..), EqProp)
 import           Xanthous.Orphans ()
+import           Xanthous.Util.Graphics
 --------------------------------------------------------------------------------
 
 data Position where
@@ -111,6 +119,25 @@ _Position = iso hither yon
 positionFromPair :: (Integral i, Integral j) => (i, j) -> Position
 positionFromPair (i, j) = Position (fromIntegral i) (fromIntegral j)
 
+-- | Add two positions
+--
+-- Operation for the additive group on positions
+addPositions :: Position -> Position -> Position
+addPositions = (<>)
+
+-- | Subtract two positions.
+--
+-- diffPositions pos₁ pos₂ = pos₁ `addPositions` (invert pos₂)
+diffPositions :: Position -> Position -> Position
+diffPositions (Position x₁ y₁) (Position x₂ y₂) = Position (x₁ - x₂) (y₁ - y₂)
+
+-- | Is this position a unit position? or: When taken as a difference, does this
+-- position represent a step of one tile?
+--
+-- ∀ dir :: Direction. isUnit ('asPosition' dir)
+isUnit :: Position -> Bool
+isUnit (Position px py) = abs px == 1 || abs py == 1
+
 --------------------------------------------------------------------------------
 
 data Dimensions' a = Dimensions
@@ -168,6 +195,38 @@ move Here      = id
 
 asPosition :: Direction -> Position
 asPosition dir = move dir mempty
+
+-- | Returns the direction that a given position is from a given source position
+directionOf
+  :: Position -- ^ Source
+  -> Position -- ^ Target
+  -> Direction
+directionOf (Position x₁ y₁) (Position x₂ y₂) =
+  case (x₁ `compare` x₂, y₁ `compare` y₂) of
+    (EQ, EQ) -> Here
+    (EQ, LT) -> Down
+    (EQ, GT) -> Up
+    (LT, EQ) -> Right
+    (GT, EQ) -> Left
+
+    (LT, LT) -> DownRight
+    (GT, LT) -> DownLeft
+
+    (LT, GT) -> UpRight
+    (GT, GT) -> UpLeft
+
+-- | Take one (potentially diagonal) step towards the given position
+--
+-- ∀ src tgt. isUnit (src `diffPositions` (src `stepTowards tgt`))
+stepTowards
+  :: Position -- ^ Source
+  -> Position -- ^ Target
+  -> Position
+stepTowards (view _Position -> p₁) (view _Position -> p₂)
+  | p₁ == p₂ = _Position # p₁
+  | otherwise =
+    let (_:p:_) = line p₁ p₂
+    in _Position # p
 
 --------------------------------------------------------------------------------
 
@@ -229,3 +288,5 @@ neighborDirections = Neighbors
 
 neighborPositions :: Position -> Neighbors Position
 neighborPositions pos = (`move` pos) <$> neighborDirections
+
+--------------------------------------------------------------------------------

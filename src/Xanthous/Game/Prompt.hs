@@ -31,6 +31,7 @@ data PromptType where
   Menu            :: Type -> PromptType
   DirectionPrompt :: PromptType
   PointOnMap      :: PromptType
+  Continue        :: PromptType
   deriving stock (Generic)
 
 instance Show PromptType where
@@ -39,6 +40,7 @@ instance Show PromptType where
   show (Menu _) = "Menu"
   show DirectionPrompt = "DirectionPrompt"
   show PointOnMap = "PointOnMap"
+  show Continue = "Continue"
 
 data SPromptType :: PromptType -> Type where
   SStringPrompt    ::      SPromptType 'StringPrompt
@@ -46,10 +48,12 @@ data SPromptType :: PromptType -> Type where
   SMenu            :: forall a. SPromptType ('Menu a)
   SDirectionPrompt ::      SPromptType 'DirectionPrompt
   SPointOnMap      ::      SPromptType 'PointOnMap
+  SContinue        ::      SPromptType 'Continue
 
 class SingPromptType pt where singPromptType :: SPromptType pt
 instance SingPromptType 'StringPrompt where singPromptType = SStringPrompt
 instance SingPromptType 'DirectionPrompt where singPromptType = SDirectionPrompt
+instance SingPromptType 'Continue where singPromptType = SContinue
 
 instance Show (SPromptType pt) where
   show SStringPrompt    = "SStringPrompt"
@@ -57,6 +61,7 @@ instance Show (SPromptType pt) where
   show SMenu            = "SMenu"
   show SDirectionPrompt = "SDirectionPrompt"
   show SPointOnMap      = "SPointOnMap"
+  show SContinue        = "SContinue"
 
 data PromptCancellable
   = Cancellable
@@ -73,10 +78,12 @@ data PromptResult (pt :: PromptType) where
   MenuResult       :: forall a. a    -> PromptResult ('Menu a)
   DirectionResult  :: Direction -> PromptResult 'DirectionPrompt
   PointOnMapResult :: Position  -> PromptResult 'PointOnMap
+  ContinueResult   ::             PromptResult 'Continue
 
 data PromptState pt where
   StringPromptState :: Editor Text Name -> PromptState 'StringPrompt
   DirectionPromptState :: PromptState 'DirectionPrompt
+  ContinuePromptState :: PromptState 'Continue
 
 deriving stock instance Show (PromptState pt)
 
@@ -103,6 +110,7 @@ mkPrompt c pt@SStringPrompt cb =
   let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
   in Prompt c pt ps cb
 mkPrompt c pt@SDirectionPrompt cb = Prompt c pt DirectionPromptState cb
+mkPrompt c pt@SContinue cb = Prompt c pt ContinuePromptState cb
 mkPrompt _ _ _ = undefined
 
 isCancellable :: Prompt m -> Bool
@@ -116,6 +124,8 @@ submitPrompt (Prompt _ pt ps cb) =
       cb . StringResult . mconcat . getEditContents $ edit
     (SDirectionPrompt, DirectionPromptState) ->
       pure () -- Don't use submit with a direction prompt
+    (SContinue, ContinuePromptState) ->
+      cb ContinueResult -- Don't use submit with a direction prompt
     _ -> undefined
 
 -- data PromptInput :: PromptType -> Type where

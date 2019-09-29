@@ -4,6 +4,7 @@ module Xanthous.Data.EntityMap.Graphics
   ( visiblePositions
   , visibleEntities
   , linesOfSight
+  , canSee
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude hiding (lines)
@@ -49,3 +50,7 @@ visibleEntities pos visionRadius
   . map (\(p, es) -> over _2 (Positioned p) <$> es)
   . fold
   . linesOfSight pos visionRadius
+
+canSee :: Entity e => (e -> Bool) -> Position -> Word -> EntityMap e -> Bool
+canSee match pos radius = any match . visibleEntities pos radius
+-- ^ this might be optimizable

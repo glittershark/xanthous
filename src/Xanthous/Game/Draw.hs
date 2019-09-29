@@ -14,11 +14,13 @@ import           Xanthous.Data (Position(Position), x, y, loc)
 import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities
+import           Xanthous.Entities.Character
 import           Xanthous.Game
                  ( GameState(..)
                  , entities
                  , revealedPositions
                  , characterPosition
+                 , character
                  , MessageHistory(..)
                  , messageHistory
                  , GamePromptState(..)
@@ -42,8 +44,8 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps _)) =
   case (pt, ps) of
     (SStringPrompt, StringPromptState edit) ->
       txt msg <+> renderEditor (txt . fold) True edit
-    (SDirectionPrompt, DirectionPromptState) ->
-      txt msg
+    (SDirectionPrompt, DirectionPromptState) -> txt msg
+    (SContinue, _) -> txt msg
     _ -> undefined
 
 drawEntities
@@ -79,6 +81,17 @@ drawMap game
     -- character can't see them
     (game ^. entities)
 
+drawCharacterInfo :: Character -> Widget Name
+drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
+  where
+    charName | Just n <- ch ^. characterName
+             = txt n <+> txt " "
+             | otherwise
+             = emptyWidget
+    charHitpoints
+        = txt "Hitpoints: "
+      <+> txt (tshow $ ch ^. characterHitpoints)
+
 drawGame :: GameState -> [Widget Name]
 drawGame game
   = pure
@@ -86,3 +99,4 @@ drawGame game
   $   drawMessages (game ^. messageHistory)
   <=> drawPromptState (game ^. promptState)
   <=> border (drawMap game)
+  <=> drawCharacterInfo (game ^. character)

@@ -1,4 +1,5 @@
 welcome: Welcome to Xanthous, {{characterName}}! It's dangerous out there, why not stay inside?
+dead: You have died... Press Enter to continue.
 
 entities:
   description: You see here {{entityDescriptions}}
@@ -21,6 +22,9 @@ combat:
   hit:
     - You hit the {{creature.creatureType.name}}
     - You attack the {{creature.creatureType.name}}
+  creatureAttack:
+    - The {{creature.creatureType.name}} hits you!
+    - The {{creature.creatureType.name}} attacks you!
   killed:
     - You kill the {{creature.creatureType.name}}!
     - You've killed the {{creature.creatureType.name}}!

@@ -13,6 +13,7 @@ import           Control.Monad.Random (MonadRandom)
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
+import           System.Exit
 --------------------------------------------------------------------------------
 import           Xanthous.Command
 import           Xanthous.Data
@@ -32,13 +33,12 @@ import           Xanthous.Messages (message)
 import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Entities.Character as Character
-import           Xanthous.Entities.Character (characterName)
+import           Xanthous.Entities.Character
 import           Xanthous.Entities
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Environment (Door, open, locked)
-import           Xanthous.Entities.Character
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 --------------------------------------------------------------------------------
@@ -86,6 +86,11 @@ stepGame = do
   for_ ents $ \(eid, pEntity) -> do
     pEntity' <- step pEntity
     entities . ix eid .= pEntity'
+
+  whenM (uses (character . characterHitpoints) (== 0))
+    . prompt_ @'Continue ["dead"] Uncancellable
+    . const . lift . liftIO
+    $ exitSuccess
 
 --------------------------------------------------------------------------------
 
@@ -188,6 +193,8 @@ handlePromptEvent _ (Prompt _ SDirectionPrompt _ cb)
     promptState .= NoPrompt
     continue
 handlePromptEvent _ (Prompt _ SDirectionPrompt _ _) _ = continue
+
+handlePromptEvent _ (Prompt _ SContinue _ _) _ = continue
 
 handlePromptEvent _ _ _ = undefined
 

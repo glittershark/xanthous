@@ -4,8 +4,10 @@ module Xanthous.Entities.Character
   , characterName
   , inventory
   , characterDamage
+  , characterHitpoints
   , mkCharacter
   , pickUpItem
+  , isDead
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -24,6 +26,7 @@ data Character = Character
   { _inventory :: !(Vector Item)
   , _characterName :: !(Maybe Text)
   , _characterDamage :: !Word
+  , _characterHitpoints :: !Word
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (CoArbitrary, Function)
@@ -51,12 +54,19 @@ instance Entity Character where
 instance Arbitrary Character where
   arbitrary = genericArbitrary
 
+initialHitpoints :: Word
+initialHitpoints = 10
+
 mkCharacter :: Character
 mkCharacter = Character
   { _inventory = mempty
   , _characterName = Nothing
   , _characterDamage = 1
+  , _characterHitpoints = initialHitpoints
   }
+
+isDead :: Character -> Bool
+isDead = (== 0) . view characterHitpoints
 
 pickUpItem :: Item -> Character -> Character
 pickUpItem item = inventory %~ (item <|)
