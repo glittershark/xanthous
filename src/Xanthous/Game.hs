@@ -14,10 +14,14 @@ module Xanthous.Game
   , characterPosition
   , updateCharacterVision
 
+    -- * Messages
   , MessageHistory(..)
+  , HasMessages(..)
+  , HasTurn(..)
+  , HasDisplayedTurn(..)
   , pushMessage
-  , popMessage
-  , hideMessage
+  , previousMessage
+  , nextTurn
 
     -- * Collisions
   , Collision(..)

@@ -103,7 +103,7 @@ handleEvent ev = use promptState >>= \case
 handleNoPromptEvent :: BrickEvent Name () -> AppM (Next GameState)
 handleNoPromptEvent (VtyEvent (EvKey k mods))
   | Just command <- commandFromKey k mods
-  = do messageHistory %= hideMessage
+  = do messageHistory %= nextTurn
        handleCommand command
 handleNoPromptEvent _ = continue
 
@@ -135,7 +135,7 @@ handleCommand PickUp = do
   continue
 
 handleCommand PreviousMessage = do
-  messageHistory %= popMessage
+  messageHistory %= previousMessage
   continue
 
 handleCommand Open = do

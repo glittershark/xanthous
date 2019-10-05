@@ -14,9 +14,12 @@ module Xanthous.Game.State
 
     -- * Messages
   , MessageHistory(..)
+  , HasMessages(..)
+  , HasTurn(..)
+  , HasDisplayedTurn(..)
   , pushMessage
-  , popMessage
-  , hideMessage
+  , previousMessage
+  , nextTurn
 
     -- * App monad
   , AppT(..)
@@ -61,27 +64,54 @@ import           Xanthous.Resource
 --------------------------------------------------------------------------------
 
 data MessageHistory
-  = NoMessageHistory
-  | MessageHistory (NonEmpty Text) Bool
+  = MessageHistory
+  { _messages      :: Map Word (NonEmpty Text)
+  , _turn          :: Word
+  , _displayedTurn :: Maybe Word
+  }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+makeFieldsNoPrefix ''MessageHistory
+
+instance Semigroup MessageHistory where
+  (MessageHistory msgs₁ turn₁ dt₁) <> (MessageHistory msgs₂ turn₂ dt₂) =
+    MessageHistory (msgs₁ <> msgs₂) (max turn₁ turn₂) $ case (dt₁, dt₂) of
+      (_, Nothing)      -> Nothing
+      (Just t, _)       -> Just t
+      (Nothing, Just t) -> Just t
+
+instance Monoid MessageHistory where
+  mempty = MessageHistory mempty 0 Nothing
 
 instance Arbitrary MessageHistory where
   arbitrary = genericArbitrary
 
+type instance Element MessageHistory = [Text]
+instance MonoFunctor MessageHistory where
+  omap f mh@(MessageHistory _ t _) =
+    mh & messages . at t %~ (NonEmpty.nonEmpty . f . toList =<<)
+
+instance MonoComonad MessageHistory where
+  oextract (MessageHistory ms t dt) = maybe [] toList $ ms ^. at (fromMaybe t dt)
+  oextend cok mh@(MessageHistory _ t dt) =
+    mh & messages . at (fromMaybe t dt) .~ NonEmpty.nonEmpty (cok mh)
+
 pushMessage :: Text -> MessageHistory -> MessageHistory
-pushMessage msg NoMessageHistory = MessageHistory (msg :| []) True
-pushMessage msg (MessageHistory msgs _) = MessageHistory (NonEmpty.cons msg msgs) True
+pushMessage msg mh@(MessageHistory _ turn' _) =
+  mh
+  & messages . at turn' %~ \case
+    Nothing -> Just $ msg :| mempty
+    Just msgs -> Just $ msg <| msgs
+  & displayedTurn .~ Nothing
 
-popMessage :: MessageHistory -> MessageHistory
-popMessage NoMessageHistory = NoMessageHistory
-popMessage (MessageHistory msgs False) = MessageHistory msgs True
-popMessage (MessageHistory msgs@(_ :| []) _) = MessageHistory msgs True
-popMessage (MessageHistory (_ :| (msg : msgs)) True) = MessageHistory (msg :| msgs) True
+nextTurn :: MessageHistory -> MessageHistory
+nextTurn = (turn +~ 1) . (displayedTurn .~ Nothing)
 
-hideMessage :: MessageHistory -> MessageHistory
-hideMessage NoMessageHistory = NoMessageHistory
-hideMessage (MessageHistory msgs _) = MessageHistory msgs False
+previousMessage :: MessageHistory -> MessageHistory
+previousMessage mh = mh & displayedTurn .~ maximumOf
+  (messages . ifolded . asIndex . filtered (< mh ^. turn))
+  mh
+
 
 --------------------------------------------------------------------------------
 
@@ -152,7 +182,7 @@ instance Eq SomeEntity where
     Just Refl -> a == b
     _ -> False
 
-instance Draw (SomeEntity) where
+instance Draw SomeEntity where
   drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
 
 instance Brain SomeEntity where

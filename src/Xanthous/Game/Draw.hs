@@ -8,7 +8,6 @@ import           Brick hiding (loc)
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit
-import           Data.List.NonEmpty(NonEmpty((:|)))
 --------------------------------------------------------------------------------
 import           Xanthous.Data (Position(Position), x, y, loc)
 import           Xanthous.Data.EntityMap (EntityMap, atPosition)
@@ -34,9 +33,7 @@ import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
 
 drawMessages :: MessageHistory -> Widget Name
-drawMessages NoMessageHistory = emptyWidget
-drawMessages (MessageHistory _ False) = str " "
-drawMessages (MessageHistory (lastMessage :| _) True) = txt lastMessage
+drawMessages = txt . (<> " ") . unwords . oextract
 
 drawPromptState :: GamePromptState m -> Widget Name
 drawPromptState NoPrompt = emptyWidget

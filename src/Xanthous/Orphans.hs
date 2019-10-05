@@ -25,7 +25,8 @@ import           Text.Mustache.Type ( showKey )
 
 instance forall s a.
   ( Cons s s a a
-  , MonoFoldable s
+  , IsSequence s
+  , Element s ~ a
   ) => Cons (NonNull s) (NonNull s) a a where
   _Cons = prism hither yon
     where
@@ -35,9 +36,21 @@ instance forall s a.
         in impureNonNull $ a <| s
 
       yon :: NonNull s -> Either (NonNull s) (a, NonNull s)
-      yon ns = case ns ^? _Cons of
-        Nothing -> Left ns
-        Just (a, ns') -> Right (a, ns')
+      yon ns = case nuncons ns of
+        (_, Nothing) -> Left ns
+        (x, Just xs) -> Right (x, xs)
+
+instance forall a. Cons (NonEmpty a) (NonEmpty a) a a where
+  _Cons = prism hither yon
+    where
+      hither :: (a, NonEmpty a) -> NonEmpty a
+      hither (a, x :| xs) = a :| (x : xs)
+
+      yon :: NonEmpty a -> Either (NonEmpty a) (a, NonEmpty a)
+      yon ns@(x :| xs) = case xs of
+        (y : ys) -> Right (x, y :| ys)
+        [] -> Left ns
+
 
 instance Arbitrary PName where
   arbitrary = PName . pack <$> listOf1 (elements ['a'..'z'])

@@ -36,7 +36,7 @@ getInitialState = do
           (Position 0 0)
           (SomeEntity char)
           mempty
-      _messageHistory = NoMessageHistory
+      _messageHistory = mempty
       _revealedPositions = mempty
       _promptState = NoPrompt
       _debugState = DebugState

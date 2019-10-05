@@ -30,4 +30,16 @@ test = testGroup "Xanthous.Game"
   , testGroup "character"
     [ testProperty "lens laws" $ isLens character
     ]
+  , localOption (QuickCheckTests 10)
+  $ testGroup "MessageHistory"
+    [ testGroup "MonoComonad laws"
+      [ testProperty "oextend oextract ≡ id"
+        $ \(mh :: MessageHistory) -> oextend oextract mh === mh
+      , testProperty "oextract ∘ oextend f ≡ f"
+        $ \(mh :: MessageHistory) f -> (oextract . oextend f) mh === f mh
+      , testProperty "oextend f ∘ oextend g ≡ oextend (f . oextend g)"
+        $ \(mh :: MessageHistory) f g ->
+          (oextend f . oextend g) mh === oextend (f . oextend g) mh
+      ]
+    ]
   ]
