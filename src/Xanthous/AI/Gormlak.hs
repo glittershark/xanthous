@@ -36,7 +36,7 @@ stepGormlak pe@(Positioned pos creature) = do
       then do
         charPos <- use characterPosition
         if isUnit (pos `diffPositions` charPos)
-          then attackCharacter $> charPos
+          then attackCharacter $> pos
           else pure $ pos `stepTowards` charPos
     else do
       lines <- uses entities $ linesOfSight pos (Creature.visionRadius creature)
