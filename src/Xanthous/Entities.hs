@@ -21,6 +21,7 @@ module Xanthous.Entities
 
   , EntityChar(..)
   , HasChar(..)
+  , HasStyle(..)
 
   , Brain(..)
   , Brainless(..)
