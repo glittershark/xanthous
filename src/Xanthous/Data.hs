@@ -136,7 +136,8 @@ diffPositions (Position x₁ y₁) (Position x₂ y₂) = Position (x₁ - x₂)
 --
 -- ∀ dir :: Direction. isUnit ('asPosition' dir)
 isUnit :: Position -> Bool
-isUnit (Position px py) = abs px == 1 || abs py == 1
+isUnit (Position px py) =
+  abs px `elem` [0,1] && abs py `elem` [0, 1] && (px, py) /= (0, 0)
 
 --------------------------------------------------------------------------------
 
