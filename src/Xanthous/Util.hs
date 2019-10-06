@@ -24,6 +24,7 @@ module Xanthous.Util
   , uniq
     -- ** Bag sequence algorithms
   , takeWhileInclusive
+  , smallestNotIn
   ) where
 
 import Xanthous.Prelude hiding (foldr)
@@ -194,3 +195,12 @@ uniq = uniqOf folded
 takeWhileInclusive :: (a -> Bool) -> [a] -> [a]
 takeWhileInclusive _ [] = []
 takeWhileInclusive p (x:xs) = x : if p x then takeWhileInclusive p xs else []
+
+-- | Returns the smallest value not in a list
+smallestNotIn :: (Ord a, Bounded a, Enum a) => [a] -> a
+smallestNotIn xs = case uniq $ sort xs of
+  [] -> minBound
+  xs'@(x : _)
+    | x > minBound -> minBound
+    | otherwise
+    -> snd . headEx . filter (uncurry (/=)) $ zip (xs' ++ [minBound]) [minBound..]

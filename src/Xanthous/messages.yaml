@@ -1,5 +1,9 @@
 welcome: Welcome to Xanthous, {{characterName}}! It's dangerous out there, why not stay inside?
-dead: You have died... Press Enter to continue.
+dead:
+  - You have died...
+  - You die...
+  - You perish...
+  - You have perished...
 
 entities:
   description: You see here {{entityDescriptions}}
@@ -18,10 +22,10 @@ character:
   namePrompt: "What's your name? "
 
 combat:
-  nothingToAttack: There's nothing to attack there
+  nothingToAttack: There's nothing to attack there.
   hit:
-    - You hit the {{creature.creatureType.name}}
-    - You attack the {{creature.creatureType.name}}
+    - You hit the {{creature.creatureType.name}}.
+    - You attack the {{creature.creatureType.name}}.
   creatureAttack:
     - The {{creature.creatureType.name}} hits you!
     - The {{creature.creatureType.name}} attacks you!
@@ -31,3 +35,12 @@ combat:
 
 debug:
   toggleRevealAll: revealAll now set to {{revealAll}}
+
+eat:
+  noFood:
+    - You have nothing edible.
+    - You don't have any food.
+    - You don't have anything to eat.
+    - You search your pockets for something edible, and come up short.
+  menuPrompt: What would you like to eat?
+  eat: You eat the {{item.itemType.name}}.

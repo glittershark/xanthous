@@ -37,13 +37,19 @@ drawMessages = txt . (<> " ") . unwords . oextract
 
 drawPromptState :: GamePromptState m -> Widget Name
 drawPromptState NoPrompt = emptyWidget
-drawPromptState (WaitingPrompt msg (Prompt _ pt ps _)) =
-  case (pt, ps) of
-    (SStringPrompt, StringPromptState edit) ->
+drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
+  case (pt, ps, pri) of
+    (SStringPrompt, StringPromptState edit, _) ->
       txt msg <+> renderEditor (txt . fold) True edit
-    (SDirectionPrompt, DirectionPromptState) -> txt msg
-    (SContinue, _) -> txt msg
+    (SDirectionPrompt, DirectionPromptState, _) -> txt msg
+    (SContinue, _, _) -> txt msg
+    (SMenu, _, menuItems) ->
+      txt msg
+      <=> foldl' (<=>) emptyWidget (map drawMenuItem $ itoList menuItems)
     _ -> undefined
+  where
+    drawMenuItem (chr, MenuOption m _) =
+      str ("[" <> pure chr <> "] ") <+> txt m
 
 drawEntities
   :: (Position -> Bool)

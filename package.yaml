@@ -48,6 +48,7 @@ dependencies:
 - reflection
 - stache
 - tomland
+- vector
 - vty
 - yaml
 

@@ -16,6 +16,7 @@ data Command
   | PickUp
   | Open
   | Wait
+  | Eat
 
     -- | TODO replace with `:` commands
   | ToggleRevealAll
@@ -27,6 +28,7 @@ commandFromKey (KChar (directionFromChar -> Just dir)) [] = Just $ Move dir
 commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
 commandFromKey (KChar ',') [] = Just PickUp
 commandFromKey (KChar 'o') [] = Just Open
+commandFromKey (KChar 'e') [] = Just Eat
 commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll
 commandFromKey _ _ = Nothing
 

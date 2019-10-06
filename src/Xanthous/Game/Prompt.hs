@@ -8,20 +8,25 @@ module Xanthous.Game.Prompt
   , PromptCancellable(..)
   , PromptResult(..)
   , PromptState(..)
+  , MenuOption(..)
+  , mkMenuItems
+  , PromptInput
   , Prompt(..)
   , mkPrompt
+  , mkMenu
   , isCancellable
   , submitPrompt
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
-import Brick.Widgets.Edit (Editor, editorText, getEditContents)
-import Test.QuickCheck
-import Test.QuickCheck.Arbitrary.Generic
+import           Brick.Widgets.Edit (Editor, editorText, getEditContents)
+import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
-import Xanthous.Data (Direction, Position)
-import Xanthous.Resource (Name)
+import           Xanthous.Util (smallestNotIn)
+import           Xanthous.Data (Direction, Position)
+import           Xanthous.Resource (Name)
 import qualified Xanthous.Resource as Resource
 --------------------------------------------------------------------------------
 
@@ -81,11 +86,30 @@ data PromptResult (pt :: PromptType) where
   ContinueResult   ::             PromptResult 'Continue
 
 data PromptState pt where
-  StringPromptState :: Editor Text Name -> PromptState 'StringPrompt
-  DirectionPromptState :: PromptState 'DirectionPrompt
-  ContinuePromptState :: PromptState 'Continue
+  StringPromptState    :: Editor Text Name -> PromptState 'StringPrompt
+  DirectionPromptState ::                    PromptState 'DirectionPrompt
+  ContinuePromptState  ::                    PromptState 'Continue
+  MenuPromptState      :: forall a.               PromptState ('Menu a)
 
 deriving stock instance Show (PromptState pt)
+
+data MenuOption a = MenuOption Text a
+
+mkMenuItems :: (MonoFoldable f, Element f ~ (Char, MenuOption a))
+            => f
+            -> Map Char (MenuOption a)
+mkMenuItems = flip foldl' mempty $ \items (chr, option) ->
+  let chr' = if has (ix chr) items
+             then smallestNotIn $ keys items
+             else chr
+  in items & at chr' ?~ option
+
+instance Show (MenuOption a) where
+  show (MenuOption m _) = show m
+
+type family PromptInput (pt :: PromptType) :: Type where
+  PromptInput ('Menu a) = Map Char (MenuOption a)
+  PromptInput _ = ()
 
 data Prompt (m :: Type -> Type) where
   Prompt
@@ -94,38 +118,53 @@ data Prompt (m :: Type -> Type) where
       PromptCancellable
     -> SPromptType pt
     -> PromptState pt
+    -> PromptInput pt
     -> (PromptResult pt -> m ())
     -> Prompt m
 
 instance Show (Prompt m) where
-  show (Prompt c pt ps _)
+  show (Prompt c pt ps pri _)
     = "(Prompt "
     <> show c <> " "
     <> show pt <> " "
-    <> show ps
-    <> " <function> )"
+    <> show ps <> " "
+    <> showPri
+    <> " <function>)"
+    where showPri = case pt of
+            SMenu -> show pri
+            _ -> "()"
 
-mkPrompt :: PromptCancellable -> SPromptType pt -> (PromptResult pt -> m ()) -> Prompt m
+mkPrompt :: (PromptInput pt ~ ()) => PromptCancellable -> SPromptType pt -> (PromptResult pt -> m ()) -> Prompt m
 mkPrompt c pt@SStringPrompt cb =
   let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
-  in Prompt c pt ps cb
-mkPrompt c pt@SDirectionPrompt cb = Prompt c pt DirectionPromptState cb
-mkPrompt c pt@SContinue cb = Prompt c pt ContinuePromptState cb
+  in Prompt c pt ps () cb
+mkPrompt c pt@SDirectionPrompt cb = Prompt c pt DirectionPromptState () cb
+mkPrompt c pt@SContinue cb = Prompt c pt ContinuePromptState () cb
 mkPrompt _ _ _ = undefined
 
+mkMenu
+  :: forall a m.
+    PromptCancellable
+  -> Map Char (MenuOption a) -- ^ Menu items
+  -> (PromptResult ('Menu a) -> m ())
+  -> Prompt m
+mkMenu c = Prompt c SMenu MenuPromptState
+
 isCancellable :: Prompt m -> Bool
-isCancellable (Prompt Cancellable _ _ _)   = True
-isCancellable (Prompt Uncancellable _ _ _) = False
+isCancellable (Prompt Cancellable _ _ _ _)   = True
+isCancellable (Prompt Uncancellable _ _ _ _) = False
 
 submitPrompt :: Applicative m => Prompt m -> m ()
-submitPrompt (Prompt _ pt ps cb) =
+submitPrompt (Prompt _ pt ps _ cb) =
   case (pt, ps) of
     (SStringPrompt, StringPromptState edit) ->
       cb . StringResult . mconcat . getEditContents $ edit
     (SDirectionPrompt, DirectionPromptState) ->
       pure () -- Don't use submit with a direction prompt
     (SContinue, ContinuePromptState) ->
-      cb ContinueResult -- Don't use submit with a direction prompt
+      cb ContinueResult
+    (SMenu, MenuPromptState) ->
+      pure () -- Don't use submit with a menu prompt
     _ -> undefined
 
 -- data PromptInput :: PromptType -> Type where

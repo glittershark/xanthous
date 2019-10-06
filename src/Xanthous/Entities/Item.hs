@@ -5,6 +5,7 @@ module Xanthous.Entities.Item
   ( Item(..)
   , itemType
   , newWithType
+  , isEdible
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -12,7 +13,7 @@ import           Test.QuickCheck
 import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------
-import           Xanthous.Entities.RawTypes hiding (Item, description)
+import           Xanthous.Entities.RawTypes hiding (Item, description, isEdible)
 import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Entities
                  ( Draw(..)
@@ -47,3 +48,6 @@ instance Entity Item where
 
 newWithType :: ItemType -> Item
 newWithType = Item
+
+isEdible :: Item -> Bool
+isEdible = Raw.isEdible . view itemType

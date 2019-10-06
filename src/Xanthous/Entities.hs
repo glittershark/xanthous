@@ -1,8 +1,9 @@
-{-# LANGUAGE RoleAnnotations       #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE RoleAnnotations      #-}
+{-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TemplateHaskell      #-}
 --------------------------------------------------------------------------------
 module Xanthous.Entities
   ( Draw(..)
@@ -103,6 +104,7 @@ data EntityChar = EntityChar
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+makeFieldsNoPrefix ''EntityChar
 
 instance Arbitrary EntityChar where
   arbitrary = genericArbitrary

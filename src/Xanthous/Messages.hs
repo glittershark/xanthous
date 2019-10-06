@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+--------------------------------------------------------------------------------
 module Xanthous.Messages
   ( Message(..)
   , resolve
@@ -7,11 +8,13 @@ module Xanthous.Messages
 
     -- * Game messages
   , messages
+  , render
+  , lookup
   , message
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
-
+import Xanthous.Prelude hiding (lookup)
+--------------------------------------------------------------------------------
 import Control.Monad.Random.Class (MonadRandom)
 import Data.Aeson (FromJSON, ToJSON, toJSON)
 import Data.Aeson.Generic.DerivingVia
@@ -22,9 +25,10 @@ import Test.QuickCheck.Arbitrary.Generic
 import Test.QuickCheck.Instances.UnorderedContainers ()
 import Text.Mustache
 import qualified Data.Yaml as Yaml
-
+--------------------------------------------------------------------------------
 import Xanthous.Random
 import Xanthous.Orphans ()
+--------------------------------------------------------------------------------
 
 data Message = Single Template | Choice (NonEmpty Template)
   deriving stock (Show, Eq, Ord, Generic)
@@ -78,10 +82,19 @@ messages
   = either (error . Yaml.prettyPrintParseException) id
   $ Yaml.decodeEither' rawMessages
 
+render :: (MonadRandom m, ToJSON params) => Message -> params -> m Text
+render msg params = do
+  tpl <- resolve msg
+  pure . toStrict . renderMustache tpl $ toJSON params
+
+lookup :: [Text] -> Message
+lookup path = fromMaybe notFound $ messages ^? ix path
+  where notFound
+          = Single
+          $ compileMustacheText "template" "Message not found"
+          ^?! _Right
+
 message :: (MonadRandom m, ToJSON params) => [Text] -> params -> m Text
-message path params = maybe notFound renderMessage $ messages ^? ix path
+message path params = maybe notFound (`render` params) $ messages ^? ix path
   where
-    renderMessage msg = do
-      tpl <- resolve msg
-      pure . toStrict . renderMustache tpl $ toJSON params
     notFound = pure "Message not found"

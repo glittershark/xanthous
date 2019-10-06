@@ -13,6 +13,7 @@ import           Control.Monad.Random (MonadRandom)
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
+import qualified Data.Vector as V
 import           System.Exit
 --------------------------------------------------------------------------------
 import           Xanthous.Command
@@ -29,16 +30,18 @@ import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Game.Prompt
 import           Xanthous.Monad
 import           Xanthous.Resource (Name)
-import           Xanthous.Messages (message)
+import qualified Xanthous.Messages as Messages
 import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character
 import           Xanthous.Entities
 import           Xanthous.Entities.Item (Item)
+import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Environment (Door, open, locked)
+import           Xanthous.Entities.RawTypes (edible, eatMessage, hitpointsHealed)
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 --------------------------------------------------------------------------------
@@ -155,6 +158,26 @@ handleCommand Open = do
 
 handleCommand Wait = stepGame >> continue
 
+handleCommand Eat = do
+  uses (character . inventory)
+       (V.mapMaybe (\item -> (item,) <$> item ^. Item.itemType . edible))
+    >>= \case
+      Empty -> say_ ["eat", "noFood"]
+      food ->
+        let foodMenuItem idx (item, edibleItem)
+              = ( item ^. Item.itemType . char . char
+                , MenuOption (description item) (idx, item, edibleItem))
+            menuItems = mkMenuItems $ imap foodMenuItem food
+        in menu_ ["eat", "menuPrompt"] Cancellable menuItems
+          $ \(MenuResult (idx, item, edibleItem)) -> do
+            character . inventory %= \inv ->
+              let (before, after) = V.splitAt idx inv
+              in before <> fromMaybe Empty (tailMay after)
+            let msg = fromMaybe (Messages.lookup ["eat", "eat"])
+                      $ edibleItem ^. eatMessage
+            message msg $ object ["item" A..= item]
+  continue
+
 handleCommand ToggleRevealAll = do
   val <- debugState . allRevealed <%= not
   say ["debug", "toggleRevealAll"] $ object [ "revealAll" A..= val ]
@@ -168,39 +191,43 @@ handlePromptEvent
   -> BrickEvent Name ()
   -> AppM (Next GameState)
 
-handlePromptEvent _ (Prompt Cancellable _ _ _) (VtyEvent (EvKey KEsc [])) = do
+handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc [])) = do
   promptState .= NoPrompt
   continue
-handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) = do
-  submitPrompt pr
-  promptState .= NoPrompt
-  continue
+handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) =
+  submitPrompt pr >> clearPrompt
 
 handlePromptEvent
   msg
-  (Prompt c SStringPrompt (StringPromptState edit) cb)
+  (Prompt c SStringPrompt (StringPromptState edit) pi cb)
   (VtyEvent ev)
   = do
     edit' <- lift $ handleEditorEvent ev edit
-    let prompt' = Prompt c SStringPrompt (StringPromptState edit') cb
+    let prompt' = Prompt c SStringPrompt (StringPromptState edit') pi cb
     promptState .= WaitingPrompt msg prompt'
     continue
 
-handlePromptEvent _ (Prompt _ SDirectionPrompt _ cb)
+handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ cb)
   (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
-  = do
-    cb $ DirectionResult dir
-    promptState .= NoPrompt
-    continue
-handlePromptEvent _ (Prompt _ SDirectionPrompt _ _) _ = continue
+  = cb (DirectionResult dir) >> clearPrompt
+handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ _) _ = continue
 
-handlePromptEvent _ (Prompt _ SContinue _ _) _ = continue
+handlePromptEvent _ (Prompt _ SContinue _ _ _) _ = continue
+
+handlePromptEvent _ (Prompt _ SMenu _ items cb) (VtyEvent (EvKey (KChar chr) []))
+  | Just (MenuOption _ res) <- items ^. at chr
+  = cb (MenuResult res) >> clearPrompt
+  | otherwise
+  = continue
 
 handlePromptEvent _ _ _ = undefined
 
+clearPrompt :: AppM (Next GameState)
+clearPrompt = promptState .= NoPrompt >> continue
+
 prompt
   :: forall (pt :: PromptType) (params :: Type).
-    (ToJSON params, SingPromptType pt)
+    (ToJSON params, SingPromptType pt, PromptInput pt ~ ())
   => [Text]                     -- ^ Message key
   -> params                     -- ^ Message params
   -> PromptCancellable
@@ -208,18 +235,39 @@ prompt
   -> AppM ()
 prompt msgPath params cancellable cb = do
   let pt = singPromptType @pt
-  msg <- message msgPath params
+  msg <- Messages.message msgPath params
   let p = mkPrompt cancellable pt cb
   promptState .= WaitingPrompt msg p
 
 prompt_
   :: forall (pt :: PromptType) .
-    (SingPromptType pt)
+    (SingPromptType pt, PromptInput pt ~ ())
   => [Text] -- ^ Message key
   -> PromptCancellable
   -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
   -> AppM ()
 prompt_ msg = prompt msg $ object []
+
+menu :: forall (a :: Type) (params :: Type).
+       (ToJSON params)
+     => [Text]                            -- ^ Message key
+     -> params                            -- ^ Message params
+     -> PromptCancellable
+     -> Map Char (MenuOption a)           -- ^ Menu items
+     -> (PromptResult ('Menu a) -> AppM ()) -- ^ Menu promise handler
+     -> AppM ()
+menu msgPath params cancellable items cb = do
+  msg <- Messages.message msgPath params
+  let p = mkMenu cancellable items cb
+  promptState .= WaitingPrompt msg p
+
+menu_ :: forall (a :: Type).
+        [Text]                            -- ^ Message key
+      -> PromptCancellable
+      -> Map Char (MenuOption a)           -- ^ Menu items
+      -> (PromptResult ('Menu a) -> AppM ()) -- ^ Menu promise handler
+      -> AppM ()
+menu_ msgPath = menu msgPath $ object []
 
 --------------------------------------------------------------------------------
 

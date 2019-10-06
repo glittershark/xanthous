@@ -3,14 +3,20 @@
 --------------------------------------------------------------------------------
 module Xanthous.Entities.RawTypes
   ( CreatureType(..)
+  , EdibleItem(..)
   , ItemType(..)
+  , isEdible
   , EntityRaw(..)
 
+    -- * Lens classes
   , HasName(..)
   , HasDescription(..)
   , HasLongDescription(..)
   , HasMaxHitpoints(..)
   , HasFriendly(..)
+  , HasEatMessage(..)
+  , HasHitpointsHealed(..)
+  , HasEdible(..)
   , _Creature
   ) where
 --------------------------------------------------------------------------------
@@ -21,6 +27,7 @@ import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Entities (EntityChar, HasChar(..))
+import Xanthous.Messages (Message(..))
 --------------------------------------------------------------------------------
 data CreatureType = CreatureType
   { _name :: Text
@@ -41,11 +48,26 @@ instance Arbitrary CreatureType where
 
 --------------------------------------------------------------------------------
 
+data EdibleItem = EdibleItem
+  { _hitpointsHealed :: Int
+  , _eatMessage :: Maybe Message
+  }
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+                       EdibleItem
+makeFieldsNoPrefix ''EdibleItem
+
+instance Arbitrary EdibleItem where
+  arbitrary = genericArbitrary
+
 data ItemType = ItemType
-  { _name :: Text
-  , _description :: Text
+  { _name            :: Text
+  , _description     :: Text
   , _longDescription :: Text
-  , _char :: EntityChar
+  , _char            :: EntityChar
+  , _edible          :: Maybe EdibleItem
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -56,6 +78,11 @@ makeFieldsNoPrefix ''ItemType
 
 instance Arbitrary ItemType where
   arbitrary = genericArbitrary
+
+isEdible :: ItemType -> Bool
+isEdible = has $ edible . _Just
+
+--------------------------------------------------------------------------------
 
 data EntityRaw
   = Creature CreatureType

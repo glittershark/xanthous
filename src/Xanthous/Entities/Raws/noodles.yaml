@@ -6,3 +6,7 @@ Item:
     char: 'n'
     style:
       foreground: yellow
+  edible:
+    hitpointsHealed: 2
+    eatMessage:
+      - You slurp up the noodles. Yumm!
