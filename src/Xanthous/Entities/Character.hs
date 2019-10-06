@@ -8,6 +8,7 @@ module Xanthous.Entities.Character
   , mkCharacter
   , pickUpItem
   , isDead
+  , damage
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -71,3 +72,7 @@ isDead = (== 0) . view characterHitpoints
 pickUpItem :: Item -> Character -> Character
 pickUpItem item = inventory %~ (item <|)
 
+damage :: Word -> Character -> Character
+damage amount = characterHitpoints %~ \case
+  n | n <= amount -> 0
+    | otherwise  -> n - amount

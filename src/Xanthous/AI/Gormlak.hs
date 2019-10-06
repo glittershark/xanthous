@@ -14,7 +14,8 @@ import           Xanthous.Data (Positioned(..), diffPositions, stepTowards, isUn
 import           Xanthous.Data.EntityMap
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Creature (Creature)
-import           Xanthous.Entities.Character (Character, characterHitpoints)
+import           Xanthous.Entities.Character (Character)
+import qualified Xanthous.Entities.Character as Character
 import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Entities (Entity(..), Brain(..), brainVia)
 import           Xanthous.Game.State (entities, GameState, entityIs)
@@ -54,7 +55,7 @@ stepGormlak pe@(Positioned pos creature) = do
     vision = Creature.visionRadius creature
     attackCharacter = do
       say ["combat", "creatureAttack"] $ object [ "creature" A..= creature ]
-      character . characterHitpoints -= 1
+      character %= Character.damage 1
 
 newtype GormlakBrain = GormlakBrain Creature
 
