@@ -64,10 +64,12 @@ startEvent :: AppM ()
 startEvent = do
   initLevel
   modify updateCharacterVision
-  prompt_ @'StringPrompt ["character", "namePrompt"] Uncancellable
-    $ \(StringResult s) -> do
-      character . characterName ?= s
-      say ["welcome"] =<< use character
+  use (character . characterName) >>= \case
+    Nothing -> prompt_ @'StringPrompt ["character", "namePrompt"] Uncancellable
+      $ \(StringResult s) -> do
+        character . characterName ?= s
+        say ["welcome"] =<< use character
+    Just n -> say ["welcome"] $ object [ "characterName" A..= n ]
 
 initLevel :: AppM ()
 initLevel = do
@@ -178,6 +180,7 @@ handleCommand Eat = do
             character . characterHitpoints +=
               edibleItem ^. hitpointsHealed . to fromIntegral
             message msg $ object ["item" A..= item]
+  stepGame
   continue
 
 handleCommand ToggleRevealAll = do
@@ -201,11 +204,11 @@ handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) =
 
 handlePromptEvent
   msg
-  (Prompt c SStringPrompt (StringPromptState edit) pi cb)
+  (Prompt c SStringPrompt (StringPromptState edit) pri cb)
   (VtyEvent ev)
   = do
     edit' <- lift $ handleEditorEvent ev edit
-    let prompt' = Prompt c SStringPrompt (StringPromptState edit') pi cb
+    let prompt' = Prompt c SStringPrompt (StringPromptState edit') pri cb
     promptState .= WaitingPrompt msg prompt'
     continue
 

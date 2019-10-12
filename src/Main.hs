@@ -1,25 +1,50 @@
 module Main ( main ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude
+import           Xanthous.Prelude hiding (finally)
 import           Brick
 import qualified Options.Applicative as Opt
 import           System.Random
+import           Control.Monad.Random (getRandom)
+import           Control.Exception (finally)
 --------------------------------------------------------------------------------
-import           Xanthous.Game (getInitialState)
+import qualified Xanthous.Game as Game
 import           Xanthous.App (makeApp)
 import           Xanthous.Generators
-  ( GeneratorInput
-  , parseGeneratorInput
-  , generateFromInput
-  , showCells
-  )
+                 ( GeneratorInput
+                 , parseGeneratorInput
+                 , generateFromInput
+                 , showCells
+                 )
+import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Generators.Util (regions)
 import           Xanthous.Generators.LevelContents
 import           Xanthous.Data (Dimensions, Dimensions'(Dimensions))
 import           Data.Array.IArray ( amap )
 --------------------------------------------------------------------------------
+
+data RunParams = RunParams
+  { seed :: Maybe Int
+  , characterName :: Maybe Text
+  }
+  deriving stock (Show, Eq)
+
+parseRunParams :: Opt.Parser RunParams
+parseRunParams = RunParams
+  <$> optional (Opt.option Opt.auto
+      ( Opt.long "seed"
+      <> Opt.help "Random seed for the game."
+      ))
+  <*> optional (Opt.strOption
+      ( Opt.short 'n'
+      <> Opt.long "name"
+      <> Opt.help
+        ( "Name for the character. If not set on the command line, "
+        <> "will be prompted for at runtime"
+        )
+      ))
+
 data Command
-  = Run
+  = Run RunParams
   | Generate GeneratorInput Dimensions
 
 parseDimensions :: Opt.Parser Dimensions
@@ -34,10 +59,10 @@ parseDimensions = Dimensions
        )
 
 parseCommand :: Opt.Parser Command
-parseCommand = (<|> pure Run) $ Opt.subparser
+parseCommand = (<|> Run <$> parseRunParams) $ Opt.subparser
   $ Opt.command "run"
       (Opt.info
-       (pure Run)
+       (Run <$> parseRunParams)
        (Opt.progDesc "Run the game"))
   <> Opt.command "generate"
       (Opt.info
@@ -53,11 +78,20 @@ optParser = Opt.info
   (parseCommand <**> Opt.helper)
   (Opt.header "Xanthous: a WIP TUI RPG")
 
-runGame :: IO ()
-runGame =  do
+runGame :: RunParams -> IO ()
+runGame rparams = do
   app <- makeApp
-  initialState <- getInitialState
-  _ <- defaultMain app initialState
+  gameSeed <- maybe getRandom pure $ seed rparams
+  let initialState = Game.initialStateFromSeed gameSeed &~ do
+        for_ (characterName rparams) $ \cn ->
+          Game.character . Character.characterName ?= cn
+  _game' <- defaultMain app initialState `finally` do
+    putStr "\n\n"
+    putStrLn "Thanks for playing Xanthous!"
+    when (isNothing $ seed rparams)
+      . putStrLn
+      $ "Seed: " <> tshow gameSeed
+    putStr "\n\n"
   pure ()
 
 runGenerate :: GeneratorInput -> Dimensions -> IO ()
@@ -74,7 +108,7 @@ runGenerate input dims = do
   putStrLn $ showCells res
 
 runCommand :: Command -> IO ()
-runCommand Run = runGame
+runCommand (Run runParams) = runGame runParams
 runCommand (Generate input dims) = runGenerate input dims
 
 main :: IO ()

@@ -8,6 +8,7 @@ module Xanthous.Game
   , GamePromptState(..)
 
   , getInitialState
+  , initialStateFromSeed
 
   , positionedCharacter
   , character

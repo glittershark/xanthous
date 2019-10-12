@@ -6,6 +6,7 @@ module Xanthous.Game.Lenses
   , characterPosition
   , updateCharacterVision
   , getInitialState
+  , initialStateFromSeed
 
     -- * Collisions
   , Collision(..)
@@ -16,6 +17,7 @@ import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           System.Random
 import           Control.Monad.State
+import           Control.Monad.Random (getRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
 import           Xanthous.Data
@@ -28,9 +30,12 @@ import           Xanthous.Entities.Creature (Creature)
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState
-getInitialState = do
-  _randomGen <- getStdGen
-  let char = mkCharacter
+getInitialState = initialStateFromSeed <$> getRandom
+
+initialStateFromSeed :: Int -> GameState
+initialStateFromSeed seed =
+  let _randomGen = mkStdGen seed
+      char = mkCharacter
       (_characterEntityID, _entities)
         = EntityMap.insertAtReturningID
           (Position 0 0)
@@ -42,7 +47,7 @@ getInitialState = do
       _debugState = DebugState
         { _allRevealed = False
         }
-  pure GameState {..}
+  in GameState {..}
 
 
 positionedCharacter :: Lens' GameState (Positioned Character)
