@@ -11,7 +11,10 @@ main :: IO ()
 main = defaultMain test
 
 test :: TestTree
-test = testGroup "Xanthous.Game"
+test
+  = localOption (QuickCheckTests 10)
+  . localOption (QuickCheckMaxSize 10)
+  $ testGroup "Xanthous.Game"
   [ testGroup "positionedCharacter"
     [ testProperty "lens laws" $ isLens positionedCharacter
     , testCase "updates the position of the character" $ do
@@ -30,8 +33,7 @@ test = testGroup "Xanthous.Game"
   , testGroup "character"
     [ testProperty "lens laws" $ isLens character
     ]
-  , localOption (QuickCheckTests 10)
-  $ testGroup "MessageHistory"
+  , testGroup "MessageHistory"
     [ testGroup "MonoComonad laws"
       [ testProperty "oextend oextract ≡ id"
         $ \(mh :: MessageHistory) -> oextend oextract mh === mh
