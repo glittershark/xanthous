@@ -119,9 +119,9 @@ handleCommand (Move dir) = do
   collisionAt newPos >>= \case
     Nothing -> do
       characterPosition .= newPos
+      stepGame
       describeEntitiesAt newPos
       modify updateCharacterVision
-      stepGame
     Just Combat -> attackAt newPos
     Just Stop -> pure ()
   continue
