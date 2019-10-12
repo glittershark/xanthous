@@ -175,6 +175,8 @@ handleCommand Eat = do
               in before <> fromMaybe Empty (tailMay after)
             let msg = fromMaybe (Messages.lookup ["eat", "eat"])
                       $ edibleItem ^. eatMessage
+            character . characterHitpoints +=
+              edibleItem ^. hitpointsHealed . to fromIntegral
             message msg $ object ["item" A..= item]
   continue
 
