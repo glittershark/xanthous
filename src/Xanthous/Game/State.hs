@@ -57,7 +57,8 @@ import           Control.Monad.Random.Class
 import           Brick (EventM, Widget)
 --------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
-import           Xanthous.Data (Positioned(..), Position(..), Neighbors)
+import           Xanthous.Data
+                 (Positioned(..), type Position, Neighbors, Ticks(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Resource
@@ -149,12 +150,12 @@ instance Draw a => Draw (Positioned a) where
 --------------------------------------------------------------------------------
 
 class Brain a where
-  step :: Positioned a -> AppM (Positioned a)
+  step :: Ticks -> Positioned a -> AppM (Positioned a)
 
 newtype Brainless a = Brainless a
 
 instance Brain (Brainless a) where
-  step = pure
+  step = const pure
 
 -- | Workaround for the inability to use DerivingVia on Brain due to the lack of
 -- higher-order roles (specifically AppT not having its last type argument have
@@ -162,8 +163,8 @@ instance Brain (Brainless a) where
 brainVia
   :: forall brain entity. (Coercible entity brain, Brain brain)
   => (entity -> brain) -- ^ constructor, ignored
-  -> (Positioned entity -> AppM (Positioned entity))
-brainVia _ = fmap coerce . step . coerce @_ @(Positioned brain)
+  -> (Ticks -> Positioned entity -> AppM (Positioned entity))
+brainVia _ ticks = fmap coerce . step ticks . coerce @_ @(Positioned brain)
 
 --------------------------------------------------------------------------------
 
@@ -186,8 +187,8 @@ instance Draw SomeEntity where
   drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
 
 instance Brain SomeEntity where
-  step (Positioned pos (SomeEntity ent)) =
-    fmap SomeEntity <$> step (Positioned pos ent)
+  step ticks (Positioned pos (SomeEntity ent)) =
+    fmap SomeEntity <$> step ticks (Positioned pos ent)
 
 instance Entity SomeEntity where
   blocksVision (SomeEntity ent) = blocksVision ent

@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 --------------------------------------------------------------------------------
 module Xanthous.Entities.RawTypes
@@ -8,6 +8,7 @@ module Xanthous.Entities.RawTypes
   , isEdible
   , EntityRaw(..)
 
+  , _Creature
     -- * Lens classes
   , HasName(..)
   , HasDescription(..)
@@ -17,7 +18,7 @@ module Xanthous.Entities.RawTypes
   , HasEatMessage(..)
   , HasHitpointsHealed(..)
   , HasEdible(..)
-  , _Creature
+  , HasSpeed(..)
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -28,16 +29,18 @@ import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Entities (EntityChar, HasChar(..))
 import Xanthous.Messages (Message(..))
+import Xanthous.Data (TicksPerTile)
 --------------------------------------------------------------------------------
 data CreatureType = CreatureType
-  { _name :: Text
-  , _description :: Text
-  , _char :: EntityChar
-  , _maxHitpoints :: Word
-  , _friendly :: Bool
+  { _name         :: !Text
+  , _description  :: !Text
+  , _char         :: !EntityChar
+  , _maxHitpoints :: !Word
+  , _friendly     :: !Bool
+  , _speed        :: !TicksPerTile
   }
   deriving stock (Show, Eq, Generic)
-  deriving anyclass (NFData)
+  deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        CreatureType

@@ -24,15 +24,15 @@ test = testGroup "Xanthous.Data"
       ]
     , testProperty "directionOf laws" $ \pos dir ->
         directionOf pos (move dir pos) == dir
-    , testProperty "diffPositions is add inverse" $ \pos₁ pos₂ ->
+    , testProperty "diffPositions is add inverse" $ \(pos₁ :: Position) pos₂ ->
         diffPositions pos₁ pos₂ == addPositions pos₁ (invert pos₂)
     , testGroup "isUnit"
       [ testProperty "double direction is never unit" $ \dir ->
           not . isUnit $ move dir (asPosition dir)
       , testCase "examples" $ do
-          isUnit (Position 1 1) @? "not . isUnit $ Position 1 1"
-          isUnit (Position 0 (-1)) @? "not . isUnit $ Position 0 (-1)"
-          (not . isUnit) (Position 1 13) @? "isUnit $ Position 1 13"
+          isUnit (Position @Int 1 1) @? "not . isUnit $ Position 1 1"
+          isUnit (Position @Int 0 (-1)) @? "not . isUnit $ Position 0 (-1)"
+          (not . isUnit) (Position @Int 1 13) @? "isUnit $ Position 1 13"
       ]
     ]
   , testGroup "Direction"

@@ -22,6 +22,9 @@ import           Xanthous.Data
                  , Dimensions'(Dimensions)
                  , positioned
                  , Position
+                 , Ticks
+                 , Position'(Position)
+                 , (|*|)
                  )
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
@@ -85,17 +88,23 @@ initLevel = do
 
 --------------------------------------------------------------------------------
 
-stepGame :: AppM ()
-stepGame = do
+stepGameBy :: Ticks -> AppM ()
+stepGameBy ticks = do
   ents <- uses entities EntityMap.toEIDsAndPositioned
   for_ ents $ \(eid, pEntity) -> do
-    pEntity' <- step pEntity
+    pEntity' <- step ticks pEntity
     entities . ix eid .= pEntity'
 
   whenM (uses (character . characterHitpoints) (== 0))
     . prompt_ @'Continue ["dead"] Uncancellable
     . const . lift . liftIO
     $ exitSuccess
+
+ticksPerTurn :: Ticks
+ticksPerTurn = 100
+
+stepGame :: AppM ()
+stepGame = stepGameBy ticksPerTurn
 
 --------------------------------------------------------------------------------
 
@@ -119,7 +128,7 @@ handleCommand (Move dir) = do
   collisionAt newPos >>= \case
     Nothing -> do
       characterPosition .= newPos
-      stepGame
+      stepGameBy =<< uses (character . speed) (|*| 1)
       describeEntitiesAt newPos
       modify updateCharacterVision
     Just Combat -> attackAt newPos
@@ -135,7 +144,7 @@ handleCommand PickUp = do
       character %= Character.pickUpItem item
       entities . at itemID .= Nothing
       say ["items", "pickUp"] $ object [ "item" A..= item ]
-      stepGame
+      stepGameBy 100 -- TODO
     _ -> undefined
   continue
 
@@ -155,7 +164,7 @@ handleCommand Open = do
                entities . ix eid . positioned . _SomeEntity . open .= True
              say_ ["open", "success"]
       pure ()
-  stepGame
+  stepGame -- TODO
   continue
 
 handleCommand Wait = stepGame >> continue
@@ -180,7 +189,7 @@ handleCommand Eat = do
             character . characterHitpoints +=
               edibleItem ^. hitpointsHealed . to fromIntegral
             message msg $ object ["item" A..= item]
-  stepGame
+  stepGame -- TODO
   continue
 
 handleCommand ToggleRevealAll = do
@@ -318,4 +327,4 @@ attackAt pos =
       else do
         say ["combat", "hit"] msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
-    stepGame
+    stepGame -- TODO

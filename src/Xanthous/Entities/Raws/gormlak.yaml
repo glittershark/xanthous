@@ -8,5 +8,5 @@ Creature:
     style:
       foreground: red
   maxHitpoints: 5
-  speed: 120
+  speed: 125
   friendly: false

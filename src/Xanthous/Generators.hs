@@ -26,7 +26,7 @@ import           Control.Monad.Random
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 import           Xanthous.Generators.Util
 import           Xanthous.Generators.LevelContents
-import           Xanthous.Data (Dimensions, Position(Position))
+import           Xanthous.Data (Dimensions, Position'(Position), Position)
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Environment

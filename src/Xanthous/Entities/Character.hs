@@ -5,6 +5,9 @@ module Xanthous.Entities.Character
   , inventory
   , characterDamage
   , characterHitpoints
+  , speed
+
+    -- *
   , mkCharacter
   , pickUpItem
   , isDead
@@ -12,6 +15,7 @@ module Xanthous.Entities.Character
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
+--------------------------------------------------------------------------------
 import Test.QuickCheck
 import Test.QuickCheck.Instances.Vector ()
 import Test.QuickCheck.Arbitrary.Generic
@@ -21,6 +25,7 @@ import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Entities
 import Xanthous.Entities.Item
+import Xanthous.Data (TicksPerTile)
 --------------------------------------------------------------------------------
 
 data Character = Character
@@ -28,6 +33,7 @@ data Character = Character
   , _characterName :: !(Maybe Text)
   , _characterDamage :: !Word
   , _characterHitpoints :: !Word
+  , _speed :: TicksPerTile
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (CoArbitrary, Function)
@@ -58,12 +64,16 @@ instance Arbitrary Character where
 initialHitpoints :: Word
 initialHitpoints = 10
 
+defaultSpeed :: TicksPerTile
+defaultSpeed = 100
+
 mkCharacter :: Character
 mkCharacter = Character
   { _inventory = mempty
   , _characterName = Nothing
   , _characterDamage = 1
   , _characterHitpoints = initialHitpoints
+  , _speed = defaultSpeed
   }
 
 isDead :: Character -> Bool

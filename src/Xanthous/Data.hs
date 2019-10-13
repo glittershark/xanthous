@@ -1,16 +1,20 @@
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE RoleAnnotations #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE RoleAnnotations   #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NoTypeSynonymInstances   #-}
 --------------------------------------------------------------------------------
 -- | Common data types for Xanthous
 --------------------------------------------------------------------------------
 module Xanthous.Data
   ( -- *
-    Position(..)
+    Position'(..)
+  , Position
   , x
   , y
 
@@ -25,6 +29,17 @@ module Xanthous.Data
   , diffPositions
   , stepTowards
   , isUnit
+
+    -- *
+  , Per(..)
+  , invertRate
+  , invertedRate
+  , (|*|)
+  , Ticks(..)
+  , Tiles(..)
+  , TicksPerTile
+  , TilesPerTick
+  , timesTiles
 
     -- *
   , Dimensions'(..)
@@ -51,33 +66,67 @@ import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
 import           Brick (Location(Location), Edges(..))
+import           Data.Monoid (Product(..), Sum(..))
+import           Data.Aeson.Generic.DerivingVia
+import           Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import           Xanthous.Util (EqEqProp(..), EqProp)
 import           Xanthous.Orphans ()
 import           Xanthous.Util.Graphics
 --------------------------------------------------------------------------------
 
-data Position where
-  Position :: { _x :: Int
-             , _y :: Int
-             } -> Position
-  deriving stock (Show, Eq, Generic, Ord)
-  deriving anyclass (Hashable, CoArbitrary, Function)
-  deriving EqProp via EqEqProp Position
-makeLenses ''Position
+-- fromScalar ∘ scalar ≡ id
+class Scalar a where
+  scalar :: a -> Double
+  fromScalar :: Double -> a
 
-instance Arbitrary Position where
+instance Scalar Double where
+  scalar = id
+  fromScalar = id
+
+newtype ScalarIntegral a = ScalarIntegral a
+  deriving newtype (Eq, Ord, Num, Enum, Real, Integral)
+instance Integral a => Scalar (ScalarIntegral a) where
+  scalar = fromIntegral
+  fromScalar = floor
+
+deriving via (ScalarIntegral Integer) instance Scalar Integer
+deriving via (ScalarIntegral Word) instance Scalar Word
+
+--------------------------------------------------------------------------------
+
+data Position' a where
+  Position :: { _x :: a
+             , _y :: a
+             } -> (Position' a)
+  deriving stock (Show, Eq, Generic, Ord, Functor, Foldable, Traversable)
+  deriving anyclass (NFData, Hashable, CoArbitrary, Function)
+  deriving EqProp via EqEqProp (Position' a)
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+                       (Position' a)
+makeLenses ''Position'
+
+type Position = Position' Int
+
+instance Arbitrary a => Arbitrary (Position' a) where
   arbitrary = genericArbitrary
   shrink = genericShrink
 
-instance Semigroup Position where
+instance Num a => Semigroup (Position' a) where
   (Position x₁ y₁) <> (Position x₂ y₂) = Position (x₁ + x₂) (y₁ + y₂)
 
-instance Monoid Position where
+instance Num a => Monoid (Position' a) where
   mempty = Position 0 0
 
-instance Group Position where
-  invert (Position px py) = Position (-px) (-py)
+instance Num a => Group (Position' a) where
+  invert (Position px py) = Position (negate px) (negate py)
+
+-- | Positions convert to scalars by discarding their orientation and just
+-- measuring the length from the origin
+instance (Ord a, Num a, Scalar a) => Scalar (Position' a) where
+  scalar = fromIntegral . length . line (0, 0) . view _Position
+  fromScalar n = Position (fromScalar n) (fromScalar n)
 
 data Positioned a where
   Positioned :: Position -> a -> Positioned a
@@ -110,32 +159,32 @@ loc = iso hither yon
     hither (Position px py) = Location (px, py)
     yon (Location (lx, ly)) = Position lx ly
 
-_Position :: Iso' Position (Int, Int)
+_Position :: Iso' (Position' a) (a, a)
 _Position = iso hither yon
   where
     hither (Position px py) = (px, py)
     yon (lx, ly) = Position lx ly
 
-positionFromPair :: (Integral i, Integral j) => (i, j) -> Position
+positionFromPair :: (Num a, Integral i, Integral j) => (i, j) -> Position' a
 positionFromPair (i, j) = Position (fromIntegral i) (fromIntegral j)
 
 -- | Add two positions
 --
 -- Operation for the additive group on positions
-addPositions :: Position -> Position -> Position
+addPositions :: Num a => Position' a -> Position' a -> Position' a
 addPositions = (<>)
 
 -- | Subtract two positions.
 --
 -- diffPositions pos₁ pos₂ = pos₁ `addPositions` (invert pos₂)
-diffPositions :: Position -> Position -> Position
+diffPositions :: Num a => Position' a -> Position' a -> Position' a
 diffPositions (Position x₁ y₁) (Position x₂ y₂) = Position (x₁ - x₂) (y₁ - y₂)
 
 -- | Is this position a unit position? or: When taken as a difference, does this
 -- position represent a step of one tile?
 --
 -- ∀ dir :: Direction. isUnit ('asPosition' dir)
-isUnit :: Position -> Bool
+isUnit :: (Eq a, Num a) => Position' a -> Bool
 isUnit (Position px py) =
   abs px `elem` [0,1] && abs py `elem` [0, 1] && (px, py) /= (0, 0)
 
@@ -291,3 +340,41 @@ neighborPositions :: Position -> Neighbors Position
 neighborPositions pos = (`move` pos) <$> neighborDirections
 
 --------------------------------------------------------------------------------
+
+newtype Per a b = Rate Double
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (Num, Ord, Enum, Real, ToJSON, FromJSON) via Double
+  deriving (Semigroup, Monoid) via Product Double
+instance Arbitrary (Per a b) where arbitrary = genericArbitrary
+
+invertRate :: a `Per` b -> b `Per` a
+invertRate (Rate p) = Rate $ 1 / p
+
+invertedRate :: Iso (a `Per` b) (b' `Per` a') (b `Per` a) (a' `Per` b')
+invertedRate = iso invertRate invertRate
+
+infixl 7 |*|
+(|*|) :: (Scalar a, Scalar b) => a `Per` b -> b -> a
+(|*|) (Rate rate) b = fromScalar $ rate * scalar b
+
+newtype Ticks = Ticks Word
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON) via Word
+  deriving (Semigroup, Monoid) via (Sum Word)
+  deriving Scalar via ScalarIntegral Ticks
+instance Arbitrary Ticks where arbitrary = genericArbitrary
+
+newtype Tiles = Tiles Double
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (Num, Ord, Enum, Real, ToJSON, FromJSON, Scalar) via Double
+  deriving (Semigroup, Monoid) via (Sum Double)
+instance Arbitrary Tiles where arbitrary = genericArbitrary
+
+type TicksPerTile = Ticks `Per` Tiles
+type TilesPerTick = Tiles `Per` Ticks
+
+timesTiles :: TicksPerTile -> Tiles -> Ticks
+timesTiles = (|*|)

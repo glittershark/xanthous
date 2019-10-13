@@ -9,7 +9,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit
 --------------------------------------------------------------------------------
-import           Xanthous.Data (Position(Position), x, y, loc)
+import           Xanthous.Data (Position'(..), type Position, x, y, loc)
 import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities
