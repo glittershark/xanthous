@@ -21,4 +21,8 @@ test = testGroup "Xanthous.Util"
         forAll (shuffle xs) $ \shuffledXs ->
           smallestNotIn xs === smallestNotIn shuffledXs
     ]
+  , testGroup "takeWhileInclusive"
+    [ testProperty "takeWhileInclusive (const True) ≡ id"
+      $ \(xs :: [Int]) -> takeWhileInclusive (const True) xs === xs
+    ]
   ]

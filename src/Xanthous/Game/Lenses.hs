@@ -10,6 +10,7 @@ module Xanthous.Game.Lenses
 
     -- * Collisions
   , Collision(..)
+  , entityCollision
   , collisionAt
   ) where
 --------------------------------------------------------------------------------
@@ -93,13 +94,21 @@ data Collision
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData)
 
+entityCollision
+  :: ( MonoFoldable (f SomeEntity)
+    , Foldable f
+    , Element (f SomeEntity) ~ SomeEntity
+    , AsEmpty (f SomeEntity)
+    )
+  => f SomeEntity
+  -> Maybe Collision
+entityCollision Empty = Nothing
+entityCollision ents
+  | any (entityIs @Creature) ents = pure Combat
+  | all (entityIs @Item) ents = Nothing
+  | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
+  , all (view open) doors = Nothing
+  | otherwise = pure Stop
+
 collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
-collisionAt pos = do
-  ents <- use $ entities . EntityMap.atPosition pos
-  pure $
-    if | null ents -> Nothing
-       | any (entityIs @Creature) ents -> pure Combat
-       | all (entityIs @Item) ents -> Nothing
-       | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
-       , all (view open) doors -> Nothing
-       | otherwise -> pure Stop
+collisionAt pos = uses (entities . EntityMap.atPosition pos) entityCollision
