@@ -10,6 +10,7 @@ module Xanthous.Entities
   , DrawCharacter(..)
   , DrawStyledCharacter(..)
   , DrawRawChar(..)
+  , DrawRawCharPriority(..)
   , Entity(..)
   , SomeEntity(..)
   , downcastEntity
@@ -96,6 +97,21 @@ instance
   , HasChar raw EntityChar
   ) => Draw (DrawRawChar rawField a) where
   draw (DrawRawChar e) = draw $ e ^. field @rawField . char
+
+newtype DrawRawCharPriority
+  (rawField :: Symbol)
+  (priority :: Nat)
+  (a :: Type)
+  = DrawRawCharPriority a
+
+instance
+  forall rawField priority a raw.
+  ( HasField rawField a a raw raw
+  , KnownNat priority
+  , HasChar raw EntityChar
+  ) => Draw (DrawRawCharPriority rawField priority a) where
+  draw (DrawRawCharPriority e) = draw $ e ^. field @rawField . char
+  drawPriority = const . fromIntegral $ natVal @priority Proxy
 
 --------------------------------------------------------------------------------
 

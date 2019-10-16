@@ -58,7 +58,6 @@ import           Brick (EventM, Widget)
 --------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data
-                 (Positioned(..), type Position, Neighbors, Ticks(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Resource
@@ -143,6 +142,10 @@ class Draw a where
   draw :: a -> Widget n
   draw = drawWithNeighbors $ pure mempty
 
+  -- | higher priority gets drawn on top
+  drawPriority :: a -> Word
+  drawPriority = const minBound
+
 instance Draw a => Draw (Positioned a) where
   drawWithNeighbors ns (Positioned _ a) = drawWithNeighbors ns a
   draw (Positioned _ a) = draw a
@@ -185,6 +188,7 @@ instance Eq SomeEntity where
 
 instance Draw SomeEntity where
   drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
+  drawPriority (SomeEntity ent) = drawPriority ent
 
 instance Brain SomeEntity where
   step ticks (Positioned pos (SomeEntity ent)) =

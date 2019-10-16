@@ -50,6 +50,7 @@ instance Draw Character where
     where
       rloc = Location (negate scrollOffset, negate scrollOffset)
       rreg = (2 * scrollOffset, 2 * scrollOffset)
+  drawPriority = const maxBound -- Character should always be on top, for now
 
 -- the character does not (yet) have a mind of its own
 instance Brain Character where step = brainVia Brainless

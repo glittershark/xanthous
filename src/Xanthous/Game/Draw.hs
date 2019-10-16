@@ -4,12 +4,12 @@ module Xanthous.Game.Draw
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
-import           Brick hiding (loc)
+import           Brick hiding (loc, on)
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit
 --------------------------------------------------------------------------------
-import           Xanthous.Data (Position'(..), type Position, x, y, loc)
+import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities
@@ -68,7 +68,10 @@ drawEntities canRenderPos allEnts
       | canRenderPos pos
       = let neighbors = EntityMap.neighbors pos allEnts
         in maybe (str " ") (drawWithNeighbors neighbors)
-           $ allEnts ^? atPosition pos . folded
+           $ maximumByOf
+             (atPosition pos . folded)
+             (compare `on` drawPriority)
+             allEnts
       | otherwise = str " "
 
 drawMap :: GameState -> Widget Name

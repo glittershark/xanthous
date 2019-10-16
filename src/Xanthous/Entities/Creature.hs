@@ -35,7 +35,7 @@ import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes hiding (Creature, description)
-import           Xanthous.Entities (Draw(..), DrawRawChar(..))
+import           Xanthous.Entities (Draw(..), DrawRawCharPriority(..))
 import           Xanthous.Data
 --------------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ data Creature = Creature
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
-  deriving Draw via DrawRawChar "_creatureType" Creature
+  deriving Draw via DrawRawCharPriority "_creatureType" 1000 Creature
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        Creature
