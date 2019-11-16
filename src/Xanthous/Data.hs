@@ -59,6 +59,9 @@ module Xanthous.Data
   , edges
   , neighborDirections
   , neighborPositions
+
+    -- *
+  , Hitpoints(..)
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (Left, Down, Right)
@@ -344,7 +347,7 @@ neighborPositions pos = (`move` pos) <$> neighborDirections
 newtype Per a b = Rate Double
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
-  deriving (Num, Ord, Enum, Real, ToJSON, FromJSON) via Double
+  deriving (Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON) via Double
   deriving (Semigroup, Monoid) via Product Double
 instance Arbitrary (Per a b) where arbitrary = genericArbitrary
 
@@ -378,3 +381,13 @@ type TilesPerTick = Tiles `Per` Ticks
 
 timesTiles :: TicksPerTile -> Tiles -> Ticks
 timesTiles = (|*|)
+
+--------------------------------------------------------------------------------
+
+newtype Hitpoints = Hitpoints Word
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (Arbitrary, Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON)
+       via Word
+  deriving (Semigroup, Monoid) via Sum Word
+

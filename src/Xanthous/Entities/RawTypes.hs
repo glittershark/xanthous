@@ -29,13 +29,13 @@ import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Entities (EntityChar, HasChar(..))
 import Xanthous.Messages (Message(..))
-import Xanthous.Data (TicksPerTile)
+import Xanthous.Data (TicksPerTile, Hitpoints)
 --------------------------------------------------------------------------------
 data CreatureType = CreatureType
   { _name         :: !Text
   , _description  :: !Text
   , _char         :: !EntityChar
-  , _maxHitpoints :: !Word
+  , _maxHitpoints :: !Hitpoints
   , _friendly     :: !Bool
   , _speed        :: !TicksPerTile
   }

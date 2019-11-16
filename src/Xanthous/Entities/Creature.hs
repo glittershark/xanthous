@@ -78,7 +78,7 @@ initialHippocampus = Hippocampus Nothing
 
 data Creature = Creature
   { _creatureType :: !CreatureType
-  , _hitpoints    :: !Word
+  , _hitpoints    :: !Hitpoints
   , _hippocampus  :: !Hippocampus
   }
   deriving stock (Eq, Show, Generic)
@@ -99,7 +99,7 @@ newWithType _creatureType =
       _hippocampus = initialHippocampus
   in Creature {..}
 
-damage :: Word -> Creature -> Creature
+damage :: Hitpoints -> Creature -> Creature
 damage amount = hitpoints %~ \hp ->
   if hp <= amount
   then 0

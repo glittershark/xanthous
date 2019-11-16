@@ -1,10 +1,13 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Xanthous.Entities.Character
   ( Character(..)
   , characterName
   , inventory
   , characterDamage
+  , characterHitpoints'
   , characterHitpoints
+  , hitpointRecoveryRate
   , speed
 
     -- *
@@ -22,17 +25,18 @@ import Test.QuickCheck.Arbitrary.Generic
 import Brick
 import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
+import Data.Coerce (coerce)
 --------------------------------------------------------------------------------
 import Xanthous.Entities
 import Xanthous.Entities.Item
-import Xanthous.Data (TicksPerTile)
+import Xanthous.Data (TicksPerTile, Hitpoints, Per, Ticks, (|*|), positioned)
 --------------------------------------------------------------------------------
 
 data Character = Character
   { _inventory :: !(Vector Item)
   , _characterName :: !(Maybe Text)
-  , _characterDamage :: !Word
-  , _characterHitpoints :: !Word
+  , _characterDamage :: !Hitpoints
+  , _characterHitpoints' :: !Double
   , _speed :: TicksPerTile
   }
   deriving stock (Show, Eq, Generic)
@@ -41,6 +45,9 @@ data Character = Character
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            Character
 makeLenses ''Character
+
+characterHitpoints :: Character -> Hitpoints
+characterHitpoints = views characterHitpoints' floor
 
 scrollOffset :: Int
 scrollOffset = 5
@@ -52,8 +59,11 @@ instance Draw Character where
       rreg = (2 * scrollOffset, 2 * scrollOffset)
   drawPriority = const maxBound -- Character should always be on top, for now
 
--- the character does not (yet) have a mind of its own
-instance Brain Character where step = brainVia Brainless
+instance Brain Character where
+  step ticks = (pure .) $ positioned . characterHitpoints' %~ \hp ->
+    if hp > fromIntegral initialHitpoints
+    then hp
+    else hp + hitpointRecoveryRate |*| ticks
 
 instance Entity Character where
   blocksVision _ = False
@@ -62,8 +72,11 @@ instance Entity Character where
 instance Arbitrary Character where
   arbitrary = genericArbitrary
 
-initialHitpoints :: Word
+initialHitpoints :: Hitpoints
 initialHitpoints = 10
+
+hitpointRecoveryRate :: Double `Per` Ticks
+hitpointRecoveryRate = 1.0 / (15 * coerce defaultSpeed)
 
 defaultSpeed :: TicksPerTile
 defaultSpeed = 100
@@ -73,17 +86,17 @@ mkCharacter = Character
   { _inventory = mempty
   , _characterName = Nothing
   , _characterDamage = 1
-  , _characterHitpoints = initialHitpoints
+  , _characterHitpoints' = fromIntegral initialHitpoints
   , _speed = defaultSpeed
   }
 
 isDead :: Character -> Bool
-isDead = (== 0) . view characterHitpoints
+isDead = (== 0) . characterHitpoints
 
 pickUpItem :: Item -> Character -> Character
 pickUpItem item = inventory %~ (item <|)
 
-damage :: Word -> Character -> Character
-damage amount = characterHitpoints %~ \case
+damage :: Hitpoints -> Character -> Character
+damage (fromIntegral -> amount) = characterHitpoints' %~ \case
   n | n <= amount -> 0
     | otherwise  -> n - amount

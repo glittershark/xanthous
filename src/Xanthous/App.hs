@@ -95,7 +95,7 @@ stepGameBy ticks = do
     pEntity' <- step ticks pEntity
     entities . ix eid .= pEntity'
 
-  whenM (uses (character . characterHitpoints) (== 0))
+  whenM (uses character isDead)
     . prompt_ @'Continue ["dead"] Uncancellable
     . const . lift . liftIO
     $ exitSuccess
@@ -186,7 +186,7 @@ handleCommand Eat = do
               in before <> fromMaybe Empty (tailMay after)
             let msg = fromMaybe (Messages.lookup ["eat", "eat"])
                       $ edibleItem ^. eatMessage
-            character . characterHitpoints +=
+            character . characterHitpoints' +=
               edibleItem ^. hitpointsHealed . to fromIntegral
             message msg $ object ["item" A..= item]
   stepGame -- TODO

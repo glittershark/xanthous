@@ -96,7 +96,7 @@ drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
              = emptyWidget
     charHitpoints
         = txt "Hitpoints: "
-      <+> txt (tshow $ ch ^. characterHitpoints)
+      <+> txt (tshow $ let Hitpoints hp = characterHitpoints ch in hp)
 
 drawGame :: GameState -> [Widget Name]
 drawGame game
