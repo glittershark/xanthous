@@ -32,6 +32,14 @@ import qualified Xanthous.Resource as Resource
 import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
 
+cursorPosition :: GameState -> Widget Name -> Widget Name
+cursorPosition game
+  | WaitingPrompt _ (Prompt _ SPointOnMap (PointOnMapPromptState pos) _ _)
+    <- game ^. promptState
+  = showCursor Resource.Prompt (pos ^. loc)
+  | otherwise
+  = showCursor Resource.Character (game ^. characterPosition . loc)
+
 drawMessages :: MessageHistory -> Widget Name
 drawMessages = txt . (<> " ") . unwords . oextract
 
@@ -46,7 +54,7 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
     (SMenu, _, menuItems) ->
       txt msg
       <=> foldl' (<=>) emptyWidget (map drawMenuItem $ itoList menuItems)
-    _ -> undefined
+    _ -> txt msg
   where
     drawMenuItem (chr, MenuOption m _) =
       str ("[" <> pure chr <> "] ") <+> txt m
@@ -77,7 +85,7 @@ drawEntities canRenderPos allEnts
 drawMap :: GameState -> Widget Name
 drawMap game
   = viewport Resource.MapViewport Both
-  . showCursor Resource.Character (game ^. characterPosition . loc)
+  . cursorPosition game
   $ drawEntities
     (\pos ->
          (game ^. debugState . allRevealed)
@@ -102,7 +110,9 @@ drawGame :: GameState -> [Widget Name]
 drawGame game
   = pure
   . withBorderStyle unicode
-  $   drawMessages (game ^. messageHistory)
+  $ case game ^. promptState of
+       NoPrompt -> drawMessages (game ^. messageHistory)
+       _ -> emptyWidget
   <=> drawPromptState (game ^. promptState)
   <=> border (drawMap game)
   <=> drawCharacterInfo (game ^. character)

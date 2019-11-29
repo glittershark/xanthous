@@ -16,6 +16,7 @@ data Name = MapViewport
           | MessageBox
             -- ^ The box where we display messages to the user
           | Prompt
+            -- ^ The game's prompt
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
 

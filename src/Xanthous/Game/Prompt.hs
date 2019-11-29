@@ -15,6 +15,7 @@ module Xanthous.Game.Prompt
   , Prompt(..)
   , mkPrompt
   , mkMenu
+  , mkPointOnMapPrompt
   , isCancellable
   , submitPrompt
   ) where
@@ -67,6 +68,7 @@ instance NFData (SPromptType pt) where
 class SingPromptType pt where singPromptType :: SPromptType pt
 instance SingPromptType 'StringPrompt where singPromptType = SStringPrompt
 instance SingPromptType 'DirectionPrompt where singPromptType = SDirectionPrompt
+instance SingPromptType 'PointOnMap where singPromptType = SPointOnMap
 instance SingPromptType 'Continue where singPromptType = SContinue
 
 instance Show (SPromptType pt) where
@@ -115,16 +117,20 @@ instance Arbitrary (PromptResult 'Continue) where
 --------------------------------------------------------------------------------
 
 data PromptState pt where
-  StringPromptState    :: Editor Text Name -> PromptState 'StringPrompt
-  DirectionPromptState ::                    PromptState 'DirectionPrompt
-  ContinuePromptState  ::                    PromptState 'Continue
-  MenuPromptState      :: forall a.               PromptState ('Menu a)
+  StringPromptState     :: Editor Text Name -> PromptState 'StringPrompt
+  DirectionPromptState  ::                    PromptState 'DirectionPrompt
+  ContinuePromptState   ::                    PromptState 'Continue
+  ConfirmPromptState    ::                    PromptState 'Confirm
+  MenuPromptState       :: forall a.               PromptState ('Menu a)
+  PointOnMapPromptState :: Position         -> PromptState 'PointOnMap
 
 instance NFData (PromptState pt) where
   rnf sps@(StringPromptState ed) = sps `deepseq` ed `deepseq` ()
   rnf DirectionPromptState = ()
   rnf ContinuePromptState = ()
+  rnf ConfirmPromptState = ()
   rnf MenuPromptState = ()
+  rnf pomps@(PointOnMapPromptState pos) = pomps `deepseq` pos `deepseq` ()
 
 instance Arbitrary (PromptState 'StringPrompt) where
   arbitrary = StringPromptState <$> arbitrary
@@ -170,6 +176,7 @@ instance Show (MenuOption a) where
 
 type family PromptInput (pt :: PromptType) :: Type where
   PromptInput ('Menu a) = Map Char (MenuOption a)
+  PromptInput 'PointOnMap = Position -- Character pos
   PromptInput _ = ()
 
 data Prompt (m :: Type -> Type) where
@@ -236,7 +243,7 @@ mkPrompt c pt@SStringPrompt cb =
   in Prompt c pt ps () cb
 mkPrompt c pt@SDirectionPrompt cb = Prompt c pt DirectionPromptState () cb
 mkPrompt c pt@SContinue cb = Prompt c pt ContinuePromptState () cb
-mkPrompt _ _ _ = undefined
+mkPrompt c pt@SConfirm cb = Prompt c pt ConfirmPromptState () cb
 
 mkMenu
   :: forall a m.
@@ -245,6 +252,13 @@ mkMenu
   -> (PromptResult ('Menu a) -> m ())
   -> Prompt m
 mkMenu c = Prompt c SMenu MenuPromptState
+
+mkPointOnMapPrompt
+  :: PromptCancellable
+  -> Position
+  -> (PromptResult 'PointOnMap -> m ())
+  -> Prompt m
+mkPointOnMapPrompt c pos = Prompt c SPointOnMap (PointOnMapPromptState pos) pos
 
 isCancellable :: Prompt m -> Bool
 isCancellable (Prompt Cancellable _ _ _ _)   = True
@@ -261,7 +275,7 @@ submitPrompt (Prompt _ pt ps _ cb) =
       cb ContinueResult
     (SMenu, MenuPromptState) ->
       pure () -- Don't use submit with a menu prompt
-    _ -> undefined
-
--- data PromptInput :: PromptType -> Type where
---   StringInput :: PromptInput 'StringPrompt
+    (SPointOnMap, PointOnMapPromptState pos) ->
+      cb $ PointOnMapResult pos
+    (SConfirm, ConfirmPromptState) ->
+      cb $ ConfirmResult True

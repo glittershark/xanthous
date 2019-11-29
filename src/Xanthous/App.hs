@@ -1,4 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE UndecidableInstances #-}
 --------------------------------------------------------------------------------
 module Xanthous.App (makeApp) where
 --------------------------------------------------------------------------------
@@ -14,8 +15,8 @@ import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
 import qualified Data.Vector as V
-import qualified Data.Yaml as Yaml
 import           System.Exit
+import           GHC.TypeLits (TypeError, ErrorMessage(..))
 --------------------------------------------------------------------------------
 import           Xanthous.Command
 import           Xanthous.Data
@@ -167,6 +168,15 @@ handleCommand Open = do
   stepGame -- TODO
   continue
 
+handleCommand Look = do
+  prompt_ @'PointOnMap ["look", "prompt"] Cancellable
+    $ \(PointOnMapResult pos) ->
+      use (entities . EntityMap.atPosition pos)
+      >>= \case
+        Empty -> say_ ["look", "nothing"]
+        ents -> describeEntities ents
+  continue
+
 handleCommand Wait = stepGame >> continue
 
 handleCommand Eat = do
@@ -217,11 +227,10 @@ handlePromptEvent
   -> BrickEvent Name ()
   -> AppM (Next GameState)
 
-handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc [])) = do
-  promptState .= NoPrompt
-  continue
-handlePromptEvent _ pr (VtyEvent (EvKey KEnter [])) =
-  submitPrompt pr >> clearPrompt
+handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc []))
+  = clearPrompt
+handlePromptEvent _ pr (VtyEvent (EvKey KEnter []))
+  = submitPrompt pr >> clearPrompt
 
 handlePromptEvent
   msg
@@ -246,14 +255,32 @@ handlePromptEvent _ (Prompt _ SMenu _ items cb) (VtyEvent (EvKey (KChar chr) [])
   | otherwise
   = continue
 
-handlePromptEvent _ _ _ = undefined
+handlePromptEvent
+  msg
+  (Prompt c SPointOnMap (PointOnMapPromptState pos) pri cb)
+  (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
+  = let pos' = move dir pos
+        prompt' = Prompt c SPointOnMap (PointOnMapPromptState pos') pri cb
+    in promptState .= WaitingPrompt msg prompt'
+       >> continue
+handlePromptEvent _ (Prompt _ SPointOnMap _ _ _) _ = continue
 
 clearPrompt :: AppM (Next GameState)
 clearPrompt = promptState .= NoPrompt >> continue
 
+class NotMenu (pt :: PromptType)
+instance NotMenu 'StringPrompt
+instance NotMenu 'Confirm
+instance NotMenu 'DirectionPrompt
+instance NotMenu 'PointOnMap
+instance NotMenu 'Continue
+instance TypeError ('Text "Cannot use `prompt` or `prompt_` for menu prompts"
+                    ':$$: 'Text "Use `menu` or `menu_` instead")
+         => NotMenu ('Menu a)
+
 prompt
   :: forall (pt :: PromptType) (params :: Type).
-    (ToJSON params, SingPromptType pt, PromptInput pt ~ ())
+    (ToJSON params, SingPromptType pt, NotMenu pt)
   => [Text]                     -- ^ Message key
   -> params                     -- ^ Message params
   -> PromptCancellable
@@ -262,12 +289,20 @@ prompt
 prompt msgPath params cancellable cb = do
   let pt = singPromptType @pt
   msg <- Messages.message msgPath params
-  let p = mkPrompt cancellable pt cb
+  p <- case pt of
+    SPointOnMap -> do
+      charPos <- use characterPosition
+      pure $ mkPointOnMapPrompt cancellable charPos cb
+    SStringPrompt -> pure $ mkPrompt cancellable pt cb
+    SConfirm -> pure $ mkPrompt cancellable pt cb
+    SDirectionPrompt -> pure $ mkPrompt cancellable pt cb
+    SContinue -> pure $ mkPrompt cancellable pt cb
+    SMenu -> error "unreachable"
   promptState .= WaitingPrompt msg p
 
 prompt_
-  :: forall (pt :: PromptType) .
-    (SingPromptType pt, PromptInput pt ~ ())
+  :: forall (pt :: PromptType).
+    (SingPromptType pt, NotMenu pt)
   => [Text] -- ^ Message key
   -> PromptCancellable
   -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
@@ -295,6 +330,7 @@ menu_ :: forall (a :: Type).
       -> AppM ()
 menu_ msgPath = menu msgPath $ object []
 
+
 --------------------------------------------------------------------------------
 
 entitiesAtPositionWithType
@@ -316,10 +352,22 @@ describeEntitiesAt pos =
       . to (filter (not . entityIs @Character))
       ) >>= \case
         Empty -> pure ()
-        ents  ->
-          let descriptions = description <$> ents
-          in say ["entities", "description"] $ object
-                 ["entityDescriptions" A..= toSentence descriptions]
+        ents  -> describeEntities ents
+
+describeEntities
+  :: ( Entity entity
+    , MonadRandom m
+    , MonadState GameState m
+    , MonoFoldable (f Text)
+    , Functor f
+    , Element (f Text) ~ Text
+    )
+  => f entity
+  -> m ()
+describeEntities ents =
+  let descriptions = description <$> ents
+  in say ["entities", "description"]
+     $ object ["entityDescriptions" A..= toSentence descriptions]
 
 attackAt :: Position -> AppM ()
 attackAt pos =

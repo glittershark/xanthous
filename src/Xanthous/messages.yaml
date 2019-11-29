@@ -22,6 +22,10 @@ open:
   locked: "That door is locked"
   nothingToOpen: "There's nothing to open there"
 
+look:
+  prompt: Select a position on the map to describe (use Enter to confirm)
+  nothing: There's nothing there
+
 character:
   namePrompt: "What's your name? "
 
