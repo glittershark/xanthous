@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GADTs #-}
 --------------------------------------------------------------------------------
@@ -50,10 +51,18 @@ instance Show PromptType where
 data SPromptType :: PromptType -> Type where
   SStringPrompt    ::      SPromptType 'StringPrompt
   SConfirm         ::      SPromptType 'Confirm
-  SMenu            :: forall a. SPromptType ('Menu a)
+  SMenu            ::      SPromptType ('Menu a)
   SDirectionPrompt ::      SPromptType 'DirectionPrompt
   SPointOnMap      ::      SPromptType 'PointOnMap
   SContinue        ::      SPromptType 'Continue
+
+instance NFData (SPromptType pt) where
+  rnf SStringPrompt = ()
+  rnf SConfirm = ()
+  rnf SMenu = ()
+  rnf SDirectionPrompt = ()
+  rnf SPointOnMap = ()
+  rnf SContinue = ()
 
 class SingPromptType pt where singPromptType :: SPromptType pt
 instance SingPromptType 'StringPrompt where singPromptType = SStringPrompt
@@ -85,15 +94,67 @@ data PromptResult (pt :: PromptType) where
   PointOnMapResult :: Position  -> PromptResult 'PointOnMap
   ContinueResult   ::             PromptResult 'Continue
 
+instance Arbitrary (PromptResult 'StringPrompt) where
+  arbitrary = StringResult <$> arbitrary
+
+instance Arbitrary (PromptResult 'Confirm) where
+  arbitrary = ConfirmResult <$> arbitrary
+
+instance Arbitrary a => Arbitrary (PromptResult ('Menu a)) where
+  arbitrary = MenuResult <$> arbitrary
+
+instance Arbitrary (PromptResult 'DirectionPrompt) where
+  arbitrary = DirectionResult <$> arbitrary
+
+instance Arbitrary (PromptResult 'PointOnMap) where
+  arbitrary = PointOnMapResult <$> arbitrary
+
+instance Arbitrary (PromptResult 'Continue) where
+  arbitrary = pure ContinueResult
+
+--------------------------------------------------------------------------------
+
 data PromptState pt where
   StringPromptState    :: Editor Text Name -> PromptState 'StringPrompt
   DirectionPromptState ::                    PromptState 'DirectionPrompt
   ContinuePromptState  ::                    PromptState 'Continue
   MenuPromptState      :: forall a.               PromptState ('Menu a)
 
+instance NFData (PromptState pt) where
+  rnf sps@(StringPromptState ed) = sps `deepseq` ed `deepseq` ()
+  rnf DirectionPromptState = ()
+  rnf ContinuePromptState = ()
+  rnf MenuPromptState = ()
+
+instance Arbitrary (PromptState 'StringPrompt) where
+  arbitrary = StringPromptState <$> arbitrary
+
+instance Arbitrary (PromptState 'DirectionPrompt) where
+  arbitrary = pure DirectionPromptState
+
+instance Arbitrary (PromptState 'Continue) where
+  arbitrary = pure ContinuePromptState
+
+instance Arbitrary (PromptState ('Menu a)) where
+  arbitrary = pure MenuPromptState
+
+instance CoArbitrary (PromptState 'StringPrompt) where
+  coarbitrary (StringPromptState ed) = coarbitrary ed
+
+instance CoArbitrary (PromptState 'DirectionPrompt) where
+  coarbitrary DirectionPromptState = coarbitrary ()
+
+instance CoArbitrary (PromptState 'Continue) where
+  coarbitrary ContinuePromptState = coarbitrary ()
+
+instance CoArbitrary (PromptState ('Menu a)) where
+  coarbitrary MenuPromptState = coarbitrary ()
+
 deriving stock instance Show (PromptState pt)
 
 data MenuOption a = MenuOption Text a
+  deriving stock (Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
 
 mkMenuItems :: (MonoFoldable f, Element f ~ (Char, MenuOption a))
             => f
@@ -133,6 +194,41 @@ instance Show (Prompt m) where
     where showPri = case pt of
             SMenu -> show pri
             _ -> "()"
+
+instance NFData (Prompt m) where
+  rnf (Prompt c SMenu ps pri cb)
+            = c
+    `deepseq` ps
+    `deepseq` pri
+    `seq` cb
+    `seq` ()
+  rnf (Prompt c spt ps pri cb)
+            = c
+    `deepseq` spt
+    `deepseq` ps
+    `deepseq` pri
+    `seq` cb
+    `seq` ()
+
+instance CoArbitrary (m ()) => CoArbitrary (Prompt m) where
+  coarbitrary (Prompt c SStringPrompt ps pri cb) =
+    variant @Int 1 . coarbitrary (c, ps, pri, cb)
+  coarbitrary (Prompt c SConfirm _ pri cb) = -- TODO fill in prompt state
+    variant @Int 2 . coarbitrary (c, pri, cb)
+  coarbitrary (Prompt c SMenu _ps _pri _cb) =
+    variant @Int 3 . coarbitrary c {-, ps, pri, cb -}
+  coarbitrary (Prompt c SDirectionPrompt ps pri cb) =
+    variant @Int 4 . coarbitrary (c, ps, pri, cb)
+  coarbitrary (Prompt c SPointOnMap _ pri cb) = -- TODO fill in prompt state
+    variant @Int 5 . coarbitrary (c, pri, cb)
+  coarbitrary (Prompt c SContinue ps pri cb) =
+    variant @Int 6 . coarbitrary (c, ps, pri, cb)
+
+-- instance Function (Prompt m) where
+--   function = functionMap toTuple _fromTuple
+--     where
+--       toTuple (Prompt c pt ps pri cb) = (c, pt, ps, pri, cb)
+
 
 mkPrompt :: (PromptInput pt ~ ()) => PromptCancellable -> SPromptType pt -> (PromptResult pt -> m ()) -> Prompt m
 mkPrompt c pt@SStringPrompt cb =

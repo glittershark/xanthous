@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ac15bf59fd57f7a0bc23f010aec83824f819592494145cbce3e1db36e23f1107
+-- hash: 0ec32d45d89e30640d8d59137c5eaa80e5eed7eb31cb553d9b251db94ed1ba36
 
 name:           xanthous
 version:        0.1.0.0
@@ -37,10 +37,10 @@ library
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
       Xanthous.Entities
-      Xanthous.Entities.Arbitrary
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
       Xanthous.Entities.Draw.Util
+      Xanthous.Entities.Entities
       Xanthous.Entities.Environment
       Xanthous.Entities.Item
       Xanthous.Entities.Raws
@@ -64,6 +64,8 @@ library
       Xanthous.Util
       Xanthous.Util.Graphics
       Xanthous.Util.Inflection
+      Xanthous.Util.JSON
+      Xanthous.Util.QuickCheck
   other-modules:
       Paths_xanthous
   hs-source-dirs:
@@ -102,10 +104,12 @@ library
     , raw-strings-qq
     , reflection
     , stache
+    , text-zipper
     , tomland
     , vector
     , vty
     , yaml
+    , zlib
   default-language: Haskell2010
 
 executable xanthous
@@ -119,10 +123,10 @@ executable xanthous
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
       Xanthous.Entities
-      Xanthous.Entities.Arbitrary
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
       Xanthous.Entities.Draw.Util
+      Xanthous.Entities.Entities
       Xanthous.Entities.Environment
       Xanthous.Entities.Item
       Xanthous.Entities.Raws
@@ -146,6 +150,8 @@ executable xanthous
       Xanthous.Util
       Xanthous.Util.Graphics
       Xanthous.Util.Inflection
+      Xanthous.Util.JSON
+      Xanthous.Util.QuickCheck
       Paths_xanthous
   hs-source-dirs:
       src
@@ -183,11 +189,13 @@ executable xanthous
     , raw-strings-qq
     , reflection
     , stache
+    , text-zipper
     , tomland
     , vector
     , vty
     , xanthous
     , yaml
+    , zlib
   default-language: Haskell2010
 
 test-suite test
@@ -198,6 +206,7 @@ test-suite test
       Xanthous.Data.EntityMapSpec
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
+      Xanthous.EntitiesSpec
       Xanthous.GameSpec
       Xanthous.Generators.UtilSpec
       Xanthous.MessageSpec
@@ -246,9 +255,11 @@ test-suite test
     , tasty
     , tasty-hunit
     , tasty-quickcheck
+    , text-zipper
     , tomland
     , vector
     , vty
     , xanthous
     , yaml
+    , zlib
   default-language: Haskell2010

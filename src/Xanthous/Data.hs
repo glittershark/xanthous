@@ -64,14 +64,15 @@ module Xanthous.Data
   , Hitpoints(..)
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding (Left, Down, Right)
+import           Xanthous.Prelude hiding (Left, Down, Right, (.=))
 import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
 import           Brick (Location(Location), Edges(..))
 import           Data.Monoid (Product(..), Sum(..))
 import           Data.Aeson.Generic.DerivingVia
-import           Data.Aeson (ToJSON, FromJSON)
+import           Data.Aeson
+                 ( ToJSON(..), FromJSON(..), object, (.=), (.:), withObject)
 --------------------------------------------------------------------------------
 import           Xanthous.Util (EqEqProp(..), EqProp)
 import           Xanthous.Orphans ()
@@ -116,6 +117,7 @@ instance Arbitrary a => Arbitrary (Position' a) where
   arbitrary = genericArbitrary
   shrink = genericShrink
 
+
 instance Num a => Semigroup (Position' a) where
   (Position x₁ y₁) <> (Position x₂ y₂) = Position (x₁ + x₂) (y₁ + y₂)
 
@@ -134,7 +136,7 @@ instance (Ord a, Num a, Scalar a) => Scalar (Position' a) where
 data Positioned a where
   Positioned :: Position -> a -> Positioned a
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
-  deriving anyclass (CoArbitrary, Function)
+  deriving anyclass (NFData, CoArbitrary, Function)
 type role Positioned representational
 
 _Positioned :: Iso (Position, a) (Position, b) (Positioned a) (Positioned b)
@@ -145,6 +147,16 @@ _Positioned = iso hither yon
 
 instance Arbitrary a => Arbitrary (Positioned a) where
   arbitrary = Positioned <$> arbitrary <*> arbitrary
+
+instance ToJSON a => ToJSON (Positioned a) where
+  toJSON (Positioned pos val) = object
+    [ "position" .= pos
+    , "data" .= val
+    ]
+
+instance FromJSON a => FromJSON (Positioned a) where
+  parseJSON = withObject "Positioned" $ \obj ->
+    Positioned <$> obj .: "position" <*> obj .: "data"
 
 position :: Lens' (Positioned a) Position
 position = lens

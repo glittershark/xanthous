@@ -48,9 +48,11 @@ dependencies:
 - reflection
 - stache
 - tomland
+- text-zipper
 - vector
 - vty
 - yaml
+- zlib
 
 default-extensions:
 - BlockArguments

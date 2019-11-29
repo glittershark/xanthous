@@ -40,7 +40,7 @@ data Character = Character
   , _speed :: TicksPerTile
   }
   deriving stock (Show, Eq, Generic)
-  deriving anyclass (CoArbitrary, Function)
+  deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            Character

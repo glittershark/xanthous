@@ -29,12 +29,14 @@ data Item = Item
   { _itemType :: ItemType
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (CoArbitrary, Function)
+  deriving anyclass (NFData, CoArbitrary, Function)
   deriving Draw via DrawRawChar "_itemType" Item
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        Item
 makeLenses ''Item
+
+{-# ANN Item ("HLint: ignore Use newtype instead of data" :: String )#-}
 
 -- deriving via (Brainless Item) instance Brain Item
 instance Brain Item where step = brainVia Brainless

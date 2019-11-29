@@ -8,12 +8,13 @@ import qualified Brick
 import           Brick.Widgets.Edit (handleEditorEvent)
 import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
-import           Control.Monad.State (get, MonadState)
+import           Control.Monad.State (get, gets, MonadState)
 import           Control.Monad.Random (MonadRandom)
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
 import qualified Data.Vector as V
+import qualified Data.Yaml as Yaml
 import           System.Exit
 --------------------------------------------------------------------------------
 import           Xanthous.Command
@@ -23,7 +24,6 @@ import           Xanthous.Data
                  , positioned
                  , Position
                  , Ticks
-                 , Position'(Position)
                  , (|*|)
                  )
 import           Xanthous.Data.EntityMap (EntityMap)
@@ -191,6 +191,18 @@ handleCommand Eat = do
             message msg $ object ["item" A..= item]
   stepGame -- TODO
   continue
+
+handleCommand Save = do
+  -- TODO default save locations / config file?
+  prompt_ @'StringPrompt ["save", "location"] Cancellable
+    $ \(StringResult filename) -> do
+      src <- gets saveGame
+      lift . liftIO $ do
+        writeFile (unpack filename) $ toStrict src
+        exitSuccess
+
+  continue
+
 
 handleCommand ToggleRevealAll = do
   val <- debugState . allRevealed <%= not

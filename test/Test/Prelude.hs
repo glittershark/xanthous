@@ -13,6 +13,7 @@ import Test.Tasty.QuickCheck
 import Test.Tasty.HUnit
 import Test.QuickCheck.Classes
 import Test.QuickCheck.Checkers (TestBatch)
+import Test.QuickCheck.Instances.ByteString ()
 
 testBatch :: TestBatch -> TestTree
 testBatch (name, tests) = testGroup name $ uncurry testProperty <$> tests

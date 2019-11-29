@@ -8,20 +8,27 @@ module Xanthous.Orphans
   ( ppTemplate
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding (elements)
+import           Xanthous.Prelude hiding (elements, (.=))
 --------------------------------------------------------------------------------
 import           Data.Aeson
+import           Data.Aeson.Types (typeMismatch)
 import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Text.Arbitrary ()
 import           Graphics.Vty.Attributes
+import           Brick.Widgets.Edit
+import           Data.Text.Zipper.Generic (GenericTextZipper)
+import           Brick.Widgets.Core (getName)
+import           System.Random (StdGen)
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 import           Text.Megaparsec (errorBundlePretty)
 import           Text.Megaparsec.Pos
 import           Text.Mustache
 import           Text.Mustache.Type ( showKey )
+import           Control.Monad.State
 --------------------------------------------------------------------------------
+import           Xanthous.Util.JSON
 
 instance forall s a.
   ( Cons s s a a
@@ -96,8 +103,10 @@ concatTextBlocks (x : xs) = x : concatTextBlocks xs
 instance Arbitrary Template where
   arbitrary = do
     template <- concatTextBlocks <$> arbitrary
-    templateName <- arbitrary
-    rest <- arbitrary
+    -- templateName <- arbitrary
+    -- rest <- arbitrary
+    let templateName = "template"
+        rest = mempty
     pure $ Template
       { templateActual = templateName
       , templateCache = rest & at templateName ?~ template
@@ -171,28 +180,45 @@ deriving anyclass instance NFData Node
 deriving anyclass instance NFData Template
 
 instance FromJSON Color where
-  parseJSON = withText "Color" $ \case
-    "black"   -> pure black
-    "red"     -> pure red
-    "green"   -> pure green
-    "yellow"  -> pure yellow
-    "blue"    -> pure blue
-    "magenta" -> pure magenta
-    "cyan"    -> pure cyan
-    "white"   -> pure white
-    _         -> fail "Invalid color"
+  parseJSON (String "black")         = pure black
+  parseJSON (String "red")           = pure red
+  parseJSON (String "green")         = pure green
+  parseJSON (String "yellow")        = pure yellow
+  parseJSON (String "blue")          = pure blue
+  parseJSON (String "magenta")       = pure magenta
+  parseJSON (String "cyan")          = pure cyan
+  parseJSON (String "white")         = pure white
+  parseJSON (String "brightBlack")   = pure brightBlack
+  parseJSON (String "brightRed")     = pure brightRed
+  parseJSON (String "brightGreen")   = pure brightGreen
+  parseJSON (String "brightYellow")  = pure brightYellow
+  parseJSON (String "brightBlue")    = pure brightBlue
+  parseJSON (String "brightMagenta") = pure brightMagenta
+  parseJSON (String "brightCyan")    = pure brightCyan
+  parseJSON (String "brightWhite")   = pure brightWhite
+  parseJSON n@(Number _)             = Color240 <$> parseJSON n
+  parseJSON x                        = typeMismatch "Color" x
 
 instance ToJSON Color where
   toJSON color
-    | color == black = "black"
-    | color == red = "red"
-    | color == green = "green"
-    | color == yellow = "yellow"
-    | color == blue = "blue"
-    | color == magenta = "magenta"
-    | color == cyan = "cyan"
-    | color == white = "white"
-    | otherwise = error "unimplemented"
+    | color == black         = "black"
+    | color == red           = "red"
+    | color == green         = "green"
+    | color == yellow        = "yellow"
+    | color == blue          = "blue"
+    | color == magenta       = "magenta"
+    | color == cyan          = "cyan"
+    | color == white         = "white"
+    | color == brightBlack   = "brightBlack"
+    | color == brightRed     = "brightRed"
+    | color == brightGreen   = "brightGreen"
+    | color == brightYellow  = "brightYellow"
+    | color == brightBlue    = "brightBlue"
+    | color == brightMagenta = "brightMagenta"
+    | color == brightCyan    = "brightCyan"
+    | color == brightWhite   = "brightWhite"
+    | Color240 num <- color  = toJSON num
+    | otherwise             = error $ "unimplemented: " <> show color
 
 instance (Eq a, Show a, Read a, FromJSON a) => FromJSON (MaybeDefault a) where
   parseJSON Null                   = pure Default
@@ -207,7 +233,9 @@ instance ToJSON a => ToJSON (MaybeDefault a) where
 --------------------------------------------------------------------------------
 
 instance Arbitrary Color where
-  arbitrary = genericArbitrary
+  arbitrary = oneof [ Color240 <$> choose (0, 239)
+                    , ISOColor <$> choose (0, 15)
+                    ]
 
 deriving anyclass instance CoArbitrary Color
 deriving anyclass instance Function Color
@@ -236,3 +264,89 @@ instance Arbitrary Attr where
 
 deriving anyclass instance CoArbitrary Attr
 deriving anyclass instance Function Attr
+
+instance ToJSON Attr where
+  toJSON Attr{..} = object
+    [ "style" .= maybeDefaultToJSONWith styleToJSON attrStyle
+    , "foreground" .= attrForeColor
+    , "background" .= attrBackColor
+    , "url" .= attrURL
+    ]
+    where
+      maybeDefaultToJSONWith _ Default = Null
+      maybeDefaultToJSONWith _ KeepCurrent = String "keepCurrent"
+      maybeDefaultToJSONWith tj (SetTo x) = tj x
+      styleToJSON style
+        | style == standout     = "standout"
+        | style == underline    = "underline"
+        | style == reverseVideo = "reverseVideo"
+        | style == blink        = "blink"
+        | style == dim          = "dim"
+        | style == bold         = "bold"
+        | style == italic       = "italic"
+        | otherwise            = toJSON style
+
+instance FromJSON Attr where
+  parseJSON = withObject "Attr" $ \obj -> do
+    attrStyle <- parseStyle =<< obj .:? "style" .!= Default
+    attrForeColor <- obj .:? "foreground" .!= Default
+    attrBackColor <- obj .:? "background" .!= Default
+    attrURL <- obj .:? "url" .!= Default
+    pure Attr{..}
+
+    where
+      parseStyle (SetTo (String "standout"))     = pure (SetTo standout)
+      parseStyle (SetTo (String "underline"))    = pure (SetTo underline)
+      parseStyle (SetTo (String "reverseVideo")) = pure (SetTo reverseVideo)
+      parseStyle (SetTo (String "blink"))        = pure (SetTo blink)
+      parseStyle (SetTo (String "dim"))          = pure (SetTo dim)
+      parseStyle (SetTo (String "bold"))         = pure (SetTo bold)
+      parseStyle (SetTo (String "italic"))       = pure (SetTo italic)
+      parseStyle (SetTo n@(Number _))            = SetTo <$> parseJSON n
+      parseStyle (SetTo v)                       = typeMismatch "Style" v
+      parseStyle Default                         = pure Default
+      parseStyle KeepCurrent                     = pure KeepCurrent
+
+--------------------------------------------------------------------------------
+
+instance NFData a => NFData (NonNull a) where
+  rnf xs = xs `seq` toNullable xs `deepseq` ()
+
+instance forall t name. (NFData t, Monoid t, NFData name)
+                 => NFData (Editor t name) where
+  rnf ed = getName @_ @name ed `deepseq` getEditContents ed `deepseq` ()
+
+instance NFData StdGen where
+  -- StdGen's fields are bang-patterned so this is actually correct!
+  rnf sg = sg `seq` ()
+
+deriving via (ReadShowJSON StdGen) instance ToJSON StdGen
+deriving via (ReadShowJSON StdGen) instance FromJSON StdGen
+
+instance Function StdGen where
+  function = functionShow
+
+--------------------------------------------------------------------------------
+
+instance CoArbitrary a => CoArbitrary (NonNull a) where
+  coarbitrary = coarbitrary . toNullable
+
+instance (MonoFoldable a, Function a) => Function (NonNull a) where
+  function = functionMap toNullable $ fromMaybe (error "null") . fromNullable
+
+instance (Arbitrary t, Arbitrary n, GenericTextZipper t)
+       => Arbitrary (Editor t n) where
+  arbitrary = editor <$> arbitrary <*> arbitrary <*> arbitrary
+
+instance forall t n. (CoArbitrary t, CoArbitrary n, Monoid t)
+              => CoArbitrary (Editor t n) where
+  coarbitrary ed = coarbitrary (getName @_ @n ed, getEditContents ed)
+
+instance CoArbitrary StdGen where
+  coarbitrary = coarbitrary . show
+
+--------------------------------------------------------------------------------
+
+deriving newtype instance (Arbitrary s, CoArbitrary (m (a, s)))
+            => CoArbitrary (StateT s m a)
+

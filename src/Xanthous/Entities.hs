@@ -130,14 +130,7 @@ instance FromJSON EntityChar where
   parseJSON (String (chr :< Empty)) = pure $ EntityChar chr Vty.defAttr
   parseJSON (Object o) = do
     (EntityChar _char _) <- o .: "char"
-    _style <- o .:? "style" >>= \case
-      Just styleO -> do
-        let attrStyle = Vty.Default -- TODO
-            attrURL = Vty.Default
-        attrForeColor <- styleO .:? "foreground" .!= Vty.Default
-        attrBackColor <- styleO .:? "background" .!= Vty.Default
-        pure Vty.Attr {..}
-      Nothing -> pure Vty.defAttr
+    _style <- o .:? "style" .!= Vty.defAttr
     pure EntityChar {..}
   parseJSON _ = fail "Invalid type, expected string or object"
 
@@ -146,10 +139,7 @@ instance ToJSON EntityChar where
     | styl == Vty.defAttr = String $ chr <| Empty
     | otherwise = object
       [ "char" .= chr
-      , "style" .= object
-        [ "foreground" .= Vty.attrForeColor styl
-        , "background" .= Vty.attrBackColor styl
-        ]
+      , "style" .= styl
       ]
 
 instance Draw EntityChar where

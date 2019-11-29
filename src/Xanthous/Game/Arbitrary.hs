@@ -1,4 +1,6 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
 --------------------------------------------------------------------------------
 module Xanthous.Game.Arbitrary where
@@ -9,7 +11,7 @@ import           Test.QuickCheck
 import           System.Random
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
-import           Xanthous.Entities.Arbitrary ()
+import           Xanthous.Entities.Entities ()
 import           Xanthous.Entities.Character
 import qualified Xanthous.Data.EntityMap as EntityMap
 --------------------------------------------------------------------------------
@@ -26,3 +28,8 @@ instance Arbitrary GameState where
     let _promptState = NoPrompt -- TODO
     _debugState <- arbitrary
     pure $ GameState {..}
+
+
+instance CoArbitrary GameState
+instance Function GameState
+deriving newtype instance CoArbitrary (m (a, GameState)) => CoArbitrary (AppT m a)

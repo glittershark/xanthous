@@ -1,12 +1,16 @@
 {-# LANGUAGE BlockArguments #-}
+--------------------------------------------------------------------------------
 module Xanthous.OrphansSpec where
-
-import Test.Prelude
-import Xanthous.Orphans
-import Text.Mustache
-import Text.Megaparsec (errorBundlePretty)
-
-import Xanthous.Orphans ()
+--------------------------------------------------------------------------------
+import           Test.Prelude
+--------------------------------------------------------------------------------
+import           Text.Mustache
+import           Text.Megaparsec (errorBundlePretty)
+import           Graphics.Vty.Attributes
+import qualified Data.Aeson as JSON
+--------------------------------------------------------------------------------
+import           Xanthous.Orphans
+--------------------------------------------------------------------------------
 
 main :: IO ()
 main = defaultMain test
@@ -27,5 +31,12 @@ test = testGroup "Xanthous.Orphans"
           $ Right expected === do
             (Template actual cache) <- res
             maybe (Left "Template not found") Right $ cache ^? at actual
+    , testProperty "JSON round trip" $ \(tpl :: Template) ->
+        counterexample (unpack $ ppTemplate tpl)
+        $ JSON.decode (JSON.encode tpl) === Just tpl
+    ]
+  , testGroup "Attr"
+    [ testProperty "JSON round trip" $ \(attr :: Attr) ->
+        JSON.decode (JSON.encode attr) === Just attr
     ]
   ]

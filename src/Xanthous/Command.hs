@@ -17,6 +17,7 @@ data Command
   | Open
   | Wait
   | Eat
+  | Save
 
     -- | TODO replace with `:` commands
   | ToggleRevealAll
@@ -30,6 +31,7 @@ commandFromKey (KChar ',') [] = Just PickUp
 commandFromKey (KChar 'o') [] = Just Open
 commandFromKey (KChar 'e') [] = Just Eat
 commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll
+commandFromKey (KChar 'S') [] = Just Save
 commandFromKey _ _ = Nothing
 
 --------------------------------------------------------------------------------

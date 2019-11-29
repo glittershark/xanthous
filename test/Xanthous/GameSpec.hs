@@ -44,4 +44,10 @@ test
           (oextend f . oextend g) mh === oextend (f . oextend g) mh
       ]
     ]
+  , testGroup "Saving the game"
+    [ testProperty "forms a prism" $ isPrism saved
+    , testProperty "preserves the character ID" $ \gs ->
+        let Just gs' = loadGame $ saveGame gs
+        in gs' ^. character === gs ^. character
+    ]
   ]

@@ -2,9 +2,11 @@
 --------------------------------------------------------------------------------
 module Xanthous.Data.EntityMapSpec where
 --------------------------------------------------------------------------------
-import Test.Prelude
+import           Test.Prelude
 --------------------------------------------------------------------------------
-import Xanthous.Data.EntityMap
+import qualified Data.Aeson as JSON
+--------------------------------------------------------------------------------
+import           Xanthous.Data.EntityMap
 --------------------------------------------------------------------------------
 
 main :: IO ()
@@ -29,5 +31,10 @@ test = localOption (QuickCheckTests 20)
         if (em₁ == em₂ && em₂ == em₃)
         then (em₁ == em₃)
         else True
+    ]
+  , testGroup "JSON encoding/decoding"
+    [ testProperty "Preserves IDs" $ \(em :: EntityMap Int) ->
+        let Just em' = JSON.decode $ JSON.encode em
+        in toEIDsAndPositioned em' === toEIDsAndPositioned em
     ]
   ]

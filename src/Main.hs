@@ -6,6 +6,7 @@ import qualified Options.Applicative as Opt
 import           System.Random
 import           Control.Monad.Random (getRandom)
 import           Control.Exception (finally)
+import           System.Exit (die)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Game as Game
 import           Xanthous.App (makeApp)
@@ -45,6 +46,7 @@ parseRunParams = RunParams
 
 data Command
   = Run RunParams
+  | Load FilePath
   | Generate GeneratorInput Dimensions
 
 parseDimensions :: Opt.Parser Dimensions
@@ -64,6 +66,10 @@ parseCommand = (<|> Run <$> parseRunParams) $ Opt.subparser
       (Opt.info
        (Run <$> parseRunParams)
        (Opt.progDesc "Run the game"))
+  <> Opt.command "load"
+      (Opt.info
+       (Load <$> Opt.argument Opt.str (Opt.metavar "FILE"))
+       (Opt.progDesc "Load a saved game"))
   <> Opt.command "generate"
       (Opt.info
        (Generate
@@ -77,6 +83,9 @@ optParser :: Opt.ParserInfo Command
 optParser = Opt.info
   (parseCommand <**> Opt.helper)
   (Opt.header "Xanthous: a WIP TUI RPG")
+
+thanks :: IO ()
+thanks = putStr "\n\n" >> putStrLn "Thanks for playing Xanthous!"
 
 runGame :: RunParams -> IO ()
 runGame rparams = do
@@ -94,6 +103,15 @@ runGame rparams = do
     putStr "\n\n"
   pure ()
 
+loadGame :: FilePath -> IO ()
+loadGame saveFile = do
+  app <- makeApp
+  gameState <- maybe (die "Invalid save file!") pure
+              =<< Game.loadGame . fromStrict <$> readFile @IO saveFile
+  _game' <- gameState `deepseq` defaultMain app gameState `finally` thanks
+  pure ()
+
+
 runGenerate :: GeneratorInput -> Dimensions -> IO ()
 runGenerate input dims = do
   randGen <- getStdGen
@@ -109,6 +127,7 @@ runGenerate input dims = do
 
 runCommand :: Command -> IO ()
 runCommand (Run runParams) = runGame runParams
+runCommand (Load saveFile) = loadGame saveFile
 runCommand (Generate input dims) = runGenerate input dims
 
 main :: IO ()

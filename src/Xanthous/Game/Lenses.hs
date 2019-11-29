@@ -28,6 +28,7 @@ import           Xanthous.Entities.Character (Character, mkCharacter)
 import           Xanthous.Entities.Environment (Door, open)
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
+import           Xanthous.Entities.Entities ()
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState

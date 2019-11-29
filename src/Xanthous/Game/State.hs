@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
@@ -55,6 +56,9 @@ import           Control.Monad.State.Class
 import           Control.Monad.State
 import           Control.Monad.Random.Class
 import           Brick (EventM, Widget)
+import           Data.Aeson (ToJSON(..), FromJSON(..), Value(Null))
+import qualified Data.Aeson as JSON
+import           Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data
@@ -71,6 +75,9 @@ data MessageHistory
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+           MessageHistory
 makeFieldsNoPrefix ''MessageHistory
 
 instance Semigroup MessageHistory where
@@ -118,7 +125,31 @@ previousMessage mh = mh & displayedTurn .~ maximumOf
 data GamePromptState m where
   NoPrompt :: GamePromptState m
   WaitingPrompt :: Text -> Prompt m -> GamePromptState m
-  deriving stock (Show)
+  deriving stock (Show, Generic)
+  deriving anyclass (NFData)
+
+-- | Non-injective! We never try to serialize waiting prompts, since:
+--
+--  * they contain callback functions
+--  * we can't save the game when in a prompt anyway
+instance ToJSON (GamePromptState m) where
+  toJSON _ = Null
+
+-- | Always expects Null
+instance FromJSON (GamePromptState m) where
+  parseJSON Null = pure NoPrompt
+  parseJSON _ = fail "Invalid GamePromptState; expected null"
+
+instance CoArbitrary (GamePromptState m) where
+  coarbitrary NoPrompt = variant @Int 1
+  coarbitrary (WaitingPrompt txt _) = variant @Int 2 . coarbitrary txt
+
+instance Function (GamePromptState m) where
+  function = functionMap onlyNoPrompt (const NoPrompt)
+    where
+      onlyNoPrompt NoPrompt = ()
+      onlyNoPrompt (WaitingPrompt _ _) =
+        error "Can't handle prompts in Function!"
 
 --------------------------------------------------------------------------------
 
@@ -171,7 +202,10 @@ brainVia _ ticks = fmap coerce . step ticks . coerce @_ @(Positioned brain)
 
 --------------------------------------------------------------------------------
 
-class (Show a, Eq a, Draw a, Brain a) => Entity a where
+class ( Show a, Eq a, NFData a
+      , ToJSON a, FromJSON a
+      , Draw a, Brain a
+      ) => Entity a where
   blocksVision :: a -> Bool
   description :: a -> Text
 
@@ -186,6 +220,19 @@ instance Eq SomeEntity where
     Just Refl -> a == b
     _ -> False
 
+instance NFData SomeEntity where
+  rnf (SomeEntity ent) = ent `deepseq` ()
+
+instance ToJSON SomeEntity where
+  toJSON (SomeEntity ent) = entityToJSON ent
+    where
+      entityToJSON :: forall entity. (Entity entity, Typeable entity)
+                   => entity -> JSON.Value
+      entityToJSON entity = JSON.object
+        [ "type" JSON..= tshow (typeRep @_ @entity Proxy)
+        , "data" JSON..= toJSON entity
+        ]
+
 instance Draw SomeEntity where
   drawWithNeighbors ns (SomeEntity ent) = drawWithNeighbors ns ent
   drawPriority (SomeEntity ent) = drawPriority ent
@@ -193,10 +240,6 @@ instance Draw SomeEntity where
 instance Brain SomeEntity where
   step ticks (Positioned pos (SomeEntity ent)) =
     fmap SomeEntity <$> step ticks (Positioned pos ent)
-
-instance Entity SomeEntity where
-  blocksVision (SomeEntity ent) = blocksVision ent
-  description (SomeEntity ent) = description ent
 
 downcastEntity :: forall (a :: Type). (Typeable a) => SomeEntity -> Maybe a
 downcastEntity (SomeEntity e) = cast e
@@ -214,6 +257,10 @@ data DebugState = DebugState
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+           DebugState
+{-# ANN DebugState ("HLint: ignore Use newtype instead of data" :: String) #-}
 
 instance Arbitrary DebugState where
   arbitrary = genericArbitrary
@@ -227,7 +274,11 @@ data GameState = GameState
   , _promptState       :: !(GamePromptState AppM)
   , _debugState        :: DebugState
   }
-  deriving stock (Show)
+  deriving stock (Show, Generic)
+  deriving anyclass (NFData)
+  deriving (ToJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+           GameState
 makeLenses ''GameState
 
 instance Eq GameState where
@@ -249,6 +300,20 @@ instance (Monad m) => MonadRandom (AppT m) where
   getRandomRs rng = uses randomGen $ randomRs rng
   getRandoms = uses randomGen randoms
 
+instance (MonadIO m) => MonadIO (AppT m) where
+  liftIO = lift . liftIO
+
 --------------------------------------------------------------------------------
 
 makeLenses ''DebugState
+
+--------------------------------------------------------------------------------
+
+-- saveGame :: GameState -> LByteString
+-- saveGame = Zlib.compress . JSON.encode
+
+-- loadGame :: LByteString -> Maybe GameState
+-- loadGame = JSON.decode . Zlib.decompress
+
+-- saved :: Prism' LByteString GameState
+-- saved = prism' saveGame loadGame

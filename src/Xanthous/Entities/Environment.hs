@@ -12,6 +12,7 @@ import Test.QuickCheck.Arbitrary.Generic
 import Brick (str)
 import Brick.Widgets.Border.Style (unicode)
 import Brick.Types (Edges(..))
+import Data.Aeson
 --------------------------------------------------------------------------------
 import Xanthous.Entities
        ( Draw(..)
@@ -28,7 +29,15 @@ import Xanthous.Data
 
 data Wall = Wall
   deriving stock (Show, Eq, Ord, Generic, Enum)
-  deriving anyclass (CoArbitrary, Function)
+  deriving anyclass (NFData, CoArbitrary, Function)
+
+instance ToJSON Wall where
+  toJSON = const $ String "Wall"
+
+instance FromJSON Wall where
+  parseJSON = withText "Wall" $ \case
+    "Wall" -> pure Wall
+    _      -> fail "Invalid Wall: expected Wall"
 
 -- deriving via Brainless Wall instance Brain Wall
 instance Brain Wall where step = brainVia Brainless
@@ -53,7 +62,7 @@ data Door = Door
   , _locked :: Bool
   }
   deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
 makeLenses ''Door
 
 instance Arbitrary Door where

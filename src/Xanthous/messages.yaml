@@ -5,6 +5,10 @@ dead:
   - You perish...
   - You have perished...
 
+save:
+  location:
+    "Enter filename to save to: "
+
 entities:
   description: You see here {{entityDescriptions}}
 

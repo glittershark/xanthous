@@ -42,9 +42,13 @@ import Xanthous.Orphans ()
 import Xanthous.Util (EqEqProp(..))
 --------------------------------------------------------------------------------
 import Data.Monoid (Endo(..))
-import Test.QuickCheck (Arbitrary(..))
+import Test.QuickCheck (Arbitrary(..), CoArbitrary, Function)
 import Test.QuickCheck.Checkers (EqProp)
+import Test.QuickCheck.Instances.UnorderedContainers ()
+import Test.QuickCheck.Instances.Vector ()
+import Data.Aeson
 --------------------------------------------------------------------------------
+
 type EntityID = Word32
 type NonNullVector a = NonNull (Vector a)
 
@@ -55,8 +59,15 @@ data EntityMap a where
     , _lastID     :: EntityID
     } -> EntityMap a
   deriving stock (Functor, Foldable, Traversable, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
 deriving via (EqEqProp (EntityMap a)) instance Eq a => EqProp (EntityMap a)
 makeLenses ''EntityMap
+
+instance ToJSON a => ToJSON (EntityMap a) where
+  toJSON = toJSON . toEIDsAndPositioned
+
+instance FromJSON a => FromJSON (EntityMap a) where
+  parseJSON = fmap (fromEIDsAndPositioned @[_]) . parseJSON
 
 byIDInvariantError :: forall a. a
 byIDInvariantError = error $ "Invariant violation: All EntityIDs in byPosition "
@@ -180,7 +191,7 @@ atPositionWithIDs pos em =
   in (id &&& Positioned pos . getEIDAssume em) <$> eids
 
 fromEIDsAndPositioned
-  :: (MonoFoldable mono, Element mono ~ (EntityID, Positioned a))
+  :: forall mono a. (MonoFoldable mono, Element mono ~ (EntityID, Positioned a))
   => mono
   -> EntityMap a
 fromEIDsAndPositioned eps = newLastID $ alaf Endo foldMap insert' eps mempty
