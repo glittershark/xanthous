@@ -14,7 +14,6 @@ import Test.QuickCheck.Function
 import Test.QuickCheck.Instances.ByteString ()
 import Test.QuickCheck.Arbitrary.Generic
 import Data.Aeson
-import Data.Coerce
 import GHC.Generics (Rep)
 --------------------------------------------------------------------------------
 

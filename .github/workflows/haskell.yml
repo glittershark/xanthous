@@ -11,5 +11,5 @@ jobs:
     - uses: actions/checkout@v1
     - name: Nix Build
       with:
-        args: default.nix
+        args: default.nix --arg failOnWarnings true
       uses: ./.github/actions/nix-build

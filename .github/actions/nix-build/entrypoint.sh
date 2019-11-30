@@ -16,7 +16,7 @@ file="$1"
 [ ! -e "$file" ] && echo "File $file not exist!" && exit 1
 
 echo "Building all attrs in $file..."
-nix-build --no-link ${QUIET_ARG} "$file"
+nix-build --no-link ${QUIET_ARG} "$file" "${@:2}"
 
 echo "Copying build closure to $(pwd)/store..."
 mapfile -t storePaths < <(nix-build ${QUIET_ARG} --no-link "$file" | grep -v cache-deps)

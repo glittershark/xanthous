@@ -411,5 +411,5 @@ entityMenu_ = mkMenuItems @[_] . map entityMenuItem
            then ec
            else 'a'
 
-entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
-entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity
+-- entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
+-- entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity
