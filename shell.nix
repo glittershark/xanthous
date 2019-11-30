@@ -21,7 +21,7 @@ let
         # eww https://github.com/NixOS/nixpkgs/issues/16394
         generic-arbitrary = pkgs.haskell.lib.appendPatch
           super.generic-arbitrary
-          [ ./generic-arbitrary-export-garbitrary.patch ];
+          [ ./build/generic-arbitrary-export-garbitrary.patch ];
       });
     }
     else packageSet
