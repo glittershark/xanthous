@@ -9,7 +9,7 @@ $ nix build
 * Running
 
 #+BEGIN_SRC shell
-$ ./result
+$ ./result/bin/xanthous [--help]
 #+END_SRC
 
 ** Keyboard commands
