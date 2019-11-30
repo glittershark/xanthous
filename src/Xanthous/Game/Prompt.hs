@@ -27,7 +27,6 @@ import Xanthous.Prelude
 import           Brick.Widgets.Edit (Editor, editorText, getEditContents)
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
-import           Control.Comonad
 --------------------------------------------------------------------------------
 import           Xanthous.Util (smallestNotIn)
 import           Xanthous.Data (Direction, Position)

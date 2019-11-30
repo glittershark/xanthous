@@ -33,7 +33,15 @@ test = localOption (QuickCheckTests 20)
         else True
     ]
   , testGroup "JSON encoding/decoding"
-    [ testProperty "Preserves IDs" $ \(em :: EntityMap Int) ->
+    [ testProperty "round-trips" $ \(em :: EntityMap Int) ->
+        let em' = JSON.decode (JSON.encode em)
+        in counterexample (show (em' ^? _Just . lastID, em ^. lastID
+                                , em' ^? _Just . byID == em ^. byID . re _Just
+                                , em' ^? _Just . byPosition == em ^. byPosition . re _Just
+                                , em' ^? _Just . _EntityMap == em ^. _EntityMap . re _Just
+                                ))
+           $ em' === Just em
+    , testProperty "Preserves IDs" $ \(em :: EntityMap Int) ->
         let Just em' = JSON.decode $ JSON.encode em
         in toEIDsAndPositioned em' === toEIDsAndPositioned em
     ]

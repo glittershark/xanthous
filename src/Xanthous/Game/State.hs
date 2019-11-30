@@ -70,7 +70,6 @@ import           Data.Aeson.Generic.DerivingVia
 import           Data.Generics.Product.Fields
 import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
-import           Control.Comonad
 --------------------------------------------------------------------------------
 import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
@@ -282,7 +281,7 @@ brainVia _ ticks = fmap coerce . step ticks . coerce @_ @(Positioned brain)
 
 --------------------------------------------------------------------------------
 
-class ( Show a, Eq a, NFData a
+class ( Show a, Eq a, Ord a, NFData a
       , ToJSON a, FromJSON a
       , Draw a, Brain a
       ) => Entity a where
@@ -300,6 +299,12 @@ instance Eq SomeEntity where
   (SomeEntity (a :: ea)) == (SomeEntity (b :: eb)) = case eqT @ea @eb of
     Just Refl -> a == b
     _ -> False
+
+instance Ord SomeEntity where
+  compare (SomeEntity (a :: ea)) (SomeEntity (b :: eb)) = case eqT @ea @eb of
+    Just Refl -> compare a b
+    _ -> compare (typeRep $ Proxy @ea) (typeRep $ Proxy @eb)
+
 
 instance NFData SomeEntity where
   rnf (SomeEntity ent) = ent `deepseq` ()

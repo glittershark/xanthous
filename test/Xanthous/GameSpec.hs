@@ -46,6 +46,8 @@ test
     ]
   , testGroup "Saving the game"
     [ testProperty "forms a prism" $ isPrism saved
+    , testProperty "round-trips" $ \gs ->
+        loadGame (saveGame gs) === Just gs
     , testProperty "preserves the character ID" $ \gs ->
         let Just gs' = loadGame $ saveGame gs
         in gs' ^. character === gs ^. character

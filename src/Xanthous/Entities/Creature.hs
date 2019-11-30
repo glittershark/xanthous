@@ -47,7 +47,7 @@ data Destination = Destination
     -- When this value reaches >= 1, the creature has reached their destination
   , _destinationProgress :: !Tiles
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
@@ -63,7 +63,7 @@ destinationFromPos _destinationPosition =
 data Hippocampus = Hippocampus
   { _destination :: !(Maybe Destination)
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
@@ -81,7 +81,7 @@ data Creature = Creature
   , _hitpoints    :: !Hitpoints
   , _hippocampus  :: !Hippocampus
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Draw via DrawRawCharPriority "_creatureType" 1000 Creature
   deriving (ToJSON, FromJSON)

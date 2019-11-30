@@ -30,7 +30,7 @@ data EntityChar = EntityChar
   { _char :: Char
   , _style :: Vty.Attr
   }
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Arbitrary via GenericArbitrary EntityChar
 makeFieldsNoPrefix ''EntityChar

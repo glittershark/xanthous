@@ -115,7 +115,7 @@ type Position = Position' Int
 
 instance Arbitrary a => Arbitrary (Position' a) where
   arbitrary = genericArbitrary
-  shrink = genericShrink
+  shrink (Position px py) = Position <$> shrink px <*> shrink py
 
 
 instance Num a => Semigroup (Position' a) where

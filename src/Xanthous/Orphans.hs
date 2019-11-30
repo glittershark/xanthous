@@ -306,6 +306,10 @@ instance FromJSON Attr where
       parseStyle Default                         = pure Default
       parseStyle KeepCurrent                     = pure KeepCurrent
 
+deriving stock instance Ord Color
+deriving stock instance Ord a => Ord (MaybeDefault a)
+deriving stock instance Ord Attr
+
 --------------------------------------------------------------------------------
 
 instance NFData a => NFData (NonNull a) where

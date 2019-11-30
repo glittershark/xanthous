@@ -27,6 +27,7 @@ module Xanthous.Data.EntityMap
   -- * debug
   , byID
   , byPosition
+  , lastID
 
   ) where
 --------------------------------------------------------------------------------
@@ -46,25 +47,27 @@ import Test.QuickCheck (Arbitrary(..), CoArbitrary, Function)
 import Test.QuickCheck.Checkers (EqProp)
 import Test.QuickCheck.Instances.UnorderedContainers ()
 import Test.QuickCheck.Instances.Vector ()
+import Text.Show (showString, showParen)
 import Data.Aeson
 --------------------------------------------------------------------------------
 
 type EntityID = Word32
-type NonNullVector a = NonNull (Vector a)
+type NonNullSet a = NonNull (Set a)
 
 data EntityMap a where
   EntityMap ::
-    { _byPosition :: Map Position (NonNullVector EntityID)
+    { _byPosition :: Map Position (NonNullSet EntityID)
     , _byID       :: HashMap EntityID (Positioned a)
     , _lastID     :: EntityID
     } -> EntityMap a
   deriving stock (Functor, Foldable, Traversable, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
-deriving via (EqEqProp (EntityMap a)) instance Eq a => EqProp (EntityMap a)
+deriving via (EqEqProp (EntityMap a)) instance (Eq a, Ord a) => EqProp (EntityMap a)
 makeLenses ''EntityMap
 
 instance ToJSON a => ToJSON (EntityMap a) where
   toJSON = toJSON . toEIDsAndPositioned
+
 
 instance FromJSON a => FromJSON (EntityMap a) where
   parseJSON = fmap (fromEIDsAndPositioned @[_]) . parseJSON
@@ -73,14 +76,24 @@ byIDInvariantError :: forall a. a
 byIDInvariantError = error $ "Invariant violation: All EntityIDs in byPosition "
   <> "must point to entityIDs in byID"
 
-instance Eq a => Eq (EntityMap a) where
-  em₁ == em₂ = em₁ ^. _EntityMap == em₂ ^. _EntityMap
+instance (Ord a, Eq a) => Eq (EntityMap a) where
+  -- em₁ == em₂ = em₁ ^. _EntityMap == em₂ ^. _EntityMap
+  (==) = (==) `on` view (_EntityMap . to sort)
+
+deriving stock instance (Ord a) => Ord (EntityMap a)
 
 instance Show a => Show (EntityMap a) where
-  show em = "_EntityMap # " <> show (em ^. _EntityMap)
+  showsPrec pr em
+    = showParen (pr > 10)
+    $ showString
+    . ("fromEIDsAndPositioned " <>)
+    . show
+    . toEIDsAndPositioned
+    $ em
 
 instance Arbitrary a => Arbitrary (EntityMap a) where
   arbitrary = review _EntityMap <$> arbitrary
+  shrink em = review _EntityMap <$> shrink (em ^. _EntityMap)
 
 type instance Index (EntityMap a) = EntityID
 type instance IxValue (EntityMap a) = (Positioned a)
@@ -102,10 +115,10 @@ instance At (EntityMap a) where
           )
         & byID . at eid ?~ pe
         & byPosition . at pos %~ \case
-            Nothing -> Just $ ncons eid mempty
-            Just es -> Just $ eid <| es
+            Nothing -> Just $ opoint eid
+            Just es -> Just $ ninsertSet eid es
       removeEIDAtPos pos =
-        byPosition . at pos %~ (>>= fromNullable . nfilter (/= eid))
+        byPosition . at pos %~ (>>= fromNullable . ndeleteSet eid)
 
 instance Semigroup (EntityMap a) where
   em₁ <> em₂ = alaf Endo foldMap (uncurry insertAt) (em₂ ^. _EntityMap) em₁
@@ -137,8 +150,8 @@ instance Semigroup (Deduplicate a) where
         _byPosition = mempty &~ do
           ifor_ _byID $ \eid (Positioned pos _) ->
             at pos %= \case
-              Just eids -> Just $ eid <| eids
-              Nothing -> Just $ ncons eid mempty
+              Just eids -> Just $ ninsertSet eid eids
+              Nothing -> Just $ opoint eid
         _lastID = fromMaybe 1 $ maximumOf (ifolded . asIndex) _byID
     in Deduplicate EntityMap{..}
 
@@ -164,8 +177,8 @@ insertAtReturningID pos e em =
   in em'
      & byID . at eid ?~ Positioned pos e
      & byPosition . at pos %~ \case
-       Nothing -> Just $ ncons eid mempty
-       Just es -> Just $ eid <| es
+       Nothing -> Just $ opoint eid
+       Just es -> Just $ ninsertSet eid es
      & (eid, )
 
 insertAt :: forall a. Position -> a -> EntityMap a -> EntityMap a
@@ -176,7 +189,8 @@ atPosition pos = lens getter setter
   where
     getter em =
       let eids :: Vector EntityID
-          eids = maybe mempty toNullable $ em ^. byPosition . at pos
+          eids = maybe mempty (toVector . toNullable)
+                 $ em ^. byPosition . at pos
       in getEIDAssume em <$> eids
     setter em Empty = em & byPosition . at pos .~ Nothing
     setter em entities = alaf Endo foldMap (insertAt pos) entities em
@@ -187,7 +201,8 @@ getEIDAssume em eid = fromMaybe byIDInvariantError
 
 atPositionWithIDs :: Position -> EntityMap a -> Vector (EntityID, Positioned a)
 atPositionWithIDs pos em =
-  let eids = maybe mempty toNullable $ em ^. byPosition . at pos
+  let eids = maybe mempty (toVector . toNullable)
+             $ em ^. byPosition . at pos
   in (id &&& Positioned pos . getEIDAssume em) <$> eids
 
 fromEIDsAndPositioned
@@ -199,8 +214,8 @@ fromEIDsAndPositioned eps = newLastID $ alaf Endo foldMap insert' eps mempty
     insert' (eid, pe@(Positioned pos _))
       = (byID . at eid ?~ pe)
       . (byPosition . at pos %~ \case
-            Just eids -> Just $ eid <| eids
-            Nothing   -> Just $ ncons eid mempty
+            Just eids -> Just $ ninsertSet eid eids
+            Nothing   -> Just $ opoint eid
         )
     newLastID em = em & lastID
       .~ fromMaybe 1

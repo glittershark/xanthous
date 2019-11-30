@@ -21,7 +21,7 @@ import           Xanthous.Game.State
 data Item = Item
   { _itemType :: ItemType
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Draw via DrawRawChar "_itemType" Item
   deriving (ToJSON, FromJSON)

@@ -40,7 +40,7 @@ data CreatureType = CreatureType
   , _friendly     :: !Bool
   , _speed        :: !TicksPerTile
   }
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
@@ -56,7 +56,7 @@ data EdibleItem = EdibleItem
   { _hitpointsHealed :: Int
   , _eatMessage :: Maybe Message
   }
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
@@ -73,7 +73,7 @@ data ItemType = ItemType
   , _char            :: EntityChar
   , _edible          :: Maybe EdibleItem
   }
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2f93900ad18d56709eb363a7f8dd251a9474dd7092b1aef956389f32c036a121
+-- hash: 0476b4307dfceb20b9358ca2e6f78c753e3e0a4ae60c6faed54528f6a9c0dc5c
 
 name:           xanthous
 version:        0.1.0.0
@@ -96,6 +96,7 @@ library
     , megaparsec
     , mtl
     , optparse-applicative
+    , parallel
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -157,7 +158,7 @@ executable xanthous
   hs-source-dirs:
       src
   default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       MonadRandom
     , QuickCheck
@@ -182,6 +183,7 @@ executable xanthous
     , megaparsec
     , mtl
     , optparse-applicative
+    , parallel
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -220,7 +222,7 @@ test-suite test
   hs-source-dirs:
       test
   default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O0
   build-depends:
       MonadRandom
     , QuickCheck
@@ -246,6 +248,7 @@ test-suite test
     , megaparsec
     , mtl
     , optparse-applicative
+    , parallel
     , quickcheck-instances
     , quickcheck-text
     , random
