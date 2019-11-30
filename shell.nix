@@ -8,7 +8,9 @@ let
     if compiler == "default"
     then pkgs.haskellPackages
     else pkgs.haskell.packages.${compiler}
-  );
+  ).override {
+    overrides = import ./haskell-overlay.nix { inherit nixpkgs; };
+  };
 
   haskellPackages = (
     if withHoogle
@@ -16,6 +18,10 @@ let
       overrides = (self: super: {
         ghc = super.ghc // { withPackages = super.ghc.withHoogle; };
         ghcWithPackages = self.ghc.withPackages;
+        # eww https://github.com/NixOS/nixpkgs/issues/16394
+        generic-arbitrary = pkgs.haskell.lib.appendPatch
+          super.generic-arbitrary
+          [ ./generic-arbitrary-export-garbitrary.patch ];
       });
     }
     else packageSet
