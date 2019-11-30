@@ -15,14 +15,7 @@ import           Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes hiding (Item, description, isEdible)
 import qualified Xanthous.Entities.RawTypes as Raw
-import           Xanthous.Entities
-                 ( Draw(..)
-                 , Entity(..)
-                 , DrawRawChar(..)
-                 , Brain(..)
-                 , Brainless(..)
-                 , brainVia
-                 )
+import           Xanthous.Game.State
 --------------------------------------------------------------------------------
 
 data Item = Item
@@ -47,6 +40,7 @@ instance Arbitrary Item where
 instance Entity Item where
   blocksVision _ = False
   description = view $ itemType . Raw.description
+  entityChar = view $ itemType . Raw.char
 
 newWithType :: ItemType -> Item
 newWithType = Item

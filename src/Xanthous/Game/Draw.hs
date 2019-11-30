@@ -12,7 +12,7 @@ import           Brick.Widgets.Edit
 import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
-import           Xanthous.Entities
+import           Xanthous.Game.State
 import           Xanthous.Entities.Character
 import           Xanthous.Game
                  ( GameState(..)

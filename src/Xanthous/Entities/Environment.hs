@@ -14,17 +14,9 @@ import Brick.Widgets.Border.Style (unicode)
 import Brick.Types (Edges(..))
 import Data.Aeson
 --------------------------------------------------------------------------------
-import Xanthous.Entities
-       ( Draw(..)
-       , entityIs
-       , Entity(..)
-       , SomeEntity
-       , Brain(..)
-       , Brainless(..)
-       , brainVia
-       )
 import Xanthous.Entities.Draw.Util
 import Xanthous.Data
+import Xanthous.Game.State
 --------------------------------------------------------------------------------
 
 data Wall = Wall
@@ -45,6 +37,7 @@ instance Brain Wall where step = brainVia Brainless
 instance Entity Wall where
   blocksVision _ = True
   description _ = "a wall"
+  entityChar _ = "┼"
 
 instance Arbitrary Wall where
   arbitrary = pure Wall
@@ -90,3 +83,4 @@ instance Brain Door where step = brainVia Brainless
 instance Entity Door where
   blocksVision = not . view open
   description _ = "a door"
+  entityChar _ = "d"

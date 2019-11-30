@@ -37,11 +37,11 @@ getInitialState = initialStateFromSeed <$> getRandom
 initialStateFromSeed :: Int -> GameState
 initialStateFromSeed seed =
   let _randomGen = mkStdGen seed
-      char = mkCharacter
+      chr = mkCharacter
       (_characterEntityID, _entities)
         = EntityMap.insertAtReturningID
           (Position 0 0)
-          (SomeEntity char)
+          (SomeEntity chr)
           mempty
       _messageHistory = mempty
       _revealedPositions = mempty
@@ -56,10 +56,10 @@ positionedCharacter :: Lens' GameState (Positioned Character)
 positionedCharacter = lens getPositionedCharacter setPositionedCharacter
   where
     setPositionedCharacter :: GameState -> Positioned Character -> GameState
-    setPositionedCharacter game char
+    setPositionedCharacter game chr
       = game
       &  entities . at (game ^. characterEntityID)
-      ?~ fmap SomeEntity char
+      ?~ fmap SomeEntity chr
 
     getPositionedCharacter :: GameState -> Positioned Character
     getPositionedCharacter game

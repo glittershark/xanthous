@@ -30,6 +30,7 @@ import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game
+import           Xanthous.Game.State
 import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Game.Prompt
 import           Xanthous.Monad
@@ -38,8 +39,7 @@ import qualified Xanthous.Messages as Messages
 import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Entities.Character as Character
-import           Xanthous.Entities.Character
-import           Xanthous.Entities
+import           Xanthous.Entities.Character hiding (pickUpItem)
 import           Xanthous.Entities.Item (Item)
 import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Creature (Creature)
@@ -138,16 +138,19 @@ handleCommand (Move dir) = do
 
 handleCommand PickUp = do
   pos <- use characterPosition
-  items <- uses entities $ entitiesAtPositionWithType @Item pos
-  case items of
-    [] -> say_ ["items", "nothingToPickUp"]
-    [(itemID, item)] -> do
+  uses entities (entitiesAtPositionWithType @Item pos) >>= \case
+    [] -> say_ ["pickUp", "nothingToPickUp"]
+    [item] -> pickUpItem item
+    items ->
+      menu_ ["pickUp", "menu"] Cancellable (entityMenu_ items)
+      $ \(MenuResult item) -> pickUpItem item
+  continue
+  where
+    pickUpItem (itemID, item) = do
       character %= Character.pickUpItem item
       entities . at itemID .= Nothing
-      say ["items", "pickUp"] $ object [ "item" A..= item ]
+      say ["pickUp", "pickUp"] $ object [ "item" A..= item ]
       stepGameBy 100 -- TODO
-    _ -> undefined
-  continue
 
 handleCommand PreviousMessage = do
   messageHistory %= previousMessage
@@ -188,6 +191,7 @@ handleCommand Eat = do
         let foodMenuItem idx (item, edibleItem)
               = ( item ^. Item.itemType . char . char
                 , MenuOption (description item) (idx, item, edibleItem))
+                -- TODO refactor to use entityMenu_
             menuItems = mkMenuItems $ imap foodMenuItem food
         in menu_ ["eat", "menuPrompt"] Cancellable menuItems
           $ \(MenuResult (idx, item, edibleItem)) -> do
@@ -265,6 +269,8 @@ handlePromptEvent
        >> continue
 handlePromptEvent _ (Prompt _ SPointOnMap _ _ _) _ = continue
 
+handlePromptEvent _ _ _ = continue
+
 clearPrompt :: AppM (Next GameState)
 clearPrompt = promptState .= NoPrompt >> continue
 
@@ -330,7 +336,6 @@ menu_ :: forall (a :: Type).
       -> AppM ()
 menu_ msgPath = menu msgPath $ object []
 
-
 --------------------------------------------------------------------------------
 
 entitiesAtPositionWithType
@@ -374,7 +379,9 @@ attackAt pos =
   uses entities (entitiesAtPositionWithType @Creature pos) >>= \case
     Empty               -> say_ ["combat", "nothingToAttack"]
     (creature :< Empty) -> attackCreature creature
-    creatures           -> undefined
+    creatures ->
+      menu_ ["combat", "menu"] Cancellable (entityMenu_ creatures)
+      $ \(MenuResult creature) -> attackCreature creature
  where
   attackCreature (creatureID, creature) = do
     charDamage <- use $ character . characterDamage
@@ -388,3 +395,21 @@ attackAt pos =
         say ["combat", "hit"] msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
     stepGame -- TODO
+
+entityMenu_
+  :: (Comonad w, Entity entity)
+  => [w entity]
+  -> Map Char (MenuOption (w entity))
+entityMenu_ = mkMenuItems @[_] . map entityMenuItem
+  where
+    entityMenuItem wentity
+      = let entity = extract wentity
+      in (entityMenuChar entity, MenuOption (description entity) wentity)
+    entityMenuChar entity
+      = let ec = entityChar entity ^. char
+        in if ec `elem` (['a'..'z'] ++ ['A'..'Z'])
+           then ec
+           else 'a'
+
+entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
+entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity

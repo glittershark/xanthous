@@ -12,7 +12,8 @@ save:
 entities:
   description: You see here {{entityDescriptions}}
 
-items:
+pickUp:
+  menu: What would you like to pick up?
   pickUp: You pick up the {{item.itemType.name}}
   nothingToPickUp: "There's nothing here to pick up"
 
@@ -31,6 +32,7 @@ character:
 
 combat:
   nothingToAttack: There's nothing to attack there.
+  menu: Which creature would you like to attack?
   hit:
     - You hit the {{creature.creatureType.name}}.
     - You attack the {{creature.creatureType.name}}.

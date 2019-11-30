@@ -27,7 +27,7 @@ import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
 import Data.Coerce (coerce)
 --------------------------------------------------------------------------------
-import Xanthous.Entities
+import Xanthous.Game.State
 import Xanthous.Entities.Item
 import Xanthous.Data (TicksPerTile, Hitpoints, Per, Ticks, (|*|), positioned)
 --------------------------------------------------------------------------------
@@ -68,6 +68,7 @@ instance Brain Character where
 instance Entity Character where
   blocksVision _ = False
   description _ = "yourself"
+  entityChar _ = "@"
 
 instance Arbitrary Character where
   arbitrary = genericArbitrary

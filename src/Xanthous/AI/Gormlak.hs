@@ -24,8 +24,7 @@ import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Character (Character)
 import qualified Xanthous.Entities.Character as Character
 import qualified Xanthous.Entities.RawTypes as Raw
-import           Xanthous.Entities (Entity(..), Brain(..), brainVia)
-import           Xanthous.Game.State (entities, GameState, entityIs)
+import           Xanthous.Game.State
 import           Xanthous.Game.Lenses
                  ( Collision(..), entityCollision, collisionAt
                  , character, characterPosition
@@ -99,3 +98,4 @@ instance Brain Creature where step = brainVia GormlakBrain
 instance Entity Creature where
   blocksVision _ = False
   description = view $ Creature.creatureType . Raw.description
+  entityChar = view $ Creature.creatureType . char

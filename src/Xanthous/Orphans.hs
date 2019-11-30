@@ -21,7 +21,6 @@ import           Data.Text.Zipper.Generic (GenericTextZipper)
 import           Brick.Widgets.Core (getName)
 import           System.Random (StdGen)
 import           Test.QuickCheck
-import           Test.QuickCheck.Arbitrary.Generic
 import           Text.Megaparsec (errorBundlePretty)
 import           Text.Megaparsec.Pos
 import           Text.Mustache

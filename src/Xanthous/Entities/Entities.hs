@@ -9,7 +9,6 @@ import           Test.QuickCheck
 import qualified Test.QuickCheck.Gen as Gen
 import           Data.Aeson
 --------------------------------------------------------------------------------
-import           Xanthous.Entities (Entity(..), SomeEntity(..))
 import           Xanthous.Entities.Character
 import           Xanthous.Entities.Item
 import           Xanthous.Entities.Creature
@@ -46,6 +45,7 @@ deriving via WithOptions '[ FieldLabelModifier '[Drop 1] ] GameState
 instance Entity SomeEntity where
   blocksVision (SomeEntity ent) = blocksVision ent
   description (SomeEntity ent) = description ent
+  entityChar (SomeEntity ent) = entityChar ent
 
 instance Function SomeEntity where
   function = functionJSON

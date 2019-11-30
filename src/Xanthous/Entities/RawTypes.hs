@@ -10,6 +10,7 @@ module Xanthous.Entities.RawTypes
 
   , _Creature
     -- * Lens classes
+  , HasChar(..)
   , HasName(..)
   , HasDescription(..)
   , HasLongDescription(..)
@@ -27,9 +28,9 @@ import Test.QuickCheck.Arbitrary.Generic
 import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
-import Xanthous.Entities (EntityChar, HasChar(..))
 import Xanthous.Messages (Message(..))
 import Xanthous.Data (TicksPerTile, Hitpoints)
+import Xanthous.Data.EntityChar
 --------------------------------------------------------------------------------
 data CreatureType = CreatureType
   { _name         :: !Text

@@ -18,11 +18,11 @@ import qualified Xanthous.Data.EntityMap as EntityMap
 
 instance Arbitrary GameState where
   arbitrary = do
-    char <- arbitrary @Character
+    chr <- arbitrary @Character
     charPos <- arbitrary
     _messageHistory <- arbitrary
     (_characterEntityID, _entities) <- arbitrary <&>
-      EntityMap.insertAtReturningID charPos (SomeEntity char)
+      EntityMap.insertAtReturningID charPos (SomeEntity chr)
     _revealedPositions <- fmap setFromList . sublistOf $ EntityMap.positions _entities
     _randomGen <- mkStdGen <$> arbitrary
     let _promptState = NoPrompt -- TODO

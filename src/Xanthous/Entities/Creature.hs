@@ -35,7 +35,7 @@ import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes hiding (Creature, description)
-import           Xanthous.Entities (Draw(..), DrawRawCharPriority(..))
+import           Xanthous.Game.State
 import           Xanthous.Data
 --------------------------------------------------------------------------------
 

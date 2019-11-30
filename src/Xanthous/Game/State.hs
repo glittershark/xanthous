@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE GADTs               #-}
@@ -36,6 +37,13 @@ module Xanthous.Game.State
   , downcastEntity
   , _SomeEntity
   , entityIs
+  , DrawRawChar(..)
+  , DrawRawCharPriority(..)
+  , DrawCharacter(..)
+  , DrawStyledCharacter(..)
+    -- ** Field classes
+  , HasChar(..)
+  , HasStyle(..)
 
     -- * Debug State
   , DebugState(..)
@@ -55,13 +63,18 @@ import           Test.QuickCheck.Arbitrary.Generic
 import           Control.Monad.State.Class
 import           Control.Monad.State
 import           Control.Monad.Random.Class
-import           Brick (EventM, Widget)
+import           Brick (EventM, Widget, raw, str)
 import           Data.Aeson (ToJSON(..), FromJSON(..), Value(Null))
 import qualified Data.Aeson as JSON
 import           Data.Aeson.Generic.DerivingVia
+import           Data.Generics.Product.Fields
+import qualified Graphics.Vty.Attributes as Vty
+import qualified Graphics.Vty.Image as Vty
+import           Control.Comonad
 --------------------------------------------------------------------------------
-import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data
+import           Xanthous.Data.EntityMap (EntityMap, EntityID)
+import           Xanthous.Data.EntityChar
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Resource
@@ -181,6 +194,73 @@ instance Draw a => Draw (Positioned a) where
   drawWithNeighbors ns (Positioned _ a) = drawWithNeighbors ns a
   draw (Positioned _ a) = draw a
 
+newtype DrawCharacter (char :: Symbol) (a :: Type) where
+  DrawCharacter :: a -> DrawCharacter char a
+
+instance KnownSymbol char => Draw (DrawCharacter char a) where
+  draw _ = str $ symbolVal @char Proxy
+
+data Color = Black | Red | Green | Yellow | Blue | Magenta | Cyan | White
+
+class KnownColor (color :: Color) where
+  colorVal :: forall proxy. proxy color -> Vty.Color
+
+instance KnownColor 'Black where colorVal _ = Vty.black
+instance KnownColor 'Red where colorVal _ = Vty.red
+instance KnownColor 'Green where colorVal _ = Vty.green
+instance KnownColor 'Yellow where colorVal _ = Vty.yellow
+instance KnownColor 'Blue where colorVal _ = Vty.blue
+instance KnownColor 'Magenta where colorVal _ = Vty.magenta
+instance KnownColor 'Cyan where colorVal _ = Vty.cyan
+instance KnownColor 'White where colorVal _ = Vty.white
+
+newtype DrawStyledCharacter (fg :: Color) (bg :: Color) (char :: Symbol) (a :: Type) where
+  DrawStyledCharacter :: a -> DrawStyledCharacter fg bg char a
+
+instance
+  ( KnownColor fg
+  , KnownColor bg
+  , KnownSymbol char
+  )
+  => Draw (DrawStyledCharacter fg bg char a) where
+  draw _ = raw $ Vty.string attr $ symbolVal @char Proxy
+    where attr = Vty.Attr
+            { Vty.attrStyle = Vty.Default
+            , Vty.attrForeColor = Vty.SetTo $ colorVal @fg Proxy
+            , Vty.attrBackColor = Vty.SetTo $ colorVal @bg Proxy
+            , Vty.attrURL = Vty.Default
+            }
+
+instance Draw EntityChar where
+  draw EntityChar{..} = raw $ Vty.string _style [_char]
+
+--------------------------------------------------------------------------------
+
+newtype DrawRawChar (rawField :: Symbol) (a :: Type) = DrawRawChar a
+
+instance
+  forall rawField a raw.
+  ( HasField rawField a a raw raw
+  , HasChar raw EntityChar
+  ) => Draw (DrawRawChar rawField a) where
+  draw (DrawRawChar e) = draw $ e ^. field @rawField . char
+
+newtype DrawRawCharPriority
+  (rawField :: Symbol)
+  (priority :: Nat)
+  (a :: Type)
+  = DrawRawCharPriority a
+
+instance
+  forall rawField priority a raw.
+  ( HasField rawField a a raw raw
+  , KnownNat priority
+  , HasChar raw EntityChar
+  ) => Draw (DrawRawCharPriority rawField priority a) where
+  draw (DrawRawCharPriority e) = draw $ e ^. field @rawField . char
+  drawPriority = const . fromIntegral $ natVal @priority Proxy
+
+
 --------------------------------------------------------------------------------
 
 class Brain a where
@@ -208,6 +288,7 @@ class ( Show a, Eq a, NFData a
       ) => Entity a where
   blocksVision :: a -> Bool
   description :: a -> Text
+  entityChar :: a -> EntityChar
 
 data SomeEntity where
   SomeEntity :: forall a. (Entity a, Typeable a) => a -> SomeEntity

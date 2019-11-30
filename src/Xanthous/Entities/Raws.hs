@@ -14,7 +14,7 @@ import           Xanthous.Prelude
 import           System.FilePath.Posix
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes
-import           Xanthous.Entities
+import           Xanthous.Game.State
 import qualified Xanthous.Entities.Creature as Creature
 import qualified Xanthous.Entities.Item as Item
 import           Xanthous.AI.Gormlak ()

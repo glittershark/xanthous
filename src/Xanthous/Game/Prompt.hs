@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DeriveFunctor #-}
 --------------------------------------------------------------------------------
 module Xanthous.Game.Prompt
   ( PromptType(..)
@@ -25,6 +27,7 @@ import Xanthous.Prelude
 import           Brick.Widgets.Edit (Editor, editorText, getEditContents)
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
+import           Control.Comonad
 --------------------------------------------------------------------------------
 import           Xanthous.Util (smallestNotIn)
 import           Xanthous.Data (Direction, Position)
@@ -159,8 +162,12 @@ instance CoArbitrary (PromptState ('Menu a)) where
 deriving stock instance Show (PromptState pt)
 
 data MenuOption a = MenuOption Text a
-  deriving stock (Eq, Generic)
+  deriving stock (Eq, Generic, Functor)
   deriving anyclass (NFData, CoArbitrary, Function)
+
+instance Comonad MenuOption where
+  extract (MenuOption _ x) = x
+  extend cok mo@(MenuOption text _) = MenuOption text (cok mo)
 
 mkMenuItems :: (MonoFoldable f, Element f ~ (Char, MenuOption a))
             => f

@@ -25,6 +25,7 @@ dependencies:
 - brick
 - checkers
 - classy-prelude
+- comonad
 - constraints
 - containers
 - data-default

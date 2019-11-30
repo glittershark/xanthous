@@ -2,10 +2,10 @@ module Xanthous.GameSpec where
 
 import Test.Prelude hiding (Down)
 import Xanthous.Game
+import Xanthous.Game.State
 import Control.Lens.Properties
 import Xanthous.Data (move, Direction(Down))
 import Xanthous.Data.EntityMap (atPosition)
-import Xanthous.Entities (SomeEntity(SomeEntity))
 
 main :: IO ()
 main = defaultMain test

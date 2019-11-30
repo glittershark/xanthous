@@ -12,7 +12,7 @@ import Xanthous.Prelude hiding (lines)
 import Xanthous.Util (takeWhileInclusive)
 import Xanthous.Data
 import Xanthous.Data.EntityMap
-import Xanthous.Entities
+import Xanthous.Game.State
 import Xanthous.Util.Graphics (circle, line)
 --------------------------------------------------------------------------------
 

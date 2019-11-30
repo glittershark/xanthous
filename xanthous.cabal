@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0ec32d45d89e30640d8d59137c5eaa80e5eed7eb31cb553d9b251db94ed1ba36
+-- hash: 2f93900ad18d56709eb363a7f8dd251a9474dd7092b1aef956389f32c036a121
 
 name:           xanthous
 version:        0.1.0.0
@@ -34,9 +34,9 @@ library
       Xanthous.App
       Xanthous.Command
       Xanthous.Data
+      Xanthous.Data.EntityChar
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
-      Xanthous.Entities
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
       Xanthous.Entities.Draw.Util
@@ -81,6 +81,7 @@ library
     , brick
     , checkers
     , classy-prelude
+    , comonad
     , constraints
     , containers
     , data-default
@@ -120,9 +121,9 @@ executable xanthous
       Xanthous.App
       Xanthous.Command
       Xanthous.Data
+      Xanthous.Data.EntityChar
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
-      Xanthous.Entities
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
       Xanthous.Entities.Draw.Util
@@ -166,6 +167,7 @@ executable xanthous
     , brick
     , checkers
     , classy-prelude
+    , comonad
     , constraints
     , containers
     , data-default
@@ -203,10 +205,10 @@ test-suite test
   main-is: Spec.hs
   other-modules:
       Test.Prelude
+      Xanthous.Data.EntityCharSpec
       Xanthous.Data.EntityMapSpec
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
-      Xanthous.EntitiesSpec
       Xanthous.GameSpec
       Xanthous.Generators.UtilSpec
       Xanthous.MessageSpec
@@ -228,6 +230,7 @@ test-suite test
     , brick
     , checkers
     , classy-prelude
+    , comonad
     , constraints
     , containers
     , data-default
