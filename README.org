@@ -1,1 +1,33 @@
 #+TITLE: Xanthous
+
+* Building
+
+#+BEGIN_SRC shell
+$ nix build
+#+END_SRC
+
+* Running
+
+#+BEGIN_SRC shell
+$ ./result
+#+END_SRC
+
+** Keyboard commands
+
+Keyboard commands are currently undocumented, but can be found in [[[https://github.com/glittershark/xanthous/blob/master/src/Xanthous/Command.hs#L26][this file]].
+Movement uses the nethack-esque hjklybnu.
+
+* Development
+
+#+BEGIN_SRC shell
+$ nix-shell
+
+# Build (for dev)
+[nix-shell:xanthous]$ cabal new-build
+
+# Run tests
+[nix-shell:xanthous]$ cabal new-run test
+
+# Run a repl
+[nix-shell:xanthous]$ cabal new-repl
+#+END_SRC
