@@ -205,7 +205,7 @@ handleCommand Eat = do
             character . characterHitpoints' +=
               edibleItem ^. hitpointsHealed . to fromIntegral
             message msg $ object ["item" A..= item]
-  stepGame -- TODO
+            stepGame -- TODO
   continue
 
 handleCommand Read = do
