@@ -1,22 +1,29 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Xanthous.Entities.Environment
-  ( Wall(..)
+  (
+    -- * Walls
+    Wall(..)
+    -- * Doors
   , Door(..)
   , open
   , locked
+    -- * Messages
+  , GroundMessage(..)
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
+--------------------------------------------------------------------------------
 import Test.QuickCheck
-import Test.QuickCheck.Arbitrary.Generic
 import Brick (str)
 import Brick.Widgets.Border.Style (unicode)
 import Brick.Types (Edges(..))
 import Data.Aeson
+import Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------
 import Xanthous.Entities.Draw.Util
 import Xanthous.Data
 import Xanthous.Game.State
+import Xanthous.Util.QuickCheck
 --------------------------------------------------------------------------------
 
 data Wall = Wall
@@ -31,7 +38,6 @@ instance FromJSON Wall where
     "Wall" -> pure Wall
     _      -> fail "Invalid Wall: expected Wall"
 
--- deriving via Brainless Wall instance Brain Wall
 instance Brain Wall where step = brainVia Brainless
 
 instance Entity Wall where
@@ -56,10 +62,8 @@ data Door = Door
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
+  deriving Arbitrary via GenericArbitrary Door
 makeLenses ''Door
-
-instance Arbitrary Door where
-  arbitrary = genericArbitrary
 
 instance Draw Door where
   drawWithNeighbors neighs door
@@ -77,10 +81,29 @@ instance Draw Door where
       horizDoor = '␣'
       vertDoor = '['
 
--- deriving via Brainless Door instance Brain Door
 instance Brain Door where step = brainVia Brainless
 
 instance Entity Door where
   blocksVision = not . view open
   description _ = "a door"
   entityChar _ = "d"
+
+--------------------------------------------------------------------------------
+
+newtype GroundMessage = GroundMessage Text
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary GroundMessage
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ 'TagSingleConstructors 'True
+                        , 'SumEnc 'ObjWithSingleField
+                        ]
+           GroundMessage
+  deriving Draw
+       via DrawStyledCharacter ('Just 'Yellow) 'Nothing "≈"
+           GroundMessage
+  deriving Entity
+       via DeriveEntity 'False "a message on the ground. Press r. to read it."
+                        "≈"
+           GroundMessage
+instance Brain GroundMessage where step = brainVia Brainless

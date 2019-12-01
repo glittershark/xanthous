@@ -14,6 +14,7 @@ module Xanthous.Generators
   , levelItems
   , levelCreatures
   , levelCharacterPosition
+  , levelTutorialMessage
   , generateLevel
   ) where
 --------------------------------------------------------------------------------
@@ -91,6 +92,7 @@ data Level = Level
   { _levelWalls             :: !(EntityMap Wall)
   , _levelItems             :: !(EntityMap Item)
   , _levelCreatures         :: !(EntityMap Creature)
+  , _levelTutorialMessage   :: !(EntityMap GroundMessage)
   , _levelCharacterPosition :: !Position
   }
 makeLenses ''Level
@@ -103,4 +105,5 @@ generateLevel gen ps dims = do
   _levelItems <- randomItems cells
   _levelCreatures <- randomCreatures cells
   _levelCharacterPosition <- chooseCharacterPosition cells
+  _levelTutorialMessage <- tutorialMessage cells _levelCharacterPosition
   pure Level {..}

@@ -25,7 +25,7 @@ import           Xanthous.Data
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
 import           Xanthous.Entities.Character (Character, mkCharacter)
-import           Xanthous.Entities.Environment (Door, open)
+import           Xanthous.Entities.Environment (Door, open, GroundMessage)
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
 import           Xanthous.Entities.Entities ()
@@ -105,8 +105,12 @@ entityCollision
   -> Maybe Collision
 entityCollision Empty = Nothing
 entityCollision ents
+  -- TODO track entity collision in the Entity class
   | any (entityIs @Creature) ents = pure Combat
-  | all (entityIs @Item) ents = Nothing
+  | all (\e ->
+          entityIs @Item e
+        || entityIs @GroundMessage e
+        ) ents = Nothing
   | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
   , all (view open) doors = Nothing
   | otherwise = pure Stop

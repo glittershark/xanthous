@@ -3,22 +3,26 @@ module Xanthous.Generators.LevelContents
   ( chooseCharacterPosition
   , randomItems
   , randomCreatures
+  , tutorialMessage
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           Control.Monad.Random
-import           Data.Array.IArray (amap, bounds, rangeSize)
+import           Data.Array.IArray (amap, bounds, rangeSize, (!))
 --------------------------------------------------------------------------------
 import           Xanthous.Generators.Util
 import           Xanthous.Random
-import           Xanthous.Data (Position, positionFromPair)
+import           Xanthous.Data (Position, _Position, positionFromPair)
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
 import           Xanthous.Entities.Raws (rawsWithType, RawType)
 import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Item (Item)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Creature (Creature)
+import           Xanthous.Entities.Environment (GroundMessage(..))
+import           Xanthous.Messages (message_)
+import           Xanthous.Util.Graphics (circle)
 --------------------------------------------------------------------------------
 
 chooseCharacterPosition :: MonadRandom m => Cells -> m Position
@@ -29,6 +33,24 @@ randomItems = randomEntities Item.newWithType (0.0004, 0.001)
 
 randomCreatures :: MonadRandom m => Cells -> m (EntityMap Creature)
 randomCreatures = randomEntities Creature.newWithType (0.0007, 0.003)
+
+tutorialMessage :: MonadRandom m
+  => Cells
+  -> Position -- ^ CharacterPosition
+  -> m (EntityMap GroundMessage)
+tutorialMessage cells characterPosition = do
+  let distance = 2
+  pos <- fmap (fromMaybe (error "No valid positions for tutorial message?"))
+        . choose . ChooseElement
+        $ accessiblePositionsWithin distance cells characterPosition
+  msg <- message_ ["tutorial", "message1"]
+  pure $ _EntityMap # [(pos, GroundMessage msg)]
+  where
+    accessiblePositionsWithin :: Int -> Cells -> Position -> [Position]
+    accessiblePositionsWithin dist valid pos =
+      review _Position
+      <$> filter (\(px, py) -> not $ valid ! (fromIntegral px, fromIntegral py))
+          (circle (pos ^. _Position) dist)
 
 randomEntities
   :: forall entity raw m. (MonadRandom m, RawType raw)
@@ -41,7 +63,8 @@ randomEntities newWithType sizeRange cells =
     Nothing -> pure mempty
     Just raws -> do
       let len = rangeSize $ bounds cells
-      (numEntities :: Int) <- floor . (* fromIntegral len) <$> getRandomR sizeRange
+      (numEntities :: Int) <-
+        floor . (* fromIntegral len) <$> getRandomR sizeRange
       entities <- for [0..numEntities] $ const $ do
         pos <- randomPosition cells
         raw <- choose raws

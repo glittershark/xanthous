@@ -1,8 +1,8 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 --------------------------------------------------------------------------------
 module Xanthous.Game.State
   ( GameState(..)
@@ -37,10 +37,14 @@ module Xanthous.Game.State
   , downcastEntity
   , _SomeEntity
   , entityIs
+    -- ** Vias
+  , Color(..)
+  , DrawNothing(..)
   , DrawRawChar(..)
   , DrawRawCharPriority(..)
   , DrawCharacter(..)
   , DrawStyledCharacter(..)
+  , DeriveEntity(..)
     -- ** Field classes
   , HasChar(..)
   , HasStyle(..)
@@ -63,7 +67,7 @@ import           Test.QuickCheck.Arbitrary.Generic
 import           Control.Monad.State.Class
 import           Control.Monad.State
 import           Control.Monad.Random.Class
-import           Brick (EventM, Widget, raw, str)
+import           Brick (EventM, Widget, raw, str, emptyWidget)
 import           Data.Aeson (ToJSON(..), FromJSON(..), Value(Null))
 import qualified Data.Aeson as JSON
 import           Data.Aeson.Generic.DerivingVia
@@ -71,6 +75,7 @@ import           Data.Generics.Product.Fields
 import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
 --------------------------------------------------------------------------------
+import           Xanthous.Util (KnownBool(..))
 import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data.EntityChar
@@ -213,20 +218,29 @@ instance KnownColor 'Magenta where colorVal _ = Vty.magenta
 instance KnownColor 'Cyan where colorVal _ = Vty.cyan
 instance KnownColor 'White where colorVal _ = Vty.white
 
-newtype DrawStyledCharacter (fg :: Color) (bg :: Color) (char :: Symbol) (a :: Type) where
+class KnownMaybeColor (maybeColor :: Maybe Color) where
+  maybeColorVal :: forall proxy. proxy maybeColor -> Maybe Vty.Color
+
+instance KnownMaybeColor 'Nothing where maybeColorVal _ = Nothing
+instance KnownColor color => KnownMaybeColor ('Just color) where
+  maybeColorVal _ = Just $ colorVal @color Proxy
+
+newtype DrawStyledCharacter (fg :: Maybe Color) (bg :: Maybe Color) (char :: Symbol) (a :: Type) where
   DrawStyledCharacter :: a -> DrawStyledCharacter fg bg char a
 
 instance
-  ( KnownColor fg
-  , KnownColor bg
+  ( KnownMaybeColor fg
+  , KnownMaybeColor bg
   , KnownSymbol char
   )
   => Draw (DrawStyledCharacter fg bg char a) where
   draw _ = raw $ Vty.string attr $ symbolVal @char Proxy
     where attr = Vty.Attr
             { Vty.attrStyle = Vty.Default
-            , Vty.attrForeColor = Vty.SetTo $ colorVal @fg Proxy
-            , Vty.attrBackColor = Vty.SetTo $ colorVal @bg Proxy
+            , Vty.attrForeColor = maybe Vty.Default Vty.SetTo
+                                  $ maybeColorVal @fg Proxy
+            , Vty.attrBackColor = maybe Vty.Default Vty.SetTo
+                                  $ maybeColorVal @bg Proxy
             , Vty.attrURL = Vty.Default
             }
 
@@ -234,6 +248,12 @@ instance Draw EntityChar where
   draw EntityChar{..} = raw $ Vty.string _style [_char]
 
 --------------------------------------------------------------------------------
+
+newtype DrawNothing (a :: Type) = DrawNothing a
+
+instance Draw (DrawNothing a) where
+  draw = const emptyWidget
+  drawPriority = const 0
 
 newtype DrawRawChar (rawField :: Symbol) (a :: Type) = DrawRawChar a
 
@@ -335,6 +355,31 @@ entityIs = isJust . downcastEntity @a
 
 _SomeEntity :: forall a. (Entity a, Typeable a) => Prism' SomeEntity a
 _SomeEntity = prism' SomeEntity downcastEntity
+
+newtype DeriveEntity
+  (blocksVision :: Bool)
+  (description :: Symbol)
+  (entityChar :: Symbol)
+  (entity :: Type)
+  = DeriveEntity entity
+  deriving newtype (Show, Eq, Ord, NFData, ToJSON, FromJSON, Draw)
+
+instance Brain entity => Brain (DeriveEntity b d c entity) where
+  step = brainVia $ \(DeriveEntity e) -> e
+
+instance
+  ( KnownBool blocksVision
+  , KnownSymbol description
+  , KnownSymbol entityChar
+  , Show entity, Eq entity, Ord entity, NFData entity
+  , ToJSON entity, FromJSON entity
+  , Draw entity, Brain entity
+  )
+  => Entity (DeriveEntity blocksVision description entityChar entity) where
+
+  blocksVision _ = boolVal @blocksVision
+  description _ = pack . symbolVal $ Proxy @description
+  entityChar _ = fromString . symbolVal $ Proxy @entityChar
 
 --------------------------------------------------------------------------------
 

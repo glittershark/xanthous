@@ -1,4 +1,4 @@
-welcome: Welcome to Xanthous, {{characterName}}! It's dangerous out there, why not stay inside?
+welcome: Welcome to Xanthous, {{characterName}}! It's dangerous out there, why not stay inside? Use hjklybnu to move.
 dead:
   - You have died...
   - You die...
@@ -54,3 +54,11 @@ eat:
     - You search your pockets for something edible, and come up short.
   menuPrompt: What would you like to eat?
   eat: You eat the {{item.itemType.name}}.
+
+read:
+  prompt: Direction to read (hjklybnu.)?
+  nothing: "There's nothing there to read"
+  result: "\"{{message}}\""
+
+tutorial:
+  message1: The caves are dark and full of nightmarish creatures - and you are likely to perish without food. Seek out sustenance, and pick it up with ,

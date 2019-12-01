@@ -11,23 +11,25 @@ module Xanthous.Messages
   , render
   , lookup
   , message
+  , message_
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude hiding (lookup)
 --------------------------------------------------------------------------------
-import Control.Monad.Random.Class (MonadRandom)
-import Data.Aeson (FromJSON, ToJSON, toJSON)
-import Data.Aeson.Generic.DerivingVia
-import Data.FileEmbed
-import Data.List.NonEmpty
-import Test.QuickCheck hiding (choose)
-import Test.QuickCheck.Arbitrary.Generic
-import Test.QuickCheck.Instances.UnorderedContainers ()
-import Text.Mustache
+import           Control.Monad.Random.Class (MonadRandom)
+import           Data.Aeson (FromJSON, ToJSON, toJSON)
+import qualified Data.Aeson as JSON
+import           Data.Aeson.Generic.DerivingVia
+import           Data.FileEmbed
+import           Data.List.NonEmpty
+import           Test.QuickCheck hiding (choose)
+import           Test.QuickCheck.Arbitrary.Generic
+import           Test.QuickCheck.Instances.UnorderedContainers ()
+import           Text.Mustache
 import qualified Data.Yaml as Yaml
 --------------------------------------------------------------------------------
-import Xanthous.Random
-import Xanthous.Orphans ()
+import           Xanthous.Random
+import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
 
 data Message = Single Template | Choice (NonEmpty Template)
@@ -96,5 +98,10 @@ lookup path = fromMaybe notFound $ messages ^? ix path
 
 message :: (MonadRandom m, ToJSON params) => [Text] -> params -> m Text
 message path params = maybe notFound (`render` params) $ messages ^? ix path
+  where
+    notFound = pure "Message not found"
+
+message_ :: (MonadRandom m) => [Text] -> m Text
+message_ path = maybe notFound (`render` JSON.object []) $ messages ^? ix path
   where
     notFound = pure "Message not found"

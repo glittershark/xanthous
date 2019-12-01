@@ -1,7 +1,7 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-
+--------------------------------------------------------------------------------
 module Xanthous.Util
   ( EqEqProp(..)
   , EqProp(..)
@@ -25,13 +25,18 @@ module Xanthous.Util
     -- ** Bag sequence algorithms
   , takeWhileInclusive
   , smallestNotIn
+
+    -- * Type-level programming utils
+  , KnownBool(..)
   ) where
-
+--------------------------------------------------------------------------------
 import Xanthous.Prelude hiding (foldr)
-
+--------------------------------------------------------------------------------
 import Test.QuickCheck.Checkers
 import Data.Foldable (foldr)
 import Data.Monoid
+import Data.Proxy
+--------------------------------------------------------------------------------
 
 newtype EqEqProp a = EqEqProp a
   deriving newtype Eq
@@ -204,3 +209,17 @@ smallestNotIn xs = case uniq $ sort xs of
     | x > minBound -> minBound
     | otherwise
     -> snd . headEx . filter (uncurry (/=)) $ zip (xs' ++ [minBound]) [minBound..]
+
+--------------------------------------------------------------------------------
+
+-- | This class gives a boolean associated with a type-level bool, a'la
+-- 'KnownSymbol', 'KnownNat' etc.
+class KnownBool (bool :: Bool) where
+  boolVal' :: forall proxy. proxy bool -> Bool
+  boolVal' _ = boolVal @bool
+
+  boolVal :: Bool
+  boolVal = boolVal' $ Proxy @bool
+
+instance KnownBool 'True where boolVal = True
+instance KnownBool 'False where boolVal = False

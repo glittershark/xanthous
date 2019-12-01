@@ -44,7 +44,8 @@ import           Xanthous.Entities.Item (Item)
 import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
-import           Xanthous.Entities.Environment (Door, open, locked)
+import           Xanthous.Entities.Environment
+                 (Door, open, locked, GroundMessage(..))
 import           Xanthous.Entities.RawTypes (edible, eatMessage, hitpointsHealed)
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
@@ -84,6 +85,7 @@ initLevel = do
   entities <>= (SomeEntity <$> level ^. levelWalls)
   entities <>= (SomeEntity <$> level ^. levelItems)
   entities <>= (SomeEntity <$> level ^. levelCreatures)
+  entities <>= (SomeEntity <$> level ^. levelTutorialMessage)
 
   characterPosition .= level ^. levelCharacterPosition
 
@@ -204,6 +206,29 @@ handleCommand Eat = do
               edibleItem ^. hitpointsHealed . to fromIntegral
             message msg $ object ["item" A..= item]
   stepGame -- TODO
+  continue
+
+handleCommand Read = do
+  -- TODO allow reading things in the inventory (combo direction+menu prompt?)
+  prompt_ @'DirectionPrompt ["read", "prompt"] Cancellable
+    $ \(DirectionResult dir) -> do
+      pos <- uses characterPosition $ move dir
+      uses entities
+        (fmap snd . entitiesAtPositionWithType @GroundMessage pos) >>= \case
+          Empty -> say_ ["read", "nothing"]
+          GroundMessage msg :< Empty ->
+            say ["read", "result"] $ object ["message" A..= msg]
+          msgs ->
+            let readAndContinue Empty = pure ()
+                readAndContinue (msg :< msgs') =
+                  prompt @'Continue
+                    ["read", "result"]
+                    (object ["message" A..= msg])
+                    Cancellable
+                  . const
+                  $ readAndContinue msgs'
+                readAndContinue _ = error "this is total"
+            in readAndContinue msgs
   continue
 
 handleCommand Save = do
@@ -413,3 +438,5 @@ entityMenu_ = mkMenuItems @[_] . map entityMenuItem
 
 -- entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
 -- entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity
+
+--------------------------------------------------------------------------------

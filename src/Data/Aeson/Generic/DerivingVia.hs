@@ -73,10 +73,17 @@ data Setting = FieldLabelModifier     [StrFun]
 
 type FieldLabelModifier     = 'FieldLabelModifier
 type ConstructorTagModifier = 'ConstructorTagModifier
+-- | If 'True' the constructors of a datatype, with all nullary constructors,
+-- will be encoded to just a string with the constructor tag. If 'False' the
+-- encoding will always follow the 'SumEncoding'.
 type AllNullaryToStringTag  = 'AllNullaryToStringTag
 type OmitNothingFields      = 'OmitNothingFields
 type SumEnc                 = 'SumEnc
+-- | Hide the field name when a record constructor has only one field, like a
+-- newtype.
 type UnwrapUnaryRecords     = 'UnwrapUnaryRecords
+-- | Encode types with a single constructor as sums, so that
+-- 'AllNullaryToStringTag' and 'SumEncoding' apply.
 type TagSingleConstructors  = 'TagSingleConstructors
 
 class Demotable (a :: k) where
