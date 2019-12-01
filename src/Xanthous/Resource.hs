@@ -1,24 +1,31 @@
 --------------------------------------------------------------------------------
 module Xanthous.Resource
-  ( Name(..)
+  ( Panel(..)
+  , Name(..)
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
 import Test.QuickCheck
-import Test.QuickCheck.Arbitrary.Generic
+import Data.Aeson (ToJSON, FromJSON)
+--------------------------------------------------------------------------------
+import Xanthous.Util.QuickCheck
 --------------------------------------------------------------------------------
 
-data Name = MapViewport
-            -- ^ The main viewport where we display the game content
-          | Character
-            -- ^ The character
-          | MessageBox
-            -- ^ The box where we display messages to the user
-          | Prompt
-            -- ^ The game's prompt
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (NFData, CoArbitrary, Function)
+-- | Enum for "panels" displayed in the game's UI.
+data Panel
+  = InventoryPanel -- ^ A panel displaying the character's inventory
+  deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
+  deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
+  deriving Arbitrary via GenericArbitrary Panel
 
-instance Arbitrary Name where
-  arbitrary = genericArbitrary
+
+data Name
+  = MapViewport -- ^ The main viewport where we display the game content
+  | Character   -- ^ The character
+  | MessageBox  -- ^ The box where we display messages to the user
+  | Prompt      -- ^ The game's prompt
+  | Panel Panel -- ^ A panel in the game
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
+  deriving Arbitrary via GenericArbitrary Name

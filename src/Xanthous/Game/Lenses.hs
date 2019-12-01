@@ -46,6 +46,7 @@ initialStateFromSeed seed =
       _messageHistory = mempty
       _revealedPositions = mempty
       _promptState = NoPrompt
+      _activePanel = Nothing
       _debugState = DebugState
         { _allRevealed = False
         }

@@ -34,7 +34,7 @@ import           Xanthous.Game.State
 import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Game.Prompt
 import           Xanthous.Monad
-import           Xanthous.Resource (Name)
+import           Xanthous.Resource (Name, Panel(..))
 import qualified Xanthous.Messages as Messages
 import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
@@ -230,6 +230,8 @@ handleCommand Read = do
                 readAndContinue _ = error "this is total"
             in readAndContinue msgs
   continue
+
+handleCommand Inventory = showPanel InventoryPanel >> continue
 
 handleCommand Save = do
   -- TODO default save locations / config file?
@@ -439,4 +441,9 @@ entityMenu_ = mkMenuItems @[_] . map entityMenuItem
 -- entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
 -- entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity
 
---------------------------------------------------------------------------------
+showPanel :: Panel -> AppM ()
+showPanel panel = do
+  activePanel ?= panel
+  prompt_ @'Continue ["generic", "continue"] Uncancellable
+    . const
+    $ activePanel .= Nothing

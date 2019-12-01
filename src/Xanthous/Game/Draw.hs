@@ -27,7 +27,7 @@ import           Xanthous.Game
                  , debugState, allRevealed
                  )
 import           Xanthous.Game.Prompt
-import           Xanthous.Resource (Name)
+import           Xanthous.Resource (Name, Panel(..))
 import qualified Xanthous.Resource as Resource
 import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
@@ -41,23 +41,23 @@ cursorPosition game
   = showCursor Resource.Character (game ^. characterPosition . loc)
 
 drawMessages :: MessageHistory -> Widget Name
-drawMessages = txt . (<> " ") . unwords . oextract
+drawMessages = txtWrap . (<> " ") . unwords . oextract
 
 drawPromptState :: GamePromptState m -> Widget Name
 drawPromptState NoPrompt = emptyWidget
 drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
   case (pt, ps, pri) of
     (SStringPrompt, StringPromptState edit, _) ->
-      txt msg <+> renderEditor (txt . fold) True edit
-    (SDirectionPrompt, DirectionPromptState, _) -> txt msg
-    (SContinue, _, _) -> txt msg
+      txtWrap msg <+> renderEditor (txtWrap . fold) True edit
+    (SDirectionPrompt, DirectionPromptState, _) -> txtWrap msg
+    (SContinue, _, _) -> txtWrap msg
     (SMenu, _, menuItems) ->
-      txt msg
+      txtWrap msg
       <=> foldl' (<=>) emptyWidget (map drawMenuItem $ itoList menuItems)
-    _ -> txt msg
+    _ -> txtWrap msg
   where
     drawMenuItem (chr, MenuOption m _) =
-      str ("[" <> pure chr <> "] ") <+> txt m
+      str ("[" <> pure chr <> "] ") <+> txtWrap m
 
 drawEntities
   :: (Position -> Bool)
@@ -95,11 +95,32 @@ drawMap game
     -- character can't see them
     (game ^. entities)
 
+bullet :: Char
+bullet = '•'
+
+drawPanel :: GameState -> Panel -> Widget Name
+drawPanel game panel
+  = border
+  . hLimit 35
+  . viewport (Resource.Panel panel) Vertical
+  $ case panel of
+      InventoryPanel ->
+        let items = game ^. character . inventory
+        in if null items
+           then txtWrap "Your inventory is empty right now."
+           else
+             txtWrap "You are currently carrying the following items:"
+             <=> txt " "
+             <=> foldl' (<=>) emptyWidget
+                 (map
+                  (txtWrap . ((bullet <| " ") <>) . description)
+                  items)
+
 drawCharacterInfo :: Character -> Widget Name
 drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
   where
     charName | Just n <- ch ^. characterName
-             = txt n <+> txt " "
+             = txt $ n <> " "
              | otherwise
              = emptyWidget
     charHitpoints
@@ -114,5 +135,8 @@ drawGame game
        NoPrompt -> drawMessages (game ^. messageHistory)
        _ -> emptyWidget
   <=> drawPromptState (game ^. promptState)
-  <=> border (drawMap game)
+  <=>
+  (maybe emptyWidget (drawPanel game) (game ^. activePanel)
+  <+> border (drawMap game)
+  )
   <=> drawCharacterInfo (game ^. character)

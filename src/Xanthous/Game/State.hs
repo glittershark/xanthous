@@ -10,6 +10,7 @@ module Xanthous.Game.State
   , revealedPositions
   , messageHistory
   , randomGen
+  , activePanel
   , promptState
   , characterEntityID
   , GamePromptState(..)
@@ -383,6 +384,7 @@ instance
 
 --------------------------------------------------------------------------------
 
+
 data DebugState = DebugState
   { _allRevealed :: !Bool
   }
@@ -402,8 +404,12 @@ data GameState = GameState
   , _characterEntityID :: !EntityID
   , _messageHistory    :: !MessageHistory
   , _randomGen         :: !StdGen
+
+    -- | The active panel displayed in the UI, if any
+  , _activePanel       :: !(Maybe Panel)
+
   , _promptState       :: !(GamePromptState AppM)
-  , _debugState        :: DebugState
+  , _debugState        :: !DebugState
   }
   deriving stock (Show, Generic)
   deriving anyclass (NFData)
@@ -437,14 +443,3 @@ instance (MonadIO m) => MonadIO (AppT m) where
 --------------------------------------------------------------------------------
 
 makeLenses ''DebugState
-
---------------------------------------------------------------------------------
-
--- saveGame :: GameState -> LByteString
--- saveGame = Zlib.compress . JSON.encode
-
--- loadGame :: LByteString -> Maybe GameState
--- loadGame = JSON.decode . Zlib.decompress
-
--- saved :: Prism' LByteString GameState
--- saved = prism' saveGame loadGame
