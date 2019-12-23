@@ -10,6 +10,7 @@ module Xanthous.Monad
   , say_
   , message
   , message_
+  , writeMessage
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -37,19 +38,18 @@ continue = lift . Brick.continue =<< get
 
 say :: (MonadRandom m, ToJSON params, MonadState GameState m)
     => [Text] -> params -> m ()
-say msgPath params = do
-  msg <- Messages.message msgPath params
-  messageHistory %= pushMessage msg
+say msgPath = writeMessage <=< Messages.message msgPath
 
 say_ :: (MonadRandom m, MonadState GameState m) => [Text] -> m ()
 say_ msgPath = say msgPath $ object []
 
 message :: (MonadRandom m, ToJSON params, MonadState GameState m)
         => Message -> params -> m ()
-message msg params = do
-  m <- Messages.render msg params
-  messageHistory %= pushMessage m
+message msg = writeMessage <=< Messages.render msg
 
 message_ :: (MonadRandom m, MonadState GameState m)
          => Message ->  m ()
 message_ msg = message msg $ object []
+
+writeMessage :: MonadState GameState m => Text -> m ()
+writeMessage m = messageHistory %= pushMessage m

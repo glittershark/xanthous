@@ -49,7 +49,7 @@ import           Xanthous.Entities.Environment
                  (Door, open, locked, GroundMessage(..))
 import           Xanthous.Entities.RawTypes
                  ( edible, eatMessage, hitpointsHealed
-                 , wieldable
+                 , wieldable, attackMessage
                  )
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
@@ -439,10 +439,17 @@ attackAt pos =
         say ["combat", "killed"] msgParams
         entities . at creatureID .= Nothing
       else do
-        -- TODO attack messages
-        say ["combat", "hit", "generic"] msgParams
+        msg <- uses character getAttackMessage
+        message msg msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
     stepGame -- TODO
+  getAttackMessage chr =
+    case chr ^? inventory . wielded . wieldedItems . wieldableItem of
+      Just wi ->
+        fromMaybe (Messages.lookup ["combat", "hit", "generic"])
+        $ wi ^. attackMessage
+      Nothing ->
+        Messages.lookup ["combat", "hit", "fists"]
 
 entityMenu_
   :: (Comonad w, Entity entity)
@@ -461,7 +468,6 @@ entityMenuChar entity
     in if ec `elem` (['a'..'z'] ++ ['A'..'Z'])
         then ec
         else 'a'
-
 
 -- entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
 -- entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity
