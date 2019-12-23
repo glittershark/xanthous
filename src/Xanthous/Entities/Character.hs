@@ -37,20 +37,23 @@ module Xanthous.Entities.Character
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
-import Test.QuickCheck
-import Test.QuickCheck.Instances.Vector ()
-import Test.QuickCheck.Arbitrary.Generic
-import Brick
-import Data.Aeson.Generic.DerivingVia
-import Data.Aeson (ToJSON, FromJSON)
-import Data.Coerce (coerce)
+import           Brick
+import           Data.Aeson.Generic.DerivingVia
+import           Data.Aeson (ToJSON, FromJSON)
+import           Data.Coerce (coerce)
+import           Test.QuickCheck
+import           Test.QuickCheck.Instances.Vector ()
+import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
-import Xanthous.Util.QuickCheck
-import Xanthous.Game.State
-import Xanthous.Entities.Item
-import Xanthous.Data
-       (TicksPerTile, Hitpoints, Per, Ticks, (|*|), positioned, Positioned(..))
-import Xanthous.Entities.RawTypes (WieldableItem, wieldable)
+import           Xanthous.Util.QuickCheck
+import           Xanthous.Game.State
+import           Xanthous.Entities.Item
+import           Xanthous.Data
+                 ( TicksPerTile, Hitpoints, Per, Ticks, (|*|), positioned
+                 , Positioned(..)
+                 )
+import           Xanthous.Entities.RawTypes (WieldableItem, wieldable)
+import qualified Xanthous.Entities.RawTypes as Raw
 --------------------------------------------------------------------------------
 
 data WieldedItem = WieldedItem
@@ -116,11 +119,9 @@ doubleHanded = prism' DoubleHanded $ \case
   DoubleHanded i -> Just i
   _ -> Nothing
 
-wieldedItems :: Traversal' Wielded Item
-wieldedItems k (DoubleHanded wielded) = DoubleHanded <$> wieldedItem k wielded
-wieldedItems k (Hands l r) = Hands
-  <$> (_Just . wieldedItem) k l
-  <*> (_Just . wieldedItem) k r
+wieldedItems :: Traversal' Wielded WieldedItem
+wieldedItems k (DoubleHanded wielded) = DoubleHanded <$> k wielded
+wieldedItems k (Hands l r) = Hands <$> _Just k l <*> _Just k r
 
 data Inventory = Inventory
   { _backpack :: Vector Item
@@ -137,7 +138,7 @@ makeFieldsNoPrefix ''Inventory
 items :: Traversal' Inventory Item
 items k (Inventory bp w) = Inventory
   <$> traversed k bp
-  <*> wieldedItems k w
+  <*> (wieldedItems . wieldedItem) k w
 
 type instance Element Inventory = Item
 
@@ -165,15 +166,15 @@ instance Semigroup Inventory where
     let backpack' = inv₁ ^. backpack <> inv₂ ^. backpack
         (wielded', backpack'') = case (inv₁ ^. wielded, inv₂ ^. wielded) of
           (wielded₁, wielded₂@(DoubleHanded _)) ->
-            (wielded₂, backpack' <> fromList (wielded₁ ^.. wieldedItems))
+            (wielded₂, backpack' <> fromList (wielded₁ ^.. wieldedItems . wieldedItem))
           (wielded₁, wielded₂@(Hands (Just _) (Just _))) ->
-            (wielded₂, backpack' <> fromList (wielded₁ ^.. wieldedItems))
+            (wielded₂, backpack' <> fromList (wielded₁ ^.. wieldedItems . wieldedItem))
           (wielded₁, Hands Nothing Nothing) -> (wielded₁, backpack')
           (Hands Nothing Nothing, wielded₂) -> (wielded₂, backpack')
           (Hands (Just l₁) Nothing, Hands Nothing (Just r₂)) ->
             (Hands (Just l₁) (Just r₂), backpack')
           (wielded₁@(DoubleHanded _), wielded₂) ->
-            (wielded₁, backpack' <> fromList (wielded₂ ^.. wieldedItems))
+            (wielded₁, backpack' <> fromList (wielded₂ ^.. wieldedItems . wieldedItem))
           (Hands Nothing (Just r₁), Hands Nothing (Just r₂)) ->
             (Hands Nothing (Just r₂), r₁ ^. wieldedItem <| backpack')
           (Hands Nothing r₁, Hands (Just l₂) Nothing) ->
@@ -194,7 +195,6 @@ instance Monoid Inventory where
 data Character = Character
   { _inventory :: !Inventory
   , _characterName :: !(Maybe Text)
-  , _characterDamage :: !Hitpoints
   , _characterHitpoints' :: !Double
   , _speed :: TicksPerTile
   }
@@ -245,10 +245,19 @@ mkCharacter :: Character
 mkCharacter = Character
   { _inventory = mempty
   , _characterName = Nothing
-  , _characterDamage = 1
   , _characterHitpoints' = fromIntegral initialHitpoints
   , _speed = defaultSpeed
   }
+
+defaultCharacterDamage :: Hitpoints
+defaultCharacterDamage = 1
+
+-- | Returns the damage that the character currently does with an attack
+-- TODO use double-handed/left-hand/right-hand here
+characterDamage :: Character -> Hitpoints
+characterDamage
+  = fromMaybe defaultCharacterDamage
+  . preview (inventory . wielded . wieldedItems . wieldableItem . Raw.damage)
 
 isDead :: Character -> Bool
 isDead = (== 0) . characterHitpoints

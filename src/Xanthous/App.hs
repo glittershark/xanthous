@@ -238,7 +238,7 @@ handleCommand ShowInventory = showPanel InventoryPanel >> continue
 handleCommand Wield = do
   uses (character . inventory . backpack)
        (V.mapMaybe (\item ->
-                      (WieldedItem item) <$> item ^. Item.itemType . wieldable))
+                      WieldedItem item <$> item ^. Item.itemType . wieldable))
     >>= \case
       Empty -> say_ ["wield", "nothing"]
       wieldables ->
@@ -431,7 +431,7 @@ attackAt pos =
       $ \(MenuResult creature) -> attackCreature creature
  where
   attackCreature (creatureID, creature) = do
-    charDamage <- use $ character . characterDamage
+    charDamage <- uses character characterDamage
     let creature' = Creature.damage charDamage creature
         msgParams = object ["creature" A..= creature']
     if Creature.isDead creature'
