@@ -28,6 +28,7 @@ instance Arbitrary GameState where
     let _promptState = NoPrompt -- TODO
     _activePanel <- arbitrary
     _debugState <- arbitrary
+    _sentWelcome <- arbitrary
     pure $ GameState {..}
 
 

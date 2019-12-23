@@ -77,8 +77,12 @@ startEvent = do
     Nothing -> prompt_ @'StringPrompt ["character", "namePrompt"] Uncancellable
       $ \(StringResult s) -> do
         character . characterName ?= s
-        say ["welcome"] =<< use character
-    Just n -> say ["welcome"] $ object [ "characterName" A..= n ]
+        whenM (uses sentWelcome not) $ say ["welcome"] =<< use character
+        sentWelcome .= True
+    Just n ->
+      whenM (uses sentWelcome not) $ do
+        say ["welcome"] $ object [ "characterName" A..= n ]
+        sentWelcome .= True
 
 initLevel :: AppM ()
 initLevel = do

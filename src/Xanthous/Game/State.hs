@@ -11,6 +11,7 @@ module Xanthous.Game.State
   , messageHistory
   , randomGen
   , activePanel
+  , sentWelcome
   , promptState
   , characterEntityID
   , GamePromptState(..)
@@ -405,6 +406,7 @@ data GameState = GameState
   , _characterEntityID :: !EntityID
   , _messageHistory    :: !MessageHistory
   , _randomGen         :: !StdGen
+  , _sentWelcome       :: Bool
 
     -- | The active panel displayed in the UI, if any
   , _activePanel       :: !(Maybe Panel)
@@ -425,6 +427,8 @@ instance Eq GameState where
     , gs ^. revealedPositions
     , gs ^. characterEntityID
     , gs ^. messageHistory
+    , gs ^. sentWelcome
+    , gs ^. activePanel
     )
 
 --------------------------------------------------------------------------------
