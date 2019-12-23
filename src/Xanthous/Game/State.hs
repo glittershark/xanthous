@@ -80,6 +80,7 @@ import           Xanthous.Util (KnownBool(..))
 import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data.EntityChar
+import           Xanthous.Data.VectorBag
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Resource
@@ -185,7 +186,7 @@ type AppM = AppT (EventM Name)
 --------------------------------------------------------------------------------
 
 class Draw a where
-  drawWithNeighbors :: Neighbors (Vector SomeEntity) -> a -> Widget n
+  drawWithNeighbors :: Neighbors (VectorBag SomeEntity) -> a -> Widget n
   drawWithNeighbors = const draw
 
   draw :: a -> Widget n

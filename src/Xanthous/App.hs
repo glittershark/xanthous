@@ -49,7 +49,7 @@ import           Xanthous.Entities.Environment
                  (Door, open, locked, GroundMessage(..))
 import           Xanthous.Entities.RawTypes
                  ( edible, eatMessage, hitpointsHealed
-                 , wieldable, attackMessage
+                 , attackMessage
                  )
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
@@ -158,6 +158,15 @@ handleCommand PickUp = do
       say ["pickUp", "pickUp"] $ object [ "item" A..= item ]
       stepGameBy 100 -- TODO
 
+handleCommand Drop = do
+  selectItemFromInventory_ ["drop", "menu"] Cancellable id
+    (say_ ["drop", "nothing"])
+    $ \(MenuResult item) -> do
+      charPos <- use characterPosition
+      entities . EntityMap.atPosition charPos %= (SomeEntity item <|)
+      say ["drop", "dropped"] $ object [ "item" A..= item ]
+  continue
+
 handleCommand PreviousMessage = do
   messageHistory %= previousMessage
   continue
@@ -236,22 +245,12 @@ handleCommand Read = do
 handleCommand ShowInventory = showPanel InventoryPanel >> continue
 
 handleCommand Wield = do
-  uses (character . inventory . backpack)
-       (V.mapMaybe (\item ->
-                      WieldedItem item <$> item ^. Item.itemType . wieldable))
-    >>= \case
-      Empty -> say_ ["wield", "nothing"]
-      wieldables ->
-        menu_ ["wield", "menu"] Cancellable (wieldableMenu wieldables)
-        $ \(MenuResult (idx, item)) -> do
-          character . inventory . backpack %= removeVectorIndex idx
-          character . inventory . wielded .= inRightHand item
-          say ["wield", "wielded"] item
+  selectItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
+    (say_ ["wield", "nothing"])
+    $ \(MenuResult item) -> do
+      character . inventory . wielded .= inRightHand item
+      say ["wield", "wielded"] item
   continue
-  where
-    wieldableMenu = mkMenuItems . imap wieldableMenuItem
-    wieldableMenuItem idx wi@(WieldedItem item _) =
-      (entityMenuChar item, MenuOption (description item) (idx, wi))
 
 handleCommand Save = do
   -- TODO default save locations / config file?
@@ -468,6 +467,49 @@ entityMenuChar entity
     in if ec `elem` (['a'..'z'] ++ ['A'..'Z'])
         then ec
         else 'a'
+
+-- | Prompt with an item to select out of the inventory, remove it from the
+-- inventory, and call callback with it
+selectItemFromInventory
+  :: forall item params.
+    (ToJSON params)
+  => [Text]            -- ^ Menu message
+  -> params            -- ^ Menu message params
+  -> PromptCancellable -- ^ Is the menu cancellable?
+  -> Prism' Item item  -- ^ Attach some extra information to the item, in a
+                      --   recoverable fashion. Prism vs iso so we can discard
+                      --   items.
+  -> AppM ()            -- ^ Action to take if there are no items matching
+  -> (PromptResult ('Menu item) -> AppM ())
+  -> AppM ()
+selectItemFromInventory msgPath msgParams cancellable extraInfo onEmpty cb =
+  uses (character . inventory . backpack)
+       (V.mapMaybe $ preview extraInfo)
+    >>= \case
+      Empty -> onEmpty
+      items' ->
+        menu msgPath msgParams cancellable (itemMenu items')
+        $ \(MenuResult (idx, item)) -> do
+          character . inventory . backpack %= removeVectorIndex idx
+          cb $ MenuResult item
+  where
+    itemMenu = mkMenuItems . imap itemMenuItem
+    itemMenuItem idx extraInfoItem =
+      let item = extraInfo # extraInfoItem
+      in ( entityMenuChar item
+         , MenuOption (description item) (idx, extraInfoItem))
+
+selectItemFromInventory_
+  :: forall item.
+    [Text]            -- ^ Menu message
+  -> PromptCancellable -- ^ Is the menu cancellable?
+  -> Prism' Item item  -- ^ Attach some extra information to the item, in a
+                      --   recoverable fashion. Prism vs iso so we can discard
+                      --   items.
+  -> AppM ()            -- ^ Action to take if there are no items matching
+  -> (PromptResult ('Menu item) -> AppM ())
+  -> AppM ()
+selectItemFromInventory_ msgPath = selectItemFromInventory msgPath ()
 
 -- entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
 -- entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity

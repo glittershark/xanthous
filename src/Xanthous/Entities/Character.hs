@@ -27,6 +27,7 @@ module Xanthous.Entities.Character
   , WieldedItem(..)
   , wieldedItem
   , wieldableItem
+  , asWieldedItem
 
     -- *
   , mkCharacter
@@ -67,6 +68,12 @@ data WieldedItem = WieldedItem
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            WieldedItem
 makeFieldsNoPrefix ''WieldedItem
+
+asWieldedItem :: Prism' Item WieldedItem
+asWieldedItem = prism' hither yon
+ where
+   yon item = WieldedItem item <$> item ^. itemType . wieldable
+   hither (WieldedItem item _) = item
 
 instance Brain WieldedItem where
   step ticks (Positioned p wi) =

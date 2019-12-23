@@ -41,7 +41,6 @@ dependencies:
 - MonadRandom
 - mtl
 - optparse-applicative
-- parallel
 - random
 - random-fu
 - random-extras

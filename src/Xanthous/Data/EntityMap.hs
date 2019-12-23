@@ -39,6 +39,7 @@ import Xanthous.Data
   , Neighbors(..)
   , neighborPositions
   )
+import Xanthous.Data.VectorBag
 import Xanthous.Orphans ()
 import Xanthous.Util (EqEqProp(..))
 --------------------------------------------------------------------------------
@@ -184,16 +185,25 @@ insertAtReturningID pos e em =
 insertAt :: forall a. Position -> a -> EntityMap a -> EntityMap a
 insertAt pos e = snd . insertAtReturningID pos e
 
-atPosition :: forall a. Position -> Lens' (EntityMap a) (Vector a)
+atPosition :: forall a. Position -> Lens' (EntityMap a) (VectorBag a)
 atPosition pos = lens getter setter
   where
     getter em =
-      let eids :: Vector EntityID
-          eids = maybe mempty (toVector . toNullable)
+      let eids :: VectorBag EntityID
+          eids = maybe mempty (VectorBag . toVector . toNullable)
                  $ em ^. byPosition . at pos
       in getEIDAssume em <$> eids
     setter em Empty = em & byPosition . at pos .~ Nothing
-    setter em entities = alaf Endo foldMap (insertAt pos) entities em
+    setter em entities =
+      alaf Endo foldMap (insertAt pos) entities
+      . removeAllAt pos
+      $ em
+      where
+        removeAllAt p e =
+          let eids = e ^.. byPosition . at p >>= toList >>= toList
+          in alaf Endo foldMap (\eid -> byID . at eid .~ Nothing) eids
+           . (byPosition . at pos .~ Nothing)
+           $ e
 
 getEIDAssume :: EntityMap a -> EntityID -> a
 getEIDAssume em eid = fromMaybe byIDInvariantError
@@ -237,7 +247,7 @@ lookup eid = fmap (view positioned) . lookupWithPosition eid
 -- positionedEntities :: IndexedTraversal EntityID (EntityMap a) (EntityMap b) (Positioned a) (Positioned b)
 -- positionedEntities = byID . itraversed
 
-neighbors :: Position -> EntityMap a -> Neighbors (Vector a)
+neighbors :: Position -> EntityMap a -> Neighbors (VectorBag a)
 neighbors pos em = (\p -> view (atPosition p) em) <$> neighborPositions pos
 
 --------------------------------------------------------------------------------

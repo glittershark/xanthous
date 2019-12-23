@@ -3,6 +3,7 @@
 module Xanthous.Data.EntityMapSpec where
 --------------------------------------------------------------------------------
 import           Test.Prelude
+import           Control.Lens.Properties
 --------------------------------------------------------------------------------
 import qualified Data.Aeson as JSON
 --------------------------------------------------------------------------------
@@ -44,5 +45,9 @@ test = localOption (QuickCheckTests 20)
     , testProperty "Preserves IDs" $ \(em :: EntityMap Int) ->
         let Just em' = JSON.decode $ JSON.encode em
         in toEIDsAndPositioned em' === toEIDsAndPositioned em
+    ]
+
+  , testGroup "atPosition"
+    [ testProperty "lens laws" $ \pos -> isLens $ atPosition @Int pos
     ]
   ]

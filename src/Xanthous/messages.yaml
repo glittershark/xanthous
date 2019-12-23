@@ -76,6 +76,17 @@ wield:
   # TODO: use actual hands
   wielded : You wield the {{wieldedItem.itemType.name}} in your right hand.
 
+drop:
+  nothing: You aren't carrying anything
+  menu: What would you like to drop?
+  # TODO: use actual hands
+  dropped:
+    - You drop the {{item.itemType.name}}.
+    - You drop the {{item.itemType.name}} on the ground.
+    - You put the {{item.itemType.name}} on the ground.
+    - You take the {{item.itemType.name}} out of your backpack and put it on the ground.
+    - You take the {{item.itemType.name}} out of your backpack and drop it on the ground.
+
 
 ###
 
