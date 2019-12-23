@@ -102,6 +102,8 @@ stepGameBy ticks = do
     pEntity' <- step ticks pEntity
     entities . ix eid .= pEntity'
 
+  modify updateCharacterVision
+
   whenM (uses character isDead)
     . prompt_ @'Continue ["dead"] Uncancellable
     . const . lift . liftIO
@@ -137,7 +139,6 @@ handleCommand (Move dir) = do
       characterPosition .= newPos
       stepGameBy =<< uses (character . speed) (|*| 1)
       describeEntitiesAt newPos
-      modify updateCharacterVision
     Just Combat -> attackAt newPos
     Just Stop -> pure ()
   continue
