@@ -112,19 +112,14 @@ drawPanel game panel
     drawWielded :: Wielded -> Widget Name
     drawWielded (Hands Nothing Nothing) = emptyWidget
     drawWielded (DoubleHanded i) =
-      txt $ "You are holding " <> description i <> " in both hands"
-    drawWielded (Hands l r) =
-      maybe
-        emptyWidget
-        (\i ->
-           txt $ "You are holding " <> description i <> " in your left hand")
-        l
-      <=>
-      maybe
-        emptyWidget
-        (\i ->
-           txt $ "You are holding " <> description i <> " in your right hand")
-        r
+      txtWrap $ "You are holding " <> description i <> " in both hands"
+    drawWielded (Hands l r) = drawHand "left" l <=> drawHand "right" r
+    drawHand side = maybe emptyWidget $ \i ->
+      txtWrap ( "You are holding "
+              <> description i
+              <> " in your " <> side <> " hand"
+              )
+      <=> txt " "
 
     drawBackpack :: Vector Item -> Widget Name
     drawBackpack Empty = txtWrap "Your backpack is empty right now."

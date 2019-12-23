@@ -20,6 +20,8 @@ module Xanthous.Entities.Character
   , hands
   , leftHand
   , rightHand
+  , inLeftHand
+  , inRightHand
   , doubleHanded
   , wieldedItems
   , WieldedItem(..)
@@ -100,8 +102,14 @@ hands = prism' (uncurry Hands) $ \case
 leftHand :: Traversal' Wielded WieldedItem
 leftHand = hands . _1 . _Just
 
+inLeftHand :: WieldedItem -> Wielded
+inLeftHand wi = Hands (Just wi) Nothing
+
 rightHand :: Traversal' Wielded WieldedItem
 rightHand = hands . _2 . _Just
+
+inRightHand :: WieldedItem -> Wielded
+inRightHand wi = Hands Nothing (Just wi)
 
 doubleHanded :: Prism' Wielded WieldedItem
 doubleHanded = prism' DoubleHanded $ \case

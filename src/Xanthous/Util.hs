@@ -25,17 +25,19 @@ module Xanthous.Util
     -- ** Bag sequence algorithms
   , takeWhileInclusive
   , smallestNotIn
+  , removeVectorIndex
 
     -- * Type-level programming utils
   , KnownBool(..)
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude hiding (foldr)
+import           Xanthous.Prelude hiding (foldr)
 --------------------------------------------------------------------------------
-import Test.QuickCheck.Checkers
-import Data.Foldable (foldr)
-import Data.Monoid
-import Data.Proxy
+import           Test.QuickCheck.Checkers
+import           Data.Foldable (foldr)
+import           Data.Monoid
+import           Data.Proxy
+import qualified Data.Vector as V
 --------------------------------------------------------------------------------
 
 newtype EqEqProp a = EqEqProp a
@@ -209,6 +211,12 @@ smallestNotIn xs = case uniq $ sort xs of
     | x > minBound -> minBound
     | otherwise
     -> snd . headEx . filter (uncurry (/=)) $ zip (xs' ++ [minBound]) [minBound..]
+
+-- | Remove the element at the given index, if any, from the given vector
+removeVectorIndex :: Int -> Vector a -> Vector a
+removeVectorIndex idx vect =
+  let (before, after) = V.splitAt idx vect
+  in before <> fromMaybe Empty (tailMay after)
 
 --------------------------------------------------------------------------------
 

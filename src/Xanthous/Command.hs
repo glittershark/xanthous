@@ -21,6 +21,7 @@ data Command
   | Save
   | Read
   | ShowInventory
+  | Wield
 
     -- | TODO replace with `:` commands
   | ToggleRevealAll
@@ -37,7 +38,9 @@ commandFromKey (KChar 'e') [] = Just Eat
 commandFromKey (KChar 'S') [] = Just Save
 commandFromKey (KChar 'r') [] = Just Read
 commandFromKey (KChar 'i') [] = Just ShowInventory
+commandFromKey (KChar 'w') [] = Just Wield
 
+-- DEBUG COMMANDS --
 commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll
 
 commandFromKey _ _ = Nothing

@@ -67,5 +67,17 @@ read:
   nothing: "There's nothing there to read"
   result: "\"{{message}}\""
 
+wield:
+  nothing:
+    - You aren't carrying anything you can wield
+    - You can't wield anything in your backpack
+    - You can't wield anything currently in your backpack
+  menu: What would you like to wield?
+  # TODO: use actual hands
+  wielded : You wield the {{wieldedItem.itemType.name}} in your right hand.
+
+
+###
+
 tutorial:
   message1: The caves are dark and full of nightmarish creatures - and you are likely to perish without food. Seek out sustenance! You can pick items up with ,.

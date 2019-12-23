@@ -36,6 +36,7 @@ import           Xanthous.Game.Prompt
 import           Xanthous.Monad
 import           Xanthous.Resource (Name, Panel(..))
 import qualified Xanthous.Messages as Messages
+import           Xanthous.Util (removeVectorIndex)
 import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Entities.Character as Character
@@ -46,7 +47,10 @@ import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Environment
                  (Door, open, locked, GroundMessage(..))
-import           Xanthous.Entities.RawTypes (edible, eatMessage, hitpointsHealed)
+import           Xanthous.Entities.RawTypes
+                 ( edible, eatMessage, hitpointsHealed
+                 , wieldable
+                 )
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 --------------------------------------------------------------------------------
@@ -197,9 +201,7 @@ handleCommand Eat = do
             menuItems = mkMenuItems $ imap foodMenuItem food
         in menu_ ["eat", "menuPrompt"] Cancellable menuItems
           $ \(MenuResult (idx, item, edibleItem)) -> do
-            character . inventory . backpack %= \inv ->
-              let (before, after) = V.splitAt idx inv
-              in before <> fromMaybe Empty (tailMay after)
+            character . inventory . backpack %= removeVectorIndex idx
             let msg = fromMaybe (Messages.lookup ["eat", "eat"])
                       $ edibleItem ^. eatMessage
             character . characterHitpoints' +=
@@ -232,6 +234,24 @@ handleCommand Read = do
   continue
 
 handleCommand ShowInventory = showPanel InventoryPanel >> continue
+
+handleCommand Wield = do
+  uses (character . inventory . backpack)
+       (V.mapMaybe (\item ->
+                      (WieldedItem item) <$> item ^. Item.itemType . wieldable))
+    >>= \case
+      Empty -> say_ ["wield", "nothing"]
+      wieldables ->
+        menu_ ["wield", "menu"] Cancellable (wieldableMenu wieldables)
+        $ \(MenuResult (idx, item)) -> do
+          character . inventory . backpack %= removeVectorIndex idx
+          character . inventory . wielded .= inRightHand item
+          say ["wield", "wielded"] item
+  continue
+  where
+    wieldableMenu = mkMenuItems . imap wieldableMenuItem
+    wieldableMenuItem idx wi@(WieldedItem item _) =
+      (entityMenuChar item, MenuOption (description item) (idx, wi))
 
 handleCommand Save = do
   -- TODO default save locations / config file?
@@ -433,11 +453,15 @@ entityMenu_ = mkMenuItems @[_] . map entityMenuItem
     entityMenuItem wentity
       = let entity = extract wentity
       in (entityMenuChar entity, MenuOption (description entity) wentity)
-    entityMenuChar entity
-      = let ec = entityChar entity ^. char
-        in if ec `elem` (['a'..'z'] ++ ['A'..'Z'])
-           then ec
-           else 'a'
+
+
+entityMenuChar :: Entity a => a -> Char
+entityMenuChar entity
+  = let ec = entityChar entity ^. char
+    in if ec `elem` (['a'..'z'] ++ ['A'..'Z'])
+        then ec
+        else 'a'
+
 
 -- entityMenu :: Entity entity => [entity] -> Map Char (MenuOption entity)
 -- entityMenu = map (map runIdentity) . entityMenu_ . fmap Identity
