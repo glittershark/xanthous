@@ -34,7 +34,8 @@ import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
-import           Xanthous.Entities.RawTypes hiding (Creature, description)
+import           Xanthous.Entities.RawTypes
+                 hiding (Creature, description, damage)
 import           Xanthous.Game.State
 import           Xanthous.Data
 --------------------------------------------------------------------------------

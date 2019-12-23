@@ -37,8 +37,12 @@ combat:
   nothingToAttack: There's nothing to attack there.
   menu: Which creature would you like to attack?
   hit:
-    - You hit the {{creature.creatureType.name}}.
-    - You attack the {{creature.creatureType.name}}.
+    fists:
+      - You punch the {{creature.creatureType.name}} with your bare fists! It hurts. A lot.
+      - You strike the {{creature.creatureType.name}} with your bare fists! It leaves a bit of a bruise on your knuckles.
+    generic:
+      - You hit the {{creature.creatureType.name}}.
+      - You attack the {{creature.creatureType.name}}.
   creatureAttack:
     - The {{creature.creatureType.name}} hits you!
     - The {{creature.creatureType.name}} attacks you!

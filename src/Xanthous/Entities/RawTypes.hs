@@ -2,36 +2,51 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 --------------------------------------------------------------------------------
 module Xanthous.Entities.RawTypes
-  ( CreatureType(..)
-  , EdibleItem(..)
-  , ItemType(..)
-  , isEdible
-  , EntityRaw(..)
-
+  (
+    EntityRaw(..)
   , _Creature
+  , _Item
+
+    -- * Creatures
+  , CreatureType(..)
+
+    -- * Items
+  , ItemType(..)
+    -- ** Item sub-types
+    -- *** Edible
+  , EdibleItem(..)
+  , isEdible
+    -- *** Wieldable
+  , WieldableItem(..)
+  , isWieldable
+
     -- * Lens classes
+  , HasAttackMessage(..)
   , HasChar(..)
-  , HasName(..)
+  , HasDamage(..)
   , HasDescription(..)
+  , HasEatMessage(..)
+  , HasEdible(..)
+  , HasFriendly(..)
+  , HasHitpointsHealed(..)
   , HasLongDescription(..)
   , HasMaxHitpoints(..)
-  , HasFriendly(..)
-  , HasEatMessage(..)
-  , HasHitpointsHealed(..)
-  , HasEdible(..)
+  , HasName(..)
   , HasSpeed(..)
+  , HasWieldable(..)
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 import Test.QuickCheck
-import Test.QuickCheck.Arbitrary.Generic
 import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Messages (Message(..))
 import Xanthous.Data (TicksPerTile, Hitpoints)
 import Xanthous.Data.EntityChar
+import Xanthous.Util.QuickCheck
 --------------------------------------------------------------------------------
+
 data CreatureType = CreatureType
   { _name         :: !Text
   , _description  :: !Text
@@ -42,13 +57,11 @@ data CreatureType = CreatureType
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary CreatureType
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        CreatureType
 makeFieldsNoPrefix ''CreatureType
-
-instance Arbitrary CreatureType where
-  arbitrary = genericArbitrary
 
 --------------------------------------------------------------------------------
 
@@ -58,13 +71,25 @@ data EdibleItem = EdibleItem
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary EdibleItem
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        EdibleItem
 makeFieldsNoPrefix ''EdibleItem
 
-instance Arbitrary EdibleItem where
-  arbitrary = genericArbitrary
+data WieldableItem = WieldableItem
+  { _damage :: !Hitpoints
+  , _attackMessage :: !(Maybe Message)
+  }
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary WieldableItem
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+                       WieldableItem
+makeFieldsNoPrefix ''WieldableItem
+
+--------------------------------------------------------------------------------
 
 data ItemType = ItemType
   { _name            :: Text
@@ -72,19 +97,23 @@ data ItemType = ItemType
   , _longDescription :: Text
   , _char            :: EntityChar
   , _edible          :: Maybe EdibleItem
+  , _wieldable       :: Maybe WieldableItem
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary ItemType
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        ItemType
 makeFieldsNoPrefix ''ItemType
 
-instance Arbitrary ItemType where
-  arbitrary = genericArbitrary
-
+-- | Can this item be eaten?
 isEdible :: ItemType -> Bool
 isEdible = has $ edible . _Just
+
+-- | Can this item be used as a weapon?
+isWieldable :: ItemType -> Bool
+isWieldable = has $ wieldable . _Just
 
 --------------------------------------------------------------------------------
 
@@ -93,9 +122,9 @@ data EntityRaw
   | Item ItemType
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData)
+  deriving Arbitrary via GenericArbitrary EntityRaw
   deriving (FromJSON)
        via WithOptions '[ SumEnc ObjWithSingleField ]
                        EntityRaw
 makePrisms ''EntityRaw
 
-{-# ANN module ("HLint: ignore Use newtype instead of data" :: String) #-}

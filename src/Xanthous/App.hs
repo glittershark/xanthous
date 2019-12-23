@@ -143,8 +143,8 @@ handleCommand PickUp = do
   uses entities (entitiesAtPositionWithType @Item pos) >>= \case
     [] -> say_ ["pickUp", "nothingToPickUp"]
     [item] -> pickUpItem item
-    items ->
-      menu_ ["pickUp", "menu"] Cancellable (entityMenu_ items)
+    items' ->
+      menu_ ["pickUp", "menu"] Cancellable (entityMenu_ items')
       $ \(MenuResult item) -> pickUpItem item
   continue
   where
@@ -185,7 +185,7 @@ handleCommand Look = do
 handleCommand Wait = stepGame >> continue
 
 handleCommand Eat = do
-  uses (character . inventory)
+  uses (character . inventory . backpack)
        (V.mapMaybe (\item -> (item,) <$> item ^. Item.itemType . edible))
     >>= \case
       Empty -> say_ ["eat", "noFood"]
@@ -197,7 +197,7 @@ handleCommand Eat = do
             menuItems = mkMenuItems $ imap foodMenuItem food
         in menu_ ["eat", "menuPrompt"] Cancellable menuItems
           $ \(MenuResult (idx, item, edibleItem)) -> do
-            character . inventory %= \inv ->
+            character . inventory . backpack %= \inv ->
               let (before, after) = V.splitAt idx inv
               in before <> fromMaybe Empty (tailMay after)
             let msg = fromMaybe (Messages.lookup ["eat", "eat"])
@@ -231,7 +231,7 @@ handleCommand Read = do
             in readAndContinue msgs
   continue
 
-handleCommand Inventory = showPanel InventoryPanel >> continue
+handleCommand ShowInventory = showPanel InventoryPanel >> continue
 
 handleCommand Save = do
   -- TODO default save locations / config file?
@@ -280,8 +280,8 @@ handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ _) _ = continue
 
 handlePromptEvent _ (Prompt _ SContinue _ _ _) _ = continue
 
-handlePromptEvent _ (Prompt _ SMenu _ items cb) (VtyEvent (EvKey (KChar chr) []))
-  | Just (MenuOption _ res) <- items ^. at chr
+handlePromptEvent _ (Prompt _ SMenu _ items' cb) (VtyEvent (EvKey (KChar chr) []))
+  | Just (MenuOption _ res) <- items' ^. at chr
   = cb (MenuResult res) >> clearPrompt
   | otherwise
   = continue
@@ -350,9 +350,9 @@ menu :: forall (a :: Type) (params :: Type).
      -> Map Char (MenuOption a)           -- ^ Menu items
      -> (PromptResult ('Menu a) -> AppM ()) -- ^ Menu promise handler
      -> AppM ()
-menu msgPath params cancellable items cb = do
+menu msgPath params cancellable items' cb = do
   msg <- Messages.message msgPath params
-  let p = mkMenu cancellable items cb
+  let p = mkMenu cancellable items' cb
   promptState .= WaitingPrompt msg p
 
 menu_ :: forall (a :: Type).
@@ -419,7 +419,8 @@ attackAt pos =
         say ["combat", "killed"] msgParams
         entities . at creatureID .= Nothing
       else do
-        say ["combat", "hit"] msgParams
+        -- TODO attack messages
+        say ["combat", "hit", "generic"] msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
     stepGame -- TODO
 

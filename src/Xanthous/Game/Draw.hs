@@ -14,6 +14,7 @@ import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game.State
 import           Xanthous.Entities.Character
+import           Xanthous.Entities.Item (Item)
 import           Xanthous.Game
                  ( GameState(..)
                  , entities
@@ -105,16 +106,36 @@ drawPanel game panel
   . viewport (Resource.Panel panel) Vertical
   $ case panel of
       InventoryPanel ->
-        let items = game ^. character . inventory
-        in if null items
-           then txtWrap "Your inventory is empty right now."
-           else
-             txtWrap "You are currently carrying the following items:"
-             <=> txt " "
-             <=> foldl' (<=>) emptyWidget
-                 (map
-                  (txtWrap . ((bullet <| " ") <>) . description)
-                  items)
+        drawWielded (game ^. character . inventory . wielded)
+        <=> drawBackpack (game ^. character . inventory . backpack)
+  where
+    drawWielded :: Wielded -> Widget Name
+    drawWielded (Hands Nothing Nothing) = emptyWidget
+    drawWielded (DoubleHanded i) =
+      txt $ "You are holding " <> description i <> " in both hands"
+    drawWielded (Hands l r) =
+      maybe
+        emptyWidget
+        (\i ->
+           txt $ "You are holding " <> description i <> " in your left hand")
+        l
+      <=>
+      maybe
+        emptyWidget
+        (\i ->
+           txt $ "You are holding " <> description i <> " in your right hand")
+        r
+
+    drawBackpack :: Vector Item -> Widget Name
+    drawBackpack Empty = txtWrap "Your backpack is empty right now."
+    drawBackpack backpackItems
+      = txtWrap ( "You are currently carrying the following items in your "
+                <> "backpack:")
+        <=> txt " "
+        <=> foldl' (<=>) emptyWidget
+            (map
+              (txtWrap . ((bullet <| " ") <>) . description)
+              backpackItems)
 
 drawCharacterInfo :: Character -> Widget Name
 drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
