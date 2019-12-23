@@ -3,11 +3,11 @@
 module Xanthous.Data.EntityMapSpec where
 --------------------------------------------------------------------------------
 import           Test.Prelude
-import           Control.Lens.Properties
 --------------------------------------------------------------------------------
 import qualified Data.Aeson as JSON
 --------------------------------------------------------------------------------
 import           Xanthous.Data.EntityMap
+import           Xanthous.Data (Positioned(..))
 --------------------------------------------------------------------------------
 
 main :: IO ()
@@ -47,7 +47,23 @@ test = localOption (QuickCheckTests 20)
         in toEIDsAndPositioned em' === toEIDsAndPositioned em
     ]
 
-  , testGroup "atPosition"
-    [ testProperty "lens laws" $ \pos -> isLens $ atPosition @Int pos
+  , localOption (QuickCheckTests 50)
+  $ testGroup "atPosition"
+    [ testProperty "setget" $ \pos (em :: EntityMap Int) es ->
+        view (atPosition pos) (set (atPosition pos) es em) === es
+    , testProperty "getset" $ \pos (em :: EntityMap Int) ->
+        set (atPosition pos) (view (atPosition pos) em) em === em
+    , testProperty "setset" $ \pos (em :: EntityMap Int) es ->
+        (set (atPosition pos) es . set (atPosition pos) es) em
+        ===
+        set (atPosition pos) es em
+      -- testProperty "lens laws" $ \pos -> isLens $ atPosition @Int pos
+    , testProperty "preserves IDs" $ \(em :: EntityMap Int) e1 e2 p ->
+        let (eid, em') = insertAtReturningID p e1 em
+            em'' = em' & atPosition p %~ (e2 <|)
+        in
+          counterexample ("em': " <> show em')
+          . counterexample ("em'': " <> show em'')
+          $ em'' ^. at eid === Just (Positioned p e1)
     ]
   ]

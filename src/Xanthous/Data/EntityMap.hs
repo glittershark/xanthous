@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable  #-}
@@ -185,7 +186,7 @@ insertAtReturningID pos e em =
 insertAt :: forall a. Position -> a -> EntityMap a -> EntityMap a
 insertAt pos e = snd . insertAtReturningID pos e
 
-atPosition :: forall a. Position -> Lens' (EntityMap a) (VectorBag a)
+atPosition :: forall a. (Ord a, Show a) => Position -> Lens' (EntityMap a) (VectorBag a)
 atPosition pos = lens getter setter
   where
     getter em =
@@ -194,16 +195,34 @@ atPosition pos = lens getter setter
                  $ em ^. byPosition . at pos
       in getEIDAssume em <$> eids
     setter em Empty = em & byPosition . at pos .~ Nothing
-    setter em entities =
-      alaf Endo foldMap (insertAt pos) entities
-      . removeAllAt pos
-      $ em
-      where
-        removeAllAt p e =
-          let eids = e ^.. byPosition . at p >>= toList >>= toList
-          in alaf Endo foldMap (\eid -> byID . at eid .~ Nothing) eids
-           . (byPosition . at pos .~ Nothing)
-           $ e
+    setter em (sort -> entities) =
+      let origEIDs = maybe Empty toNullable $ em ^. byPosition . at pos
+          origEntitiesWithIDs =
+            sortOn snd $ toList origEIDs <&> \eid -> (eid, getEIDAssume em eid)
+          go alles₁@((eid, e₁) :< es₁) -- orig
+             (e₂ :< es₂)               -- new
+            | e₁ == e₂
+              -- same, do nothing
+            = let (eids, lastEID, byID') = go es₁ es₂
+              in (insertSet eid eids, lastEID, byID')
+            | otherwise
+              -- e₂ is new, generate a new ID for it
+            = let (eids, lastEID, byID') = go alles₁ es₂
+                  eid' = succ lastEID
+              in (insertSet eid' eids, eid', byID' & at eid' ?~ Positioned pos e₂)
+          go Empty Empty = (mempty, em ^. lastID, em ^. byID)
+          go orig Empty =
+            let byID' = foldr deleteMap (em ^. byID) $ map fst orig
+            in (mempty, em ^. lastID, byID')
+          go Empty (new :< news) =
+            let (eids, lastEID, byID') = go Empty news
+                eid' = succ lastEID
+            in (insertSet eid' eids, eid', byID' & at eid' ?~ Positioned pos new)
+          go _ _ = error "unreachable"
+          (eidsAtPosition, newLastID, newByID) = go origEntitiesWithIDs entities
+      in em & byPosition . at pos .~ fromNullable eidsAtPosition
+            & byID .~ newByID
+            & lastID .~ newLastID
 
 getEIDAssume :: EntityMap a -> EntityID -> a
 getEIDAssume em eid = fromMaybe byIDInvariantError
@@ -247,7 +266,7 @@ lookup eid = fmap (view positioned) . lookupWithPosition eid
 -- positionedEntities :: IndexedTraversal EntityID (EntityMap a) (EntityMap b) (Positioned a) (Positioned b)
 -- positionedEntities = byID . itraversed
 
-neighbors :: Position -> EntityMap a -> Neighbors (VectorBag a)
+neighbors :: (Ord a, Show a) => Position -> EntityMap a -> Neighbors (VectorBag a)
 neighbors pos em = (\p -> view (atPosition p) em) <$> neighborPositions pos
 
 --------------------------------------------------------------------------------
