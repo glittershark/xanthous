@@ -129,7 +129,7 @@ handleNoPromptEvent (VtyEvent (EvKey k mods))
 handleNoPromptEvent _ = continue
 
 handleCommand :: Command -> AppM (Next GameState)
-handleCommand Quit = halt
+handleCommand Quit = confirm_ ["quit", "confirm"] (liftIO exitSuccess) >> continue
 handleCommand (Move dir) = do
   newPos <- uses characterPosition $ move dir
   collisionAt newPos >>= \case
@@ -282,6 +282,12 @@ handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc []))
 handlePromptEvent _ pr (VtyEvent (EvKey KEnter []))
   = submitPrompt pr >> clearPrompt
 
+handlePromptEvent _ pr@(Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'y') []))
+  = submitPrompt pr >> clearPrompt
+
+handlePromptEvent _ (Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'n') []))
+  = clearPrompt
+
 handlePromptEvent
   msg
   (Prompt c SStringPrompt (StringPromptState edit) pri cb)
@@ -296,8 +302,6 @@ handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ cb)
   (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
   = cb (DirectionResult dir) >> clearPrompt
 handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ _) _ = continue
-
-handlePromptEvent _ (Prompt _ SContinue _ _ _) _ = continue
 
 handlePromptEvent _ (Prompt _ SMenu _ items' cb) (VtyEvent (EvKey (KChar chr) []))
   | Just (MenuOption _ res) <- items' ^. at chr
@@ -315,6 +319,11 @@ handlePromptEvent
        >> continue
 handlePromptEvent _ (Prompt _ SPointOnMap _ _ _) _ = continue
 
+handlePromptEvent
+  _
+  (Prompt Cancellable _ _ _ _)
+  (VtyEvent (EvKey (KChar 'q') []))
+  = clearPrompt
 handlePromptEvent _ _ _ = continue
 
 clearPrompt :: AppM (Next GameState)
@@ -360,6 +369,18 @@ prompt_
   -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
   -> AppM ()
 prompt_ msg = prompt msg $ object []
+
+confirm
+  :: ToJSON params
+  => [Text] -- ^ Message key
+  -> params
+  -> AppM ()
+  -> AppM ()
+confirm msgPath params
+  = prompt @'Confirm msgPath params Cancellable . const
+
+confirm_ :: [Text] -> AppM () -> AppM ()
+confirm_ msgPath = confirm msgPath $ object []
 
 menu :: forall (a :: Type) (params :: Type).
        (ToJSON params)

@@ -69,6 +69,7 @@ instance NFData (SPromptType pt) where
 
 class SingPromptType pt where singPromptType :: SPromptType pt
 instance SingPromptType 'StringPrompt where singPromptType = SStringPrompt
+instance SingPromptType 'Confirm where singPromptType = SConfirm
 instance SingPromptType 'DirectionPrompt where singPromptType = SDirectionPrompt
 instance SingPromptType 'PointOnMap where singPromptType = SPointOnMap
 instance SingPromptType 'Continue where singPromptType = SContinue

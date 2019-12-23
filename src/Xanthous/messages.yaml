@@ -12,6 +12,9 @@ save:
   location:
     "Enter filename to save to: "
 
+quit:
+  confirm: Really quit without saving?
+
 entities:
   description: You see here {{entityDescriptions}}
 
