@@ -26,6 +26,8 @@ module Xanthous.Util
   , takeWhileInclusive
   , smallestNotIn
   , removeVectorIndex
+  , maximum1
+  , minimum1
 
     -- * Type-level programming utils
   , KnownBool(..)
@@ -38,6 +40,8 @@ import           Data.Foldable (foldr)
 import           Data.Monoid
 import           Data.Proxy
 import qualified Data.Vector as V
+import           Data.Semigroup (Max(..), Min(..))
+import           Data.Semigroup.Foldable
 --------------------------------------------------------------------------------
 
 newtype EqEqProp a = EqEqProp a
@@ -217,6 +221,12 @@ removeVectorIndex :: Int -> Vector a -> Vector a
 removeVectorIndex idx vect =
   let (before, after) = V.splitAt idx vect
   in before <> fromMaybe Empty (tailMay after)
+
+maximum1 :: (Ord a, Foldable1 f) => f a -> a
+maximum1 = getMax . foldMap1 Max
+
+minimum1 :: (Ord a, Foldable1 f) => f a -> a
+minimum1 = getMin . foldMap1 Min
 
 --------------------------------------------------------------------------------
 

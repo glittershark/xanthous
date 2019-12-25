@@ -1,4 +1,6 @@
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 --------------------------------------------------------------------------------
 module Xanthous.Generators.Util
   ( MCells
@@ -13,18 +15,22 @@ module Xanthous.Generators.Util
   , regions
   , fillAll
   , fillAllM
+  , fromPoints
+  , fromPointsM
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude hiding (Foldable, toList, for_)
-import Data.Array.ST
-import Data.Array.Unboxed
-import Control.Monad.ST
-import Control.Monad.Random
-import Data.Monoid
-import Data.Foldable (Foldable, toList, for_)
+import           Xanthous.Prelude hiding (Foldable, toList, for_)
+import           Data.Array.ST
+import           Data.Array.Unboxed
+import           Control.Monad.ST
+import           Control.Monad.Random
+import           Data.Monoid
+import           Data.Foldable (Foldable, toList, for_)
+import qualified Data.Set as Set
+import           Data.Semigroup.Foldable
 --------------------------------------------------------------------------------
-import Xanthous.Util (foldlMapM')
-import Xanthous.Data (Dimensions, width, height)
+import           Xanthous.Util (foldlMapM', maximum1, minimum1)
+import           Xanthous.Data (Dimensions, width, height)
 --------------------------------------------------------------------------------
 
 type MCells s = STUArray s (Word, Word) Bool
@@ -184,3 +190,28 @@ fillAll ixes a = accum (const fst) a $ (, (False, ())) <$> toList ixes
 
 fillAllM :: (MArray a Bool m, Ix i, Foldable f) => f i -> a i Bool -> m ()
 fillAllM ixes a = for_ ixes $ \i -> writeArray a i False
+
+fromPoints
+  :: forall a f i.
+    ( IArray a Bool
+    , Ix i
+    , Functor f
+    , Foldable1 f
+    )
+  => f (i, i)
+  -> a (i, i) Bool
+fromPoints points =
+  let pts = Set.fromList $ toList points
+      dims = ( (minimum1 $ fst <$> points, minimum1 $ snd <$> points)
+             , (maximum1 $ fst <$> points, maximum1 $ snd <$> points)
+             )
+  in array dims $ range dims <&> \i -> (i, i `member` pts)
+
+fromPointsM
+  :: (MArray a Bool m, Ix i, Element f ~ i, MonoFoldable f)
+  => NonNull f
+  -> m (a i Bool)
+fromPointsM points = do
+  arr <- newArray (minimum points, maximum points) False
+  fillAllM (otoList points) arr
+  pure arr

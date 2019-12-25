@@ -36,6 +36,7 @@ dependencies:
 - generic-monoid
 - generic-lens
 - groups
+- JuicyPixels
 - lens
 - megaparsec
 - MonadRandom
@@ -47,7 +48,9 @@ dependencies:
 - random-source
 - raw-strings-qq
 - reflection
+- Rasterific
 - stache
+- semigroupoids
 - tomland
 - text-zipper
 - vector

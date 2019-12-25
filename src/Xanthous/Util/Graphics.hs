@@ -1,44 +1,65 @@
 -- | Graphics algorithms and utils for rendering things in 2D space
 --------------------------------------------------------------------------------
-module Xanthous.Util.Graphics where
+module Xanthous.Util.Graphics
+  ( circle
+  , filledCircle
+  , line
+  ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
-import Data.List (unfoldr)
+import           Xanthous.Prelude
+import           Data.List (unfoldr)
+import           Data.Ix (range, Ix)
+import           Data.Word (Word8)
+import qualified Graphics.Rasterific as Raster
+import           Graphics.Rasterific hiding (circle, line)
+import           Graphics.Rasterific.Texture (uniformTexture)
+import           Codec.Picture (imagePixels)
 --------------------------------------------------------------------------------
 
--- | Generate a circle centered at the given point and with the given radius
--- using the <midpoint circle algorithm
--- https://en.wikipedia.org/wiki/Midpoint_circle_algorithm>.
---
--- Code taken from <https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#Haskell>
-circle :: (Num i, Ord i)
+
+circle :: (Num i, Integral i, Ix i)
        => (i, i) -- ^ center
        -> i      -- ^ radius
        -> [(i, i)]
-circle (x₀, y₀) radius
-  -- Four initial points, plus the generated points
-  = (x₀, y₀ + radius) : (x₀, y₀ - radius) : (x₀ + radius, y₀) : (x₀ - radius, y₀) : points
-    where
-      -- Creates the (x, y) octet offsets, then maps them to absolute points in all octets.
-      points = concatMap generatePoints $ unfoldr step initialValues
+circle (ox, oy) radius
+  = pointsFromRaster (ox + radius) (oy + radius)
+  $ stroke 1 JoinRound (CapRound, CapRound)
+  $ Raster.circle (V2 (fromIntegral ox) (fromIntegral oy))
+  $ fromIntegral radius
 
-      generatePoints (x, y)
-        = [ (x₀ `xop` x', y₀ `yop` y')
-          | (x', y') <- [(x, y), (y, x)]
-          , xop <- [(+), (-)]
-          , yop <- [(+), (-)]
-          ]
+filledCircle :: (Num i, Integral i, Ix i)
+             => (i, i) -- ^ center
+             -> i      -- ^ radius
+             -> [(i, i)]
+filledCircle (ox, oy) radius
+  = pointsFromRaster (ox + radius) (oy + radius)
+  $ fill
+  $ Raster.circle (V2 (fromIntegral ox) (fromIntegral oy))
+  $ fromIntegral radius
 
-      initialValues = (1 - radius, 1, (-2) * radius, 0, radius)
+-- showCells . fromPoints . NE.fromList $ filledCircle (15, 15) 7
+-- pointsFromRaster :: (Num i, Integral i, Ix i)
+--                  => i      -- ^ width
+--                  -> i      -- ^ height
+--                  -> _
+--                  -> [(i, i)]
+pointsFromRaster
+  :: (Integral a, Integral b, Ix a, Ix b)
+  => a
+  -> b
+  -> Drawing Word8 ()
+  -> [(a, b)]
+pointsFromRaster w h raster
+  = map snd
+  $ filter ((== 1) . fst)
+  $ zip pixels
+  $ range ((1, 1), (w, h))
+  where
+    pixels = toListOf imagePixels
+           $ renderDrawing @Word8 (fromIntegral w) (fromIntegral h) 0
+           $ withTexture (uniformTexture 1) raster
 
-      step (f, ddf_x, ddf_y, x, y)
-        | x >= y = Nothing
-        | otherwise = Just ((x', y'), (f', ddf_x', ddf_y', x', y'))
-        where
-          (f', ddf_y', y') | f >= 0 = (f + ddf_y' + ddf_x', ddf_y + 2, y - 1)
-                           | otherwise = (f + ddf_x, ddf_y, y)
-          ddf_x' = ddf_x + 2
-          x' = x + 1
+
 
 -- | Draw a line between two points using Bresenham's line drawing algorithm
 --
