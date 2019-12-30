@@ -3,6 +3,7 @@ module Xanthous.Generators.LevelContents
   ( chooseCharacterPosition
   , randomItems
   , randomCreatures
+  , randomDoors
   , tutorialMessage
   ) where
 --------------------------------------------------------------------------------
@@ -10,6 +11,7 @@ import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           Control.Monad.Random
 import           Data.Array.IArray (amap, bounds, rangeSize, (!))
+import qualified Data.Array.IArray as Arr
 --------------------------------------------------------------------------------
 import           Xanthous.Generators.Util
 import           Xanthous.Random
@@ -20,7 +22,8 @@ import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Item (Item)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Creature (Creature)
-import           Xanthous.Entities.Environment (GroundMessage(..))
+import           Xanthous.Entities.Environment
+                 (GroundMessage(..), Door(..), unlockedDoor)
 import           Xanthous.Messages (message_)
 import           Xanthous.Util.Graphics (circle)
 --------------------------------------------------------------------------------
@@ -30,6 +33,25 @@ chooseCharacterPosition = randomPosition
 
 randomItems :: MonadRandom m => Cells -> m (EntityMap Item)
 randomItems = randomEntities Item.newWithType (0.0004, 0.001)
+
+randomDoors :: MonadRandom m => Cells -> m (EntityMap Door)
+randomDoors cells = do
+  doorRatio <- getRandomR subsetRange
+  let numDoors = floor $ doorRatio * fromIntegral (length candidateCells)
+      doorPositions = positionFromPair <$> take numDoors candidateCells
+      doors = zip doorPositions $ repeat unlockedDoor
+  pure $ _EntityMap # doors
+  where
+    candidateCells = filter doorable $ Arr.indices cells
+    subsetRange = (0.8 :: Double, 1.0)
+    doorable (x, y) =
+      ( fromMaybe True $ cells ^? ix (x - 1, y) -- left
+      , fromMaybe True $ cells ^? ix (x, y - 1) -- top
+      , fromMaybe True $ cells ^? ix (x + 1, y) -- right
+      , fromMaybe True $ cells ^? ix (x, y + 1) -- bottom
+      ) `elem` [ (True, False, True, False)
+          , (False, True, False, True)
+          ]
 
 randomCreatures :: MonadRandom m => Cells -> m (EntityMap Creature)
 randomCreatures = randomEntities Creature.newWithType (0.0007, 0.003)
@@ -73,14 +95,15 @@ randomEntities newWithType sizeRange cells =
       pure $ _EntityMap # entities
 
 randomPosition :: MonadRandom m => Cells -> m Position
-randomPosition cells = fmap positionFromPair . choose $ impureNonNull candidates
-  where
-    -- cells ends up with true = wall, we want true = can put an item here
-    placeableCells = amap not cells
+randomPosition = fmap positionFromPair . choose . impureNonNull . cellCandidates
 
-    -- find the largest contiguous region of cells in the cave.
-    candidates
-      = maximumBy (compare `on` length)
-      $ fromMaybe (error "No regions generated! this should never happen.")
-      $ fromNullable
-      $ regions placeableCells
+-- cellCandidates :: Cells -> Cells
+cellCandidates :: Cells -> Set (Word, Word)
+cellCandidates
+  -- find the largest contiguous region of cells in the cave.
+  = maximumBy (compare `on` length)
+  . fromMaybe (error "No regions generated! this should never happen.")
+  . fromNullable
+  . regions
+  -- cells ends up with true = wall, we want true = can put an item here
+  . amap not

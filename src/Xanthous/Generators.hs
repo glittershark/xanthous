@@ -13,9 +13,11 @@ module Xanthous.Generators
   , levelWalls
   , levelItems
   , levelCreatures
+  , levelDoors
   , levelCharacterPosition
   , levelTutorialMessage
   , generateLevel
+  , levelToEntityMap
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (Level)
@@ -34,6 +36,7 @@ import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Environment
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
+import           Xanthous.Game.State (SomeEntity(..))
 --------------------------------------------------------------------------------
 
 data Generator
@@ -109,6 +112,7 @@ cellsToWalls cells = foldl' maybeInsertWall mempty . assocs $ cells
 
 data Level = Level
   { _levelWalls             :: !(EntityMap Wall)
+  , _levelDoors             :: !(EntityMap Door)
   , _levelItems             :: !(EntityMap Item)
   , _levelCreatures         :: !(EntityMap Creature)
   , _levelTutorialMessage   :: !(EntityMap GroundMessage)
@@ -116,13 +120,27 @@ data Level = Level
   }
 makeLenses ''Level
 
-generateLevel :: MonadRandom m => SGenerator gen -> Params gen -> Dimensions -> m Level
+generateLevel
+  :: MonadRandom m
+  => SGenerator gen
+  -> Params gen
+  -> Dimensions
+  -> m Level
 generateLevel gen ps dims = do
   rand <- mkStdGen <$> getRandom
   let cells = generate gen ps dims rand
       _levelWalls = cellsToWalls cells
   _levelItems <- randomItems cells
   _levelCreatures <- randomCreatures cells
+  _levelDoors <- randomDoors cells
   _levelCharacterPosition <- chooseCharacterPosition cells
   _levelTutorialMessage <- tutorialMessage cells _levelCharacterPosition
   pure Level {..}
+
+levelToEntityMap :: Level -> EntityMap SomeEntity
+levelToEntityMap level
+  = (SomeEntity <$> level ^. levelWalls)
+  <> (SomeEntity <$> level ^. levelDoors)
+  <> (SomeEntity <$> level ^. levelItems)
+  <> (SomeEntity <$> level ^. levelCreatures)
+  <> (SomeEntity <$> level ^. levelTutorialMessage)

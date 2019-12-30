@@ -7,6 +7,7 @@ module Xanthous.Entities.Environment
   , Door(..)
   , open
   , locked
+  , unlockedDoor
     -- * Messages
   , GroundMessage(..)
   ) where
@@ -87,6 +88,13 @@ instance Entity Door where
   blocksVision = not . view open
   description _ = "a door"
   entityChar _ = "d"
+
+-- | A closed, unlocked door
+unlockedDoor :: Door
+unlockedDoor = Door
+  { _open = False
+  , _locked = False
+  }
 
 --------------------------------------------------------------------------------
 

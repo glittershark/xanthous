@@ -90,11 +90,7 @@ initLevel = do
     generateLevel SCaveAutomata CaveAutomata.defaultParams
     $ Dimensions 80 80
 
-  entities <>= (SomeEntity <$> level ^. levelWalls)
-  entities <>= (SomeEntity <$> level ^. levelItems)
-  entities <>= (SomeEntity <$> level ^. levelCreatures)
-  entities <>= (SomeEntity <$> level ^. levelTutorialMessage)
-
+  entities <>= levelToEntityMap level
   characterPosition .= level ^. levelCharacterPosition
 
 --------------------------------------------------------------------------------
