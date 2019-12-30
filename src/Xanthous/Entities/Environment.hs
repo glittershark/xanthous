@@ -68,19 +68,21 @@ makeLenses ''Door
 
 instance Draw Door where
   drawWithNeighbors neighs door
-    | door ^. open
-    = str . pure $ case wallEdges neighs of
+    = str . pure . ($ door ^. open) $ case wallEdges neighs of
         Edges True  False  False False -> vertDoor
         Edges False True   False False -> vertDoor
         Edges True  True   False False -> vertDoor
         Edges False False  True  False -> horizDoor
         Edges False False  False True  -> horizDoor
         Edges False False  True  True  -> horizDoor
-        _                              -> '+'
-    | otherwise    = str "\\"
+        _                              -> allsidesDoor
     where
-      horizDoor = '␣'
-      vertDoor = '['
+      horizDoor True = '␣'
+      horizDoor False = 'ᚔ'
+      vertDoor True = '['
+      vertDoor False = 'ǂ'
+      allsidesDoor True = '+'
+      allsidesDoor False = '▥'
 
 instance Brain Door where step = brainVia Brainless
 
