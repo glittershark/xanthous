@@ -1,23 +1,27 @@
-{-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE ViewPatterns      #-}
-{-# LANGUAGE RoleAnnotations   #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE DeriveFoldable    #-}
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE NoTypeSynonymInstances   #-}
+{-# LANGUAGE PartialTypeSignatures  #-}
+{-# LANGUAGE StandaloneDeriving     #-}
+{-# LANGUAGE ViewPatterns           #-}
+{-# LANGUAGE RoleAnnotations        #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE DeriveTraversable      #-}
+{-# LANGUAGE DeriveFoldable         #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE NoTypeSynonymInstances #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
 --------------------------------------------------------------------------------
 -- | Common data types for Xanthous
 --------------------------------------------------------------------------------
 module Xanthous.Data
-  ( -- *
-    Position'(..)
+  ( Opposite(..)
+
+    -- *
+  , Position'(..)
   , Position
   , x
   , y
 
+    -- **
   , Positioned(..)
   , _Positioned
   , position
@@ -29,6 +33,18 @@ module Xanthous.Data
   , diffPositions
   , stepTowards
   , isUnit
+
+    -- * Boxes
+  , Box(..)
+  , topLeftCorner
+  , bottomRightCorner
+  , setBottomRightCorner
+  , dimensions
+  , inBox
+  , boxIntersects
+  , boxCenter
+  , boxEdge
+  , module Linear.V2
 
     -- *
   , Per(..)
@@ -49,10 +65,14 @@ module Xanthous.Data
 
     -- *
   , Direction(..)
-  , opposite
   , move
   , asPosition
   , directionOf
+
+    -- *
+  , Corner(..)
+  , Edge(..)
+  , cornerEdges
 
     -- *
   , Neighbors(..)
@@ -65,6 +85,9 @@ module Xanthous.Data
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (Left, Down, Right, (.=))
+--------------------------------------------------------------------------------
+import           Linear.V2 hiding (_x, _y)
+import qualified Linear.V2 as L
 import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
@@ -74,9 +97,16 @@ import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson
                  ( ToJSON(..), FromJSON(..), object, (.=), (.:), withObject)
 --------------------------------------------------------------------------------
-import           Xanthous.Util (EqEqProp(..), EqProp)
+import           Xanthous.Util (EqEqProp(..), EqProp, between)
+import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Util.Graphics
+--------------------------------------------------------------------------------
+
+-- | opposite ∘ opposite ≡ id
+class Opposite x where
+  opposite :: x -> x
+
 --------------------------------------------------------------------------------
 
 -- fromScalar ∘ scalar ≡ id
@@ -109,7 +139,10 @@ data Position' a where
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        (Position' a)
-makeLenses ''Position'
+
+x, y :: Lens' (Position' a) a
+x = lens (\(Position xx _) -> xx) (\(Position _ yy) xx -> Position xx yy)
+y = lens (\(Position _ yy) -> yy) (\(Position xx _) yy -> Position xx yy)
 
 type Position = Position' Int
 
@@ -236,16 +269,16 @@ instance Arbitrary Direction where
   arbitrary = genericArbitrary
   shrink = genericShrink
 
-opposite :: Direction -> Direction
-opposite Up        = Down
-opposite Down      = Up
-opposite Left      = Right
-opposite Right     = Left
-opposite UpLeft    = DownRight
-opposite UpRight   = DownLeft
-opposite DownLeft  = UpRight
-opposite DownRight = UpLeft
-opposite Here      = Here
+instance Opposite Direction where
+  opposite Up        = Down
+  opposite Down      = Up
+  opposite Left      = Right
+  opposite Right     = Left
+  opposite UpLeft    = DownRight
+  opposite UpRight   = DownLeft
+  opposite DownLeft  = UpRight
+  opposite DownRight = UpLeft
+  opposite Here      = Here
 
 move :: Direction -> Position -> Position
 move Up        = y -~ 1
@@ -295,6 +328,40 @@ stepTowards (view _Position -> p₁) (view _Position -> p₂)
 
 --------------------------------------------------------------------------------
 
+data Corner
+  = TopLeft
+  | TopRight
+  | BottomLeft
+  | BottomRight
+  deriving stock (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Opposite Corner where
+  opposite TopLeft = BottomRight
+  opposite TopRight = BottomLeft
+  opposite BottomLeft = TopRight
+  opposite BottomRight = TopLeft
+
+data Edge
+  = TopEdge
+  | LeftEdge
+  | RightEdge
+  | BottomEdge
+  deriving stock (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Opposite Edge where
+  opposite TopEdge = BottomEdge
+  opposite BottomEdge = TopEdge
+  opposite LeftEdge = RightEdge
+  opposite RightEdge = LeftEdge
+
+cornerEdges :: Corner -> (Edge, Edge)
+cornerEdges TopLeft = (TopEdge, LeftEdge)
+cornerEdges TopRight = (TopEdge, RightEdge)
+cornerEdges BottomLeft = (BottomEdge, LeftEdge)
+cornerEdges BottomRight = (BottomEdge, RightEdge)
+
+--------------------------------------------------------------------------------
+
 data Neighbors a = Neighbors
   { _topLeft
   , _top
@@ -307,7 +374,7 @@ data Neighbors a = Neighbors
   }
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (NFData)
-makeLenses ''Neighbors
+makeFieldsNoPrefix ''Neighbors
 
 instance Applicative Neighbors where
   pure α = Neighbors
@@ -403,3 +470,57 @@ newtype Hitpoints = Hitpoints Word
        via Word
   deriving (Semigroup, Monoid) via Sum Word
 
+--------------------------------------------------------------------------------
+
+data Box a = Box
+  { _topLeftCorner :: V2 a
+  , _dimensions    :: V2 a
+  }
+  deriving stock (Show, Eq, Ord, Functor, Generic)
+  deriving Arbitrary via GenericArbitrary (Box a)
+makeFieldsNoPrefix ''Box
+
+bottomRightCorner :: Num a => Box a -> V2 a
+bottomRightCorner box =
+  V2 (box ^. topLeftCorner . L._x + box ^. dimensions . L._x)
+     (box ^. topLeftCorner . L._y + box ^. dimensions . L._y)
+
+setBottomRightCorner :: (Num a, Ord a) => Box a -> V2 a -> Box a
+setBottomRightCorner box br@(V2 brx bry)
+  | brx < box ^. topLeftCorner . L._x || bry < box ^. topLeftCorner . L._y
+  = box & topLeftCorner .~ br
+        & dimensions . L._x .~ ((box ^. topLeftCorner . L._x) - brx)
+        & dimensions . L._y .~ ((box ^. topLeftCorner . L._y) - bry)
+  | otherwise
+  = box & dimensions . L._x .~ (brx - (box ^. topLeftCorner . L._x))
+        & dimensions . L._y .~ (bry - (box ^. topLeftCorner . L._y))
+
+inBox :: (Ord a, Num a) => Box a -> V2 a -> Bool
+inBox box pt = flip all [L._x, L._y] $ \component ->
+  between (box ^. topLeftCorner . component)
+          (box ^. to bottomRightCorner . component)
+          (pt ^. component)
+
+boxIntersects :: (Ord a, Num a) => Box a -> Box a -> Bool
+boxIntersects box₁ box₂
+  = any (inBox box₁) [box₂ ^. topLeftCorner, bottomRightCorner box₂]
+
+boxCenter :: (Fractional a) => Box a -> V2 a
+boxCenter box = V2 cx cy
+ where
+   cx = box ^. topLeftCorner . L._x + (box ^. dimensions . L._x / 2)
+   cy = box ^. topLeftCorner . L._y + (box ^. dimensions . L._y / 2)
+
+boxEdge :: (Enum a, Num a) => Box a -> Edge -> [V2 a]
+boxEdge box LeftEdge =
+  V2 (box ^. topLeftCorner . L._x)
+  <$> [box ^. topLeftCorner . L._y .. box ^. to bottomRightCorner . L._y]
+boxEdge box RightEdge =
+  V2 (box ^. to bottomRightCorner . L._x)
+  <$> [box ^. to bottomRightCorner . L._y .. box ^. to bottomRightCorner . L._y]
+boxEdge box TopEdge =
+  flip V2 (box ^. topLeftCorner . L._y)
+  <$> [box ^. topLeftCorner . L._x .. box ^. to bottomRightCorner . L._x]
+boxEdge box BottomEdge =
+  flip V2 (box ^. to bottomRightCorner . L._y)
+  <$> [box ^. topLeftCorner . L._x .. box ^. to bottomRightCorner . L._x]

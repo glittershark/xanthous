@@ -18,11 +18,7 @@ let
       overrides = (self: super: {
         ghc = super.ghc // { withPackages = super.ghc.withHoogle; };
         ghcWithPackages = self.ghc.withPackages;
-        # eww https://github.com/NixOS/nixpkgs/issues/16394
-        generic-arbitrary = pkgs.haskell.lib.appendPatch
-          super.generic-arbitrary
-          [ ./build/generic-arbitrary-export-garbitrary.patch ];
-      });
+      } // (import ./haskell-overlay.nix { inherit nixpkgs; }) self super);
     }
     else packageSet
   );

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2d93180ab419496ded42f750d00a5b3f6c6994a9af86a8694bb585a1f52919d4
+-- hash: 497414a98a626a63a6c5022688b33d0021c1580c7c262fbc1152599289df7935
 
 name:           xanthous
 version:        0.1.0.0
@@ -54,6 +54,7 @@ library
       Xanthous.Game.State
       Xanthous.Generators
       Xanthous.Generators.CaveAutomata
+      Xanthous.Generators.Dungeon
       Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
       Xanthous.Messages
@@ -63,9 +64,11 @@ library
       Xanthous.Random
       Xanthous.Resource
       Xanthous.Util
+      Xanthous.Util.Graph
       Xanthous.Util.Graphics
       Xanthous.Util.Inflection
       Xanthous.Util.JSON
+      Xanthous.Util.Optparse
       Xanthous.Util.QuickCheck
   other-modules:
       Paths_xanthous
@@ -74,8 +77,10 @@ library
   default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall
   build-depends:
-      MonadRandom
+      JuicyPixels
+    , MonadRandom
     , QuickCheck
+    , Rasterific
     , aeson
     , array
     , base
@@ -87,13 +92,18 @@ library
     , containers
     , data-default
     , deepseq
+    , fgl
+    , fgl-arbitrary
     , file-embed
     , filepath
     , generic-arbitrary
     , generic-lens
     , generic-monoid
     , groups
+    , hgeometry
+    , hgeometry-combinatorial
     , lens
+    , linear
     , megaparsec
     , mtl
     , optparse-applicative
@@ -105,7 +115,9 @@ library
     , random-source
     , raw-strings-qq
     , reflection
+    , semigroupoids
     , stache
+    , streams
     , text-zipper
     , tomland
     , vector
@@ -142,6 +154,7 @@ executable xanthous
       Xanthous.Game.State
       Xanthous.Generators
       Xanthous.Generators.CaveAutomata
+      Xanthous.Generators.Dungeon
       Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
       Xanthous.Messages
@@ -151,9 +164,11 @@ executable xanthous
       Xanthous.Random
       Xanthous.Resource
       Xanthous.Util
+      Xanthous.Util.Graph
       Xanthous.Util.Graphics
       Xanthous.Util.Inflection
       Xanthous.Util.JSON
+      Xanthous.Util.Optparse
       Xanthous.Util.QuickCheck
       Paths_xanthous
   hs-source-dirs:
@@ -161,8 +176,10 @@ executable xanthous
   default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
-      MonadRandom
+      JuicyPixels
+    , MonadRandom
     , QuickCheck
+    , Rasterific
     , aeson
     , array
     , base
@@ -174,13 +191,18 @@ executable xanthous
     , containers
     , data-default
     , deepseq
+    , fgl
+    , fgl-arbitrary
     , file-embed
     , filepath
     , generic-arbitrary
     , generic-lens
     , generic-monoid
     , groups
+    , hgeometry
+    , hgeometry-combinatorial
     , lens
+    , linear
     , megaparsec
     , mtl
     , optparse-applicative
@@ -192,7 +214,9 @@ executable xanthous
     , random-source
     , raw-strings-qq
     , reflection
+    , semigroupoids
     , stache
+    , streams
     , text-zipper
     , tomland
     , vector
@@ -217,6 +241,7 @@ test-suite test
       Xanthous.MessageSpec
       Xanthous.OrphansSpec
       Xanthous.Util.GraphicsSpec
+      Xanthous.Util.GraphSpec
       Xanthous.Util.InflectionSpec
       Xanthous.UtilSpec
       Paths_xanthous
@@ -225,8 +250,10 @@ test-suite test
   default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O0
   build-depends:
-      MonadRandom
+      JuicyPixels
+    , MonadRandom
     , QuickCheck
+    , Rasterific
     , aeson
     , array
     , base
@@ -238,14 +265,19 @@ test-suite test
     , containers
     , data-default
     , deepseq
+    , fgl
+    , fgl-arbitrary
     , file-embed
     , filepath
     , generic-arbitrary
     , generic-lens
     , generic-monoid
     , groups
+    , hgeometry
+    , hgeometry-combinatorial
     , lens
     , lens-properties
+    , linear
     , megaparsec
     , mtl
     , optparse-applicative
@@ -257,7 +289,9 @@ test-suite test
     , random-source
     , raw-strings-qq
     , reflection
+    , semigroupoids
     , stache
+    , streams
     , tasty
     , tasty-hunit
     , tasty-quickcheck

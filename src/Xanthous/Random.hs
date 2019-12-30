@@ -8,17 +8,19 @@ module Xanthous.Random
   , Weighted(..)
   , evenlyWeighted
   , weightedBy
+  , subRand
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
-import Data.List.NonEmpty (NonEmpty)
-import Control.Monad.Random.Class (MonadRandom(getRandomR, getRandom))
-import Data.Random.Shuffle.Weighted
-import Data.Random.Distribution
-import Data.Random.Distribution.Uniform
-import Data.Random.Distribution.Uniform.Exclusive
-import Data.Random.Sample
+import           Data.List.NonEmpty (NonEmpty(..))
+import           Control.Monad.Random.Class (MonadRandom(getRandomR, getRandom))
+import           Control.Monad.Random (Rand, evalRand, mkStdGen, StdGen)
+import           Data.Random.Shuffle.Weighted
+import           Data.Random.Distribution
+import           Data.Random.Distribution.Uniform
+import           Data.Random.Distribution.Uniform.Exclusive
+import           Data.Random.Sample
 import qualified Data.Random.Source as DRS
 --------------------------------------------------------------------------------
 
@@ -58,6 +60,10 @@ instance Choose (NonEmpty a) where
   type RandomResult (NonEmpty a) = a
   choose = choose . fromNonEmpty @[_]
 
+instance Choose (a, a) where
+  type RandomResult (a, a) = a
+  choose (x, y) = choose (x :| [y])
+
 newtype Weighted w t a = Weighted (t (w, a))
 
 evenlyWeighted :: [a] -> Weighted Int [] a
@@ -76,3 +82,6 @@ instance (Num w, Ord w, Distribution Uniform w, Excludable w) => Choose (Weighte
     sample
     $ fromMaybe (error "unreachable") . headMay
     <$> weightedSample 1 (toList ws)
+
+subRand :: MonadRandom m => Rand StdGen a -> m a
+subRand sub = evalRand sub . mkStdGen <$> getRandom

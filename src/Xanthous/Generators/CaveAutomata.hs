@@ -2,23 +2,25 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
-
+--------------------------------------------------------------------------------
 module Xanthous.Generators.CaveAutomata
   ( Params(..)
   , defaultParams
   , parseParams
   , generate
   ) where
-
-import Xanthous.Prelude
-import Control.Monad.Random (RandomGen, runRandT)
-import Data.Array.ST
-import Data.Array.Unboxed
+--------------------------------------------------------------------------------
+import           Xanthous.Prelude
+import           Control.Monad.Random (RandomGen, runRandT)
+import           Data.Array.ST
+import           Data.Array.Unboxed
 import qualified Options.Applicative as Opt
-
-import Xanthous.Util (between)
-import Xanthous.Data (Dimensions, width, height)
-import Xanthous.Generators.Util
+--------------------------------------------------------------------------------
+import           Xanthous.Util (between)
+import           Xanthous.Util.Optparse
+import           Xanthous.Data (Dimensions, width, height)
+import           Xanthous.Generators.Util
+--------------------------------------------------------------------------------
 
 data Params = Params
   { _aliveStartChance :: Double
@@ -70,13 +72,6 @@ parseParams = Params
       <> Opt.metavar "STEPS"
       )
   where
-    readWithGuard predicate errmsg = do
-      res <- Opt.auto
-      unless (predicate res)
-        $ Opt.readerError
-        $ errmsg res
-      pure res
-
     parseChance = readWithGuard
       (between 0 1)
       $ \res -> "Chance must be in the range [0,1], got: " <> show res
@@ -85,7 +80,7 @@ parseParams = Params
       (between 0 8)
       $ \res -> "Neighbors must be in the range [0,8], got: " <> show res
 
-generate :: RandomGen g => Params -> Dimensions -> g -> UArray (Word, Word) Bool
+generate :: RandomGen g => Params -> Dimensions -> g -> Cells
 generate params dims gen
   = runSTUArray
   $ fmap fst

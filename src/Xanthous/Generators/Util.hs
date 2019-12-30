@@ -7,6 +7,7 @@ module Xanthous.Generators.Util
   , Cells
   , CellM
   , randInitialize
+  , initializeEmpty
   , numAliveNeighborsM
   , numAliveNeighbors
   , fillOuterEdgesM
@@ -39,12 +40,16 @@ type CellM g s a = RandT g (ST s) a
 
 randInitialize :: RandomGen g => Dimensions -> Double -> CellM g s (MCells s)
 randInitialize dims aliveChance = do
-  res <- lift $ newArray ((0, 0), (dims ^. width, dims ^. height)) False
+  res <- initializeEmpty dims
   for_ [0..dims ^. width] $ \i ->
     for_ [0..dims ^. height] $ \j -> do
       val <- (>= aliveChance) <$> getRandomR (0, 1)
       lift $ writeArray res (i, j) val
   pure res
+
+initializeEmpty :: RandomGen g => Dimensions -> CellM g s (MCells s)
+initializeEmpty dims =
+  lift $ newArray ((0, 0), (dims ^. width, dims ^. height)) False
 
 numAliveNeighborsM
   :: forall a i j m

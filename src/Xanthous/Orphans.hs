@@ -1,7 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE UndecidableInstances, PatternSynonyms #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 --------------------------------------------------------------------------------
 module Xanthous.Orphans
@@ -13,21 +15,23 @@ import           Xanthous.Prelude hiding (elements, (.=))
 import           Data.Aeson
 import           Data.Aeson.Types (typeMismatch)
 import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NonEmpty
-import           Data.Text.Arbitrary ()
 import           Graphics.Vty.Attributes
 import           Brick.Widgets.Edit
 import           Data.Text.Zipper.Generic (GenericTextZipper)
 import           Brick.Widgets.Core (getName)
 import           System.Random (StdGen)
 import           Test.QuickCheck
+import           "quickcheck-instances" Test.QuickCheck.Instances ()
 import           Text.Megaparsec (errorBundlePretty)
 import           Text.Megaparsec.Pos
 import           Text.Mustache
 import           Text.Mustache.Type ( showKey )
 import           Control.Monad.State
+import           Linear
 --------------------------------------------------------------------------------
 import           Xanthous.Util.JSON
+import           Xanthous.Util.QuickCheck
+--------------------------------------------------------------------------------
 
 instance forall s a.
   ( Cons s s a a
@@ -130,18 +134,6 @@ instance Function Template where
       parseTemplatePartial txt
         = compileMustacheText "template" txt ^?! _Right
 
-instance Arbitrary a => Arbitrary (NonEmpty a) where
-  arbitrary = do
-    x <- arbitrary
-    xs <- arbitrary
-    pure $ x :| xs
-
-instance CoArbitrary a => CoArbitrary (NonEmpty a) where
-  coarbitrary = coarbitrary . toList
-
-instance Function a => Function (NonEmpty a) where
-  function = functionMap toList NonEmpty.fromList
-
 ppNode :: Map PName [Node] -> Node -> Text
 ppNode _ (TextBlock txt) = txt
 ppNode _ (EscapedVar k) = "{{" <> showKey k <> "}}"
@@ -168,12 +160,6 @@ instance FromJSON Template where
     = withText "Template"
     $ either (fail . errorBundlePretty) pure
     . compileMustacheText "template"
-
-instance CoArbitrary Text where
-  coarbitrary = coarbitrary . unpack
-
-instance Function Text where
-  function = functionMap unpack pack
 
 deriving anyclass instance NFData Node
 deriving anyclass instance NFData Template
@@ -353,3 +339,8 @@ instance CoArbitrary StdGen where
 deriving newtype instance (Arbitrary s, CoArbitrary (m (a, s)))
             => CoArbitrary (StateT s m a)
 
+--------------------------------------------------------------------------------
+
+deriving via (GenericArbitrary (V2 a)) instance Arbitrary a => Arbitrary (V2 a)
+instance CoArbitrary a => CoArbitrary (V2 a)
+instance Function a => Function (V2 a)

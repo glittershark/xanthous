@@ -47,18 +47,21 @@ parseRunParams = RunParams
 data Command
   = Run RunParams
   | Load FilePath
-  | Generate GeneratorInput Dimensions
+  | Generate GeneratorInput Dimensions (Maybe Int)
 
 parseDimensions :: Opt.Parser Dimensions
 parseDimensions = Dimensions
   <$> Opt.option Opt.auto
        ( Opt.short 'w'
        <> Opt.long "width"
+       <> Opt.metavar "TILES"
        )
   <*> Opt.option Opt.auto
        ( Opt.short 'h'
        <> Opt.long "height"
+       <> Opt.metavar "TILES"
        )
+
 
 parseCommand :: Opt.Parser Command
 parseCommand = (<|> Run <$> parseRunParams) $ Opt.subparser
@@ -75,6 +78,8 @@ parseCommand = (<|> Run <$> parseRunParams) $ Opt.subparser
        (Generate
         <$> parseGeneratorInput
         <*> parseDimensions
+        <*> optional
+            (Opt.option Opt.auto (Opt.long "seed"))
         <**> Opt.helper
        )
        (Opt.progDesc "Generate a sample level"))
@@ -91,6 +96,9 @@ runGame :: RunParams -> IO ()
 runGame rparams = do
   app <- makeApp
   gameSeed <- maybe getRandom pure $ seed rparams
+  when (isNothing $ seed rparams)
+    . putStrLn
+    $ "Seed: " <> tshow gameSeed
   let initialState = Game.initialStateFromSeed gameSeed &~ do
         for_ (characterName rparams) $ \cn ->
           Game.character . Character.characterName ?= cn
@@ -112,11 +120,16 @@ loadGame saveFile = do
   pure ()
 
 
-runGenerate :: GeneratorInput -> Dimensions -> IO ()
-runGenerate input dims = do
-  randGen <- getStdGen
-  let res = generateFromInput input dims randGen
+runGenerate :: GeneratorInput -> Dimensions -> Maybe Int -> IO ()
+runGenerate input dims mSeed = do
+  putStrLn "Generating..."
+  genSeed <- maybe getRandom pure mSeed
+  let randGen = mkStdGen genSeed
+      res = generateFromInput input dims randGen
       rs = regions $ amap not res
+  when (isNothing mSeed)
+    . putStrLn
+    $ "Seed: " <> tshow genSeed
   putStr "num regions: "
   print $ length rs
   putStr "region lengths: "
@@ -128,7 +141,7 @@ runGenerate input dims = do
 runCommand :: Command -> IO ()
 runCommand (Run runParams) = runGame runParams
 runCommand (Load saveFile) = loadGame saveFile
-runCommand (Generate input dims) = runGenerate input dims
+runCommand (Generate input dims mSeed) = runGenerate input dims mSeed
 
 main :: IO ()
 main = runCommand =<< Opt.execParser optParser

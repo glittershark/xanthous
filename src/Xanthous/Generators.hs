@@ -25,6 +25,7 @@ import qualified Options.Applicative as Opt
 import           Control.Monad.Random
 --------------------------------------------------------------------------------
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
+import qualified Xanthous.Generators.Dungeon as Dungeon
 import           Xanthous.Generators.Util
 import           Xanthous.Generators.LevelContents
 import           Xanthous.Data (Dimensions, Position'(Position), Position)
@@ -35,14 +36,18 @@ import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
 --------------------------------------------------------------------------------
 
-data Generator = CaveAutomata
+data Generator
+  = CaveAutomata
+  | Dungeon
   deriving stock (Show, Eq)
 
 data SGenerator (gen :: Generator) where
   SCaveAutomata :: SGenerator 'CaveAutomata
+  SDungeon :: SGenerator 'Dungeon
 
 type family Params (gen :: Generator) :: Type where
   Params 'CaveAutomata = CaveAutomata.Params
+  Params 'Dungeon = Dungeon.Params
 
 generate
   :: RandomGen g
@@ -52,6 +57,7 @@ generate
   -> g
   -> Cells
 generate SCaveAutomata = CaveAutomata.generate
+generate SDungeon = Dungeon.generate
 
 data GeneratorInput where
   GeneratorInput :: forall gen. SGenerator gen -> Params gen -> GeneratorInput
@@ -60,10 +66,23 @@ generateFromInput :: RandomGen g => GeneratorInput -> Dimensions -> g -> Cells
 generateFromInput (GeneratorInput sg ps) = generate sg ps
 
 parseGeneratorInput :: Opt.Parser GeneratorInput
-parseGeneratorInput = Opt.subparser $
-  Opt.command "cave" (Opt.info
-                      (GeneratorInput <$> pure SCaveAutomata <*> CaveAutomata.parseParams)
-                      (Opt.progDesc "cellular-automata based cave generator"))
+parseGeneratorInput = Opt.subparser
+  $ generatorCommand SCaveAutomata
+      "cave"
+      "Cellular-automata based cave generator"
+      CaveAutomata.parseParams
+  <> generatorCommand SDungeon
+      "dungeon"
+      "Classic dungeon map generator"
+      Dungeon.parseParams
+  where
+    generatorCommand sgen name desc parseParams =
+      Opt.command name
+        (Opt.info
+          (GeneratorInput <$> pure sgen <*> parseParams)
+          (Opt.progDesc desc)
+        )
+
 
 showCells :: Cells -> Text
 showCells arr =

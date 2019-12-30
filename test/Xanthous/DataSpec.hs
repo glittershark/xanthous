@@ -1,10 +1,10 @@
--- |
-
+--------------------------------------------------------------------------------
 module Xanthous.DataSpec (main, test) where
-
+--------------------------------------------------------------------------------
 import Test.Prelude hiding (Right, Left, Down)
 import Xanthous.Data
 import Data.Group
+--------------------------------------------------------------------------------
 
 main :: IO ()
 main = defaultMain test
@@ -35,11 +35,12 @@ test = testGroup "Xanthous.Data"
           (not . isUnit) (Position @Int 1 13) @? "isUnit $ Position 1 13"
       ]
     ]
+
   , testGroup "Direction"
     [ testProperty "opposite is involutive" $ \(dir :: Direction) ->
         opposite (opposite dir) == dir
     , testProperty "opposite provides inverse" $ \dir ->
-        invert (asPosition dir) == asPosition (opposite dir)
+        invert (asPosition dir) === asPosition (opposite dir)
     , testProperty "asPosition isUnit" $ \dir ->
         dir /= Here ==> isUnit (asPosition dir)
     , testGroup "Move"
@@ -51,6 +52,31 @@ test = testGroup "Xanthous.Data"
       , testCase "UpRight"   $ move UpRight mempty   @?= Position 1 (-1)
       , testCase "DownLeft"  $ move DownLeft mempty  @?= Position (-1) 1
       , testCase "DownRight" $ move DownRight mempty @?= Position 1 1
+      ]
+    ]
+
+  , testGroup "Corner"
+    [ testGroup "instance Opposite"
+      [ testProperty "involutive" $ \corner ->
+          opposite (opposite corner) === corner
+      ]
+    ]
+
+  , testGroup "Edge"
+    [ testGroup "instance Opposite"
+      [ testProperty "involutive" $ \edge ->
+          opposite (opposite edge) === edge
+      ]
+    ]
+
+  , testGroup "Box"
+    [ testGroup "boxIntersects"
+      [ testProperty "True" $ \dims ->
+          boxIntersects (Box @Word (V2 1 1) (V2 2 2))
+                        (Box (V2 2 2) dims)
+      , testProperty "False" $ \dims ->
+          not $ boxIntersects (Box @Word (V2 1 1) (V2 2 2))
+                            (Box (V2 4 2) dims)
       ]
     ]
   ]

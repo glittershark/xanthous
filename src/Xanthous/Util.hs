@@ -29,6 +29,9 @@ module Xanthous.Util
   , maximum1
   , minimum1
 
+    -- * Combinators
+  , times, times_
+
     -- * Type-level programming utils
   , KnownBool(..)
   ) where
@@ -227,6 +230,12 @@ maximum1 = getMax . foldMap1 Max
 
 minimum1 :: (Ord a, Foldable1 f) => f a -> a
 minimum1 = getMin . foldMap1 Min
+
+times :: (Applicative f, Num n, Enum n) => n -> (n -> f b) -> f [b]
+times n f = traverse f [1..n]
+
+times_ :: (Applicative f, Num n, Enum n) => n -> f a -> f [a]
+times_ n fa = times n (const fa)
 
 --------------------------------------------------------------------------------
 
