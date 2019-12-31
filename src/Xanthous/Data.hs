@@ -334,6 +334,7 @@ data Corner
   | BottomLeft
   | BottomRight
   deriving stock (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving Arbitrary via GenericArbitrary Corner
 
 instance Opposite Corner where
   opposite TopLeft = BottomRight
@@ -347,6 +348,7 @@ data Edge
   | RightEdge
   | BottomEdge
   deriving stock (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving Arbitrary via GenericArbitrary Edge
 
 instance Opposite Edge where
   opposite TopEdge = BottomEdge

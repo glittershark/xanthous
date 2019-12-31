@@ -57,14 +57,14 @@ test = testGroup "Xanthous.Data"
 
   , testGroup "Corner"
     [ testGroup "instance Opposite"
-      [ testProperty "involutive" $ \corner ->
+      [ testProperty "involutive" $ \(corner :: Corner) ->
           opposite (opposite corner) === corner
       ]
     ]
 
   , testGroup "Edge"
     [ testGroup "instance Opposite"
-      [ testProperty "involutive" $ \edge ->
+      [ testProperty "involutive" $ \(edge :: Edge) ->
           opposite (opposite edge) === edge
       ]
     ]
