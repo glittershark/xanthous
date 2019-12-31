@@ -250,7 +250,9 @@ handleCommand Wield = do
   selectItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
     (say_ ["wield", "nothing"])
     $ \(MenuResult item) -> do
-      character . inventory . wielded .= inRightHand item
+      prevItems <- character . inventory . wielded <<.= inRightHand item
+      character . inventory . backpack
+        <>= fromList (prevItems ^.. wieldedItems . wieldedItem)
       say ["wield", "wielded"] item
   continue
 
