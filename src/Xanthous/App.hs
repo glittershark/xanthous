@@ -16,6 +16,7 @@ import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
 import qualified Data.Vector as V
 import           System.Exit
+import           System.Directory (doesFileExist)
 import           GHC.TypeLits (TypeError, ErrorMessage(..))
 --------------------------------------------------------------------------------
 import           Xanthous.Command
@@ -257,12 +258,18 @@ handleCommand Save = do
   -- TODO default save locations / config file?
   prompt_ @'StringPrompt ["save", "location"] Cancellable
     $ \(StringResult filename) -> do
+       exists <- liftIO . doesFileExist $ unpack filename
+       if exists
+       then confirm ["save", "overwrite"] (object ["filename" A..= filename])
+            $ doSave filename
+       else doSave filename
+  continue
+  where
+    doSave filename = do
       src <- gets saveGame
       lift . liftIO $ do
         writeFile (unpack filename) $ toStrict src
         exitSuccess
-
-  continue
 
 
 handleCommand ToggleRevealAll = do
@@ -279,15 +286,15 @@ handlePromptEvent
   -> AppM (Next GameState)
 
 handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc []))
-  = clearPrompt
+  = clearPrompt >> continue
 handlePromptEvent _ pr (VtyEvent (EvKey KEnter []))
-  = submitPrompt pr >> clearPrompt
+  = clearPrompt >> submitPrompt pr >> continue
 
 handlePromptEvent _ pr@(Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'y') []))
-  = submitPrompt pr >> clearPrompt
+  = clearPrompt >> submitPrompt pr >> continue
 
 handlePromptEvent _ (Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'n') []))
-  = clearPrompt
+  = clearPrompt >> continue
 
 handlePromptEvent
   msg
@@ -301,12 +308,12 @@ handlePromptEvent
 
 handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ cb)
   (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
-  = cb (DirectionResult dir) >> clearPrompt
+  = clearPrompt >> cb (DirectionResult dir) >> continue
 handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ _) _ = continue
 
 handlePromptEvent _ (Prompt _ SMenu _ items' cb) (VtyEvent (EvKey (KChar chr) []))
   | Just (MenuOption _ res) <- items' ^. at chr
-  = cb (MenuResult res) >> clearPrompt
+  = clearPrompt >> cb (MenuResult res) >> continue
   | otherwise
   = continue
 
@@ -324,11 +331,11 @@ handlePromptEvent
   _
   (Prompt Cancellable _ _ _ _)
   (VtyEvent (EvKey (KChar 'q') []))
-  = clearPrompt
+  = clearPrompt >> continue
 handlePromptEvent _ _ _ = continue
 
-clearPrompt :: AppM (Next GameState)
-clearPrompt = promptState .= NoPrompt >> continue
+clearPrompt :: AppM ()
+clearPrompt = promptState .= NoPrompt
 
 class NotMenu (pt :: PromptType)
 instance NotMenu 'StringPrompt

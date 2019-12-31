@@ -30,6 +30,7 @@ dependencies:
 - containers
 - data-default
 - deepseq
+- directory
 - fgl
 - fgl-arbitrary
 - file-embed

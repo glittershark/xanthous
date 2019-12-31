@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 497414a98a626a63a6c5022688b33d0021c1580c7c262fbc1152599289df7935
+-- hash: a4f6c2c91e3c94c81de5d6b27201cb22e7f9f9c5d8a4f14beec63c1540d01ca1
 
 name:           xanthous
 version:        0.1.0.0
@@ -92,6 +92,7 @@ library
     , containers
     , data-default
     , deepseq
+    , directory
     , fgl
     , fgl-arbitrary
     , file-embed
@@ -191,6 +192,7 @@ executable xanthous
     , containers
     , data-default
     , deepseq
+    , directory
     , fgl
     , fgl-arbitrary
     , file-embed
@@ -265,6 +267,7 @@ test-suite test
     , containers
     , data-default
     , deepseq
+    , directory
     , fgl
     , fgl-arbitrary
     , file-embed

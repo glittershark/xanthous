@@ -9,8 +9,8 @@ generic:
   continue: Press enter to continue...
 
 save:
-  location:
-    "Enter filename to save to: "
+  location: "Enter filename to save to: "
+  overwrite: "A file named {{filename}} already exists. Would you like to overwrite it? "
 
 quit:
   confirm: Really quit without saving?
