@@ -88,7 +88,8 @@ instance Brain Door where step = brainVia Brainless
 
 instance Entity Door where
   blocksVision = not . view open
-  description _ = "a door"
+  description door | door ^. open = "an open door"
+                   | otherwise    = "a closed door"
   entityChar _ = "d"
 
 -- | A closed, unlocked door
