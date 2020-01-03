@@ -14,7 +14,6 @@ import           Xanthous.Entities.Item
 import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Environment
 import           Xanthous.Game.State
-import           {-# SOURCE #-} Xanthous.AI.Gormlak ()
 import           Xanthous.Util.QuickCheck
 import           Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------

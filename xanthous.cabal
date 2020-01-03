@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a4f6c2c91e3c94c81de5d6b27201cb22e7f9f9c5d8a4f14beec63c1540d01ca1
+-- hash: 36af39a9e3b4e97923c1b363d7d84e2c99f126efd908778d0d048d0c472f2723
 
 name:           xanthous
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
+      Xanthous.Entities.Creature.Hippocampus
       Xanthous.Entities.Draw.Util
       Xanthous.Entities.Entities
       Xanthous.Entities.Environment
@@ -141,6 +142,7 @@ executable xanthous
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
+      Xanthous.Entities.Creature.Hippocampus
       Xanthous.Entities.Draw.Util
       Xanthous.Entities.Entities
       Xanthous.Entities.Environment

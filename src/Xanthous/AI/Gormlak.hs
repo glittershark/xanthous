@@ -1,14 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE UndecidableInstances #-}
 --------------------------------------------------------------------------------
-module Xanthous.AI.Gormlak () where
+module Xanthous.AI.Gormlak
+  ( HasVisionRadius(..)
+  , GormlakBrain(..)
+  ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (lines)
 --------------------------------------------------------------------------------
-import           Data.Coerce
 import           Control.Monad.State
 import           Control.Monad.Random
 import           Data.Aeson (object)
 import qualified Data.Aeson as A
+import           Data.Generics.Product.Fields
 --------------------------------------------------------------------------------
 import           Xanthous.Data
                  ( Positioned(..), positioned, position
@@ -16,14 +20,11 @@ import           Xanthous.Data
                  , Ticks, (|*|), invertedRate
                  )
 import           Xanthous.Data.EntityMap
-import qualified Xanthous.Entities.Creature as Creature
-import           Xanthous.Entities.Creature
-                 ( Creature, hippocampus, creatureType
-                 , destination, destinationProgress, destinationPosition
-                 )
+import           Xanthous.Entities.Creature.Hippocampus
 import           Xanthous.Entities.Character (Character)
 import qualified Xanthous.Entities.Character as Character
 import qualified Xanthous.Entities.RawTypes as Raw
+import           Xanthous.Entities.RawTypes (CreatureType)
 import           Xanthous.Game.State
 import           Xanthous.Game.Lenses
                  ( Collision(..), entityCollision, collisionAt
@@ -34,28 +35,44 @@ import           Xanthous.Random
 import           Xanthous.Monad (say)
 --------------------------------------------------------------------------------
 
+--  TODO move the following two classes to a more central location
+
+class HasVisionRadius a where visionRadius :: a -> Word
+
+type IsCreature entity =
+  ( HasVisionRadius entity
+  , HasField "_hippocampus" entity entity Hippocampus Hippocampus
+  , HasField "_creatureType" entity entity CreatureType CreatureType
+  , A.ToJSON entity
+  )
+
+--------------------------------------------------------------------------------
+
 stepGormlak
-  :: (MonadState GameState m, MonadRandom m)
+  :: forall entity m.
+    ( MonadState GameState m, MonadRandom m
+    , IsCreature entity
+    )
   => Ticks
-  -> Positioned Creature
-  -> m (Positioned Creature)
+  -> Positioned entity
+  -> m (Positioned entity)
 stepGormlak ticks pe@(Positioned pos creature) = do
   dest <- maybe (selectDestination pos creature) pure
-         $ creature ^. hippocampus . destination
+         $ creature ^. field @"_hippocampus" . destination
   let progress' =
         dest ^. destinationProgress
-        + creature ^. creatureType . Raw.speed . invertedRate |*| ticks
+        + creature ^. field @"_creatureType" . Raw.speed . invertedRate |*| ticks
   if progress' < 1
     then pure
          $ pe
-         & positioned . hippocampus . destination
+         & positioned . field @"_hippocampus" . destination
          ?~ (dest & destinationProgress .~ progress')
     else do
       let newPos = dest ^. destinationPosition
           remainingSpeed = progress' - 1
       newDest <- selectDestination newPos creature
                 <&> destinationProgress +~ remainingSpeed
-      let pe' = pe & positioned . hippocampus . destination ?~ newDest
+      let pe' = pe & positioned . field @"_hippocampus" . destination ?~ newDest
       collisionAt newPos >>= \case
         Nothing -> pure $ pe' & position .~ newPos
         Just Stop -> pure pe'
@@ -64,7 +81,7 @@ stepGormlak ticks pe@(Positioned pos creature) = do
           when (any (entityIs @Character) ents) attackCharacter
           pure pe'
   where
-    selectDestination pos' creature' = Creature.destinationFromPos <$> do
+    selectDestination pos' creature' = destinationFromPos <$> do
       canSeeCharacter <- uses entities $ canSee (entityIs @Character) pos' vision
       if canSeeCharacter
         then do
@@ -76,29 +93,32 @@ stepGormlak ticks pe@(Positioned pos creature) = do
         lines <- map (takeWhile (isNothing . entityCollision . map snd . snd)
                     -- the first item on these lines is always the creature itself
                     . fromMaybe mempty . tailMay)
-                . linesOfSight pos' (Creature.visionRadius creature')
+                . linesOfSight pos' (visionRadius creature')
                 <$> use entities
         line <- choose $ weightedBy length lines
         pure $ fromMaybe pos' $ fmap fst . headMay =<< line
 
-    vision = Creature.visionRadius creature
+    vision = visionRadius creature
     attackCharacter = do
       say ["combat", "creatureAttack"] $ object [ "creature" A..= creature ]
       character %= Character.damage 1
 
-newtype GormlakBrain = GormlakBrain Creature
+newtype GormlakBrain entity = GormlakBrain { _unGormlakBrain :: entity }
 
-instance Brain GormlakBrain where
-  step ticks = fmap coerce . stepGormlak ticks . coerce
+instance (IsCreature entity) => Brain (GormlakBrain entity) where
+  step ticks
+    = fmap (fmap GormlakBrain)
+    . stepGormlak ticks
+    . fmap _unGormlakBrain
   entityCanMove = const True
 
 --------------------------------------------------------------------------------
 
-instance Brain Creature where
-  step = brainVia GormlakBrain
-  entityCanMove = const True
+-- instance Brain Creature where
+--   step = brainVia GormlakBrain
+--   entityCanMove = const True
 
-instance Entity Creature where
-  blocksVision _ = False
-  description = view $ Creature.creatureType . Raw.description
-  entityChar = view $ Creature.creatureType . char
+-- instance Entity Creature where
+--   blocksVision _ = False
+--   description = view $ Creature.creatureType . Raw.description
+--   entityChar = view $ Creature.creatureType . char

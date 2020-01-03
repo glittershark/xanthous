@@ -27,9 +27,9 @@ import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
 import           Xanthous.Entities.Character (Character, mkCharacter)
 import           Xanthous.Entities.Environment (Door, open, GroundMessage)
-import           Xanthous.Entities.Item (Item)
-import           Xanthous.Entities.Creature (Creature)
-import           Xanthous.Entities.Entities ()
+import            Xanthous.Entities.Item (Item)
+import           {-# SOURCE #-} Xanthous.Entities.Creature (Creature)
+import           {-# SOURCE #-} Xanthous.Entities.Entities ()
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState
