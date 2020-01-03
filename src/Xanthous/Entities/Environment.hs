@@ -91,6 +91,8 @@ instance Entity Door where
   description door | door ^. open = "an open door"
                    | otherwise    = "a closed door"
   entityChar _ = "d"
+  entityCollision door | door ^. open = Nothing
+                       | otherwise = Just Stop
 
 -- | A closed, unlocked door
 unlockedDoor :: Door
@@ -113,8 +115,10 @@ newtype GroundMessage = GroundMessage Text
   deriving Draw
        via DrawStyledCharacter ('Just 'Yellow) 'Nothing "≈"
            GroundMessage
-  deriving Entity
-       via DeriveEntity 'False "a message on the ground. Press r. to read it."
-                        "≈"
-           GroundMessage
 instance Brain GroundMessage where step = brainVia Brainless
+
+instance Entity GroundMessage where
+  blocksVision = const False
+  description = const "a message on the ground. Press r. to read it."
+  entityChar = const "≈"
+  entityCollision = const Nothing

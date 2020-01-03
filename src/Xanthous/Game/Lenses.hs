@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 --------------------------------------------------------------------------------
 module Xanthous.Game.Lenses
   ( positionedCharacter
@@ -11,7 +13,7 @@ module Xanthous.Game.Lenses
 
     -- * Collisions
   , Collision(..)
-  , entityCollision
+  , entitiesCollision
   , collisionAt
   ) where
 --------------------------------------------------------------------------------
@@ -26,9 +28,6 @@ import           Xanthous.Data
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
 import           Xanthous.Entities.Character (Character, mkCharacter)
-import           Xanthous.Entities.Environment (Door, open, GroundMessage)
-import            Xanthous.Entities.Item (Item)
-import           {-# SOURCE #-} Xanthous.Entities.Creature (Creature)
 import           {-# SOURCE #-} Xanthous.Entities.Entities ()
 --------------------------------------------------------------------------------
 
@@ -96,31 +95,17 @@ characterVisiblePositions game =
   let charPos = game ^. characterPosition
   in visiblePositions charPos visionRadius $ game ^. entities
 
-data Collision
-  = Stop
-  | Combat
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (NFData)
-
-entityCollision
-  :: ( MonoFoldable (f SomeEntity)
-    , Foldable f
-    , Element (f SomeEntity) ~ SomeEntity
-    , AsEmpty (f SomeEntity)
+entitiesCollision
+  :: ( Functor f
+    , forall xx. MonoFoldable (f xx)
+    , forall xx. Element (f xx) ~ xx
+    , Element (f (Maybe Collision)) ~ Maybe Collision
+    , Show (f (Maybe Collision))
+    , Show (f SomeEntity)
     )
   => f SomeEntity
   -> Maybe Collision
-entityCollision Empty = Nothing
-entityCollision ents
-  -- TODO track entity collision in the Entity class
-  | any (entityIs @Creature) ents = pure Combat
-  | all (\e ->
-          entityIs @Item e
-        || entityIs @GroundMessage e
-        ) ents = Nothing
-  | doors@(_ : _) <- ents ^.. folded . _SomeEntity @Door
-  , all (view open) doors = Nothing
-  | otherwise = pure Stop
+entitiesCollision = join . maximumMay . fmap entityCollision
 
 collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
-collisionAt pos = uses (entities . EntityMap.atPosition pos) entityCollision
+collisionAt pos = uses (entities . EntityMap.atPosition pos) entitiesCollision

@@ -34,6 +34,7 @@ module Xanthous.Game.State
   , Brain(..)
   , Brainless(..)
   , brainVia
+  , Collision(..)
   , Entity(..)
   , SomeEntity(..)
   , downcastEntity
@@ -306,6 +307,13 @@ brainVia _ ticks = fmap coerce . step ticks . coerce @_ @(Positioned brain)
 
 --------------------------------------------------------------------------------
 
+
+data Collision
+  = Stop   -- ^ Can't move through this
+  | Combat -- ^ Moving into this equates to hitting it with a stick
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData)
+
 class ( Show a, Eq a, Ord a, NFData a
       , ToJSON a, FromJSON a
       , Draw a, Brain a
@@ -313,6 +321,8 @@ class ( Show a, Eq a, Ord a, NFData a
   blocksVision :: a -> Bool
   description :: a -> Text
   entityChar :: a -> EntityChar
+  entityCollision :: a -> Maybe Collision
+  entityCollision = const $ Just Stop
 
 data SomeEntity where
   SomeEntity :: forall a. (Entity a, Typeable a) => a -> SomeEntity

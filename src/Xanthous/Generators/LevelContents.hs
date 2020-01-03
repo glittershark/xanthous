@@ -45,6 +45,8 @@ randomDoors cells = do
     candidateCells = filter doorable $ Arr.indices cells
     subsetRange = (0.8 :: Double, 1.0)
     doorable (x, y) =
+      not (fromMaybe True $ cells ^? ix (x, y))
+      &&
       ( fromMaybe True $ cells ^? ix (x - 1, y) -- left
       , fromMaybe True $ cells ^? ix (x, y - 1) -- top
       , fromMaybe True $ cells ^? ix (x + 1, y) -- right

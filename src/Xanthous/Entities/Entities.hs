@@ -47,6 +47,7 @@ instance Entity SomeEntity where
   blocksVision (SomeEntity ent) = blocksVision ent
   description (SomeEntity ent) = description ent
   entityChar (SomeEntity ent) = entityChar ent
+  entityCollision (SomeEntity ent) = entityCollision ent
 
 instance Function SomeEntity where
   function = functionJSON

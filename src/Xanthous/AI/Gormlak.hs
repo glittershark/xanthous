@@ -27,7 +27,7 @@ import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Entities.RawTypes (CreatureType)
 import           Xanthous.Game.State
 import           Xanthous.Game.Lenses
-                 ( Collision(..), entityCollision, collisionAt
+                 ( Collision(..), entitiesCollision, collisionAt
                  , character, characterPosition
                  )
 import           Xanthous.Data.EntityMap.Graphics (linesOfSight, canSee)
@@ -90,7 +90,7 @@ stepGormlak ticks pe@(Positioned pos creature) = do
             then attackCharacter $> pos'
             else pure $ pos' `stepTowards` charPos
       else do
-        lines <- map (takeWhile (isNothing . entityCollision . map snd . snd)
+        lines <- map (takeWhile (isNothing . entitiesCollision . map snd . snd)
                     -- the first item on these lines is always the creature itself
                     . fromMaybe mempty . tailMay)
                 . linesOfSight pos' (visionRadius creature')

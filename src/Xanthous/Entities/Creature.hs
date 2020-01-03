@@ -68,6 +68,7 @@ instance Entity Creature where
   blocksVision _ = False
   description = view $ creatureType . Raw.description
   entityChar = view $ creatureType . char
+  entityCollision = const $ Just Combat
 
 --------------------------------------------------------------------------------
 
