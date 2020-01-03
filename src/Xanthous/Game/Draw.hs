@@ -20,6 +20,7 @@ import           Xanthous.Game
                  , entities
                  , revealedPositions
                  , characterPosition
+                 , characterVisiblePositions
                  , character
                  , MessageHistory(..)
                  , messageHistory
@@ -62,10 +63,12 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
 
 drawEntities
   :: (Position -> Bool)
-    -- ^ Can we render a given position?
+    -- ^ Is a given position directly visible to the character?
+  -> (Position -> Bool)
+    -- ^ Has a given position *ever* been seen by the character?
   -> EntityMap SomeEntity -- ^ all entities
   -> Widget Name
-drawEntities canRenderPos allEnts
+drawEntities isVisible isRevealed allEnts
   = vBox rows
   where
     entityPositions = EntityMap.positions allEnts
@@ -74,23 +77,27 @@ drawEntities canRenderPos allEnts
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
     renderEntityAt pos
-      | canRenderPos pos
+      = let entitiesAtPosition = allEnts ^. atPosition pos
+            immobileEntitiesAtPosition =
+              filter (not . entityCanMove) entitiesAtPosition
+        in renderTopEntity pos
+           $ if | isVisible  pos -> entitiesAtPosition
+                | isRevealed pos -> immobileEntitiesAtPosition
+                | otherwise      -> mempty
+    renderTopEntity pos ents
       = let neighbors = EntityMap.neighbors pos allEnts
         in maybe (str " ") (drawWithNeighbors neighbors)
-           $ maximumByOf
-             (atPosition pos . folded)
-             (compare `on` drawPriority)
-             allEnts
-      | otherwise = str " "
+           $ maximumBy (compare `on` drawPriority)
+           <$> fromNullable ents
 
 drawMap :: GameState -> Widget Name
 drawMap game
   = viewport Resource.MapViewport Both
   . cursorPosition game
   $ drawEntities
-    (\pos ->
-         (game ^. debugState . allRevealed)
-       || (pos `member` (game ^. revealedPositions)))
+    (\pos -> (game ^. debugState . allRevealed)
+            || (pos `member` (game ^. revealedPositions)))
+    (`member` characterVisiblePositions game)
     -- FIXME: this will break down as soon as creatures can walk around on their
     -- own, since we don't want to render things walking around when the
     -- character can't see them
@@ -99,17 +106,11 @@ drawMap game
 bullet :: Char
 bullet = '•'
 
-drawPanel :: GameState -> Panel -> Widget Name
-drawPanel game panel
-  = border
-  . hLimit 35
-  . viewport (Resource.Panel panel) Vertical
-  $ case panel of
-      InventoryPanel ->
-        drawWielded (game ^. character . inventory . wielded)
-        <=> drawBackpack (game ^. character . inventory . backpack)
+drawInventoryPanel :: GameState -> Widget Name
+drawInventoryPanel game
+  =   drawWielded  (game ^. character . inventory . wielded)
+  <=> drawBackpack (game ^. character . inventory . backpack)
   where
-    drawWielded :: Wielded -> Widget Name
     drawWielded (Hands Nothing Nothing) = emptyWidget
     drawWielded (DoubleHanded i) =
       txtWrap $ "You are holding " <> description i <> " in both hands"
@@ -131,6 +132,16 @@ drawPanel game panel
             (map
               (txtWrap . ((bullet <| " ") <>) . description)
               backpackItems)
+
+
+drawPanel :: GameState -> Panel -> Widget Name
+drawPanel game panel
+  = border
+  . hLimit 35
+  . viewport (Resource.Panel panel) Vertical
+  . case panel of
+      InventoryPanel -> drawInventoryPanel
+  $ game
 
 drawCharacterInfo :: Character -> Widget Name
 drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints

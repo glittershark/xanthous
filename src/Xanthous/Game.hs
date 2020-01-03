@@ -14,6 +14,7 @@ module Xanthous.Game
   , character
   , characterPosition
   , updateCharacterVision
+  , characterVisiblePositions
 
     -- * Messages
   , MessageHistory(..)

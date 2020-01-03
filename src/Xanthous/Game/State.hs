@@ -287,6 +287,8 @@ instance
 
 class Brain a where
   step :: Ticks -> Positioned a -> AppM (Positioned a)
+  entityCanMove :: a -> Bool
+  entityCanMove = const False
 
 newtype Brainless a = Brainless a
 
@@ -429,6 +431,7 @@ instance Eq GameState where
     , gs ^. messageHistory
     , gs ^. sentWelcome
     , gs ^. activePanel
+    , gs ^. debugState
     )
 
 --------------------------------------------------------------------------------

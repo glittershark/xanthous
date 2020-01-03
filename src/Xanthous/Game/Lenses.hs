@@ -5,6 +5,7 @@ module Xanthous.Game.Lenses
   , character
   , characterPosition
   , updateCharacterVision
+  , characterVisiblePositions
   , getInitialState
   , initialStateFromSeed
 
@@ -84,12 +85,16 @@ characterPosition = positionedCharacter . position
 visionRadius :: Word
 visionRadius = 12 -- TODO make this dynamic
 
--- | Update the revealed entities at the character's position based on their vision
+-- | Update the revealed entities at the character's position based on their
+-- vision
 updateCharacterVision :: GameState -> GameState
-updateCharacterVision game =
+updateCharacterVision game
+  = game & revealedPositions <>~ characterVisiblePositions game
+
+characterVisiblePositions :: GameState -> Set Position
+characterVisiblePositions game =
   let charPos = game ^. characterPosition
-      visible = visiblePositions charPos visionRadius $ game ^. entities
-  in game & revealedPositions <>~ visible
+  in visiblePositions charPos visionRadius $ game ^. entities
 
 data Collision
   = Stop

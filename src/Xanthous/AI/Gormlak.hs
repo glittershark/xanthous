@@ -90,10 +90,13 @@ newtype GormlakBrain = GormlakBrain Creature
 
 instance Brain GormlakBrain where
   step ticks = fmap coerce . stepGormlak ticks . coerce
+  entityCanMove = const True
 
 --------------------------------------------------------------------------------
 
-instance Brain Creature where step = brainVia GormlakBrain
+instance Brain Creature where
+  step = brainVia GormlakBrain
+  entityCanMove = const True
 
 instance Entity Creature where
   blocksVision _ = False
