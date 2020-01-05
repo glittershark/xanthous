@@ -19,7 +19,7 @@ import ClassyPrelude hiding
   (return, (<|), unsnoc, uncons, cons, snoc, index, (<.>), Index, say)
 import Data.Kind
 import GHC.TypeLits hiding (Text)
-import Control.Lens
+import Control.Lens hiding (levels, Level)
 import Data.Void
 import Control.Comonad
 --------------------------------------------------------------------------------

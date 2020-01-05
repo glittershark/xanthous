@@ -4,6 +4,7 @@ module Xanthous.Generators.LevelContents
   , randomItems
   , randomCreatures
   , randomDoors
+  , placeDownStaircase
   , tutorialMessage
   ) where
 --------------------------------------------------------------------------------
@@ -23,7 +24,7 @@ import           Xanthous.Entities.Item (Item)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Creature (Creature)
 import           Xanthous.Entities.Environment
-                 (GroundMessage(..), Door(..), unlockedDoor)
+                 (GroundMessage(..), Door(..), unlockedDoor, Staircase(..))
 import           Xanthous.Messages (message_)
 import           Xanthous.Util.Graphics (circle)
 --------------------------------------------------------------------------------
@@ -33,6 +34,11 @@ chooseCharacterPosition = randomPosition
 
 randomItems :: MonadRandom m => Cells -> m (EntityMap Item)
 randomItems = randomEntities Item.newWithType (0.0004, 0.001)
+
+placeDownStaircase :: MonadRandom m => Cells -> m (EntityMap Staircase)
+placeDownStaircase cells = do
+  pos <- randomPosition cells
+  pure $ _EntityMap # [(pos, DownStaircase)]
 
 randomDoors :: MonadRandom m => Cells -> m (EntityMap Door)
 randomDoors cells = do

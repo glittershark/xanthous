@@ -14,6 +14,7 @@ import           Control.Monad.Random (MonadRandom)
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
+import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Vector as V
 import           System.Exit
 import           System.Directory (doesFileExist)
@@ -30,6 +31,8 @@ import           Xanthous.Data
                  )
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
+import           Xanthous.Data.Levels (prevLevel, nextLevel)
+import qualified Xanthous.Data.Levels as Levels
 import           Xanthous.Game
 import           Xanthous.Game.State
 import           Xanthous.Game.Draw (drawGame)
@@ -37,6 +40,7 @@ import           Xanthous.Game.Prompt
 import           Xanthous.Monad
 import           Xanthous.Resource (Name, Panel(..))
 import qualified Xanthous.Messages as Messages
+import           Xanthous.Random
 import           Xanthous.Util (removeVectorIndex)
 import           Xanthous.Util.Inflection (toSentence)
 --------------------------------------------------------------------------------
@@ -47,13 +51,14 @@ import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Environment
-                 (Door, open, locked, GroundMessage(..))
+                 (Door, open, locked, GroundMessage(..), Staircase(..))
 import           Xanthous.Entities.RawTypes
                  ( edible, eatMessage, hitpointsHealed
                  , attackMessage
                  )
 import           Xanthous.Generators
 import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
+import qualified Xanthous.Generators.Dungeon as Dungeon
 --------------------------------------------------------------------------------
 
 type App = Brick.App GameState () Name
@@ -87,10 +92,7 @@ startEvent = do
 
 initLevel :: AppM ()
 initLevel = do
-  level <-
-    generateLevel SCaveAutomata CaveAutomata.defaultParams
-    $ Dimensions 80 80
-
+  level <- genLevel 0
   entities <>= levelToEntityMap level
   characterPosition .= level ^. levelCharacterPosition
 
@@ -273,6 +275,40 @@ handleCommand Save = do
         writeFile (unpack filename) $ toStrict src
         exitSuccess
 
+handleCommand GoUp = do
+  charPos <- use characterPosition
+  hasStairs <- uses (entities . EntityMap.atPosition charPos)
+              $ elem (SomeEntity UpStaircase)
+  if hasStairs
+  then uses levels prevLevel >>= \case
+    Just levs' -> levels .= levs'
+    Nothing ->
+      -- TODO in nethack, this leaves the game. Maybe something similar here?
+      say_ ["cant", "goUp"]
+  else say_ ["cant", "goUp"]
+
+  continue
+
+handleCommand GoDown = do
+  charPos <- use characterPosition
+  hasStairs <- uses (entities . EntityMap.atPosition charPos)
+              $ elem (SomeEntity DownStaircase)
+
+  if hasStairs
+  then do
+    levs <- use levels
+    let newLevelNum = Levels.pos levs + 1
+    levs' <- nextLevel (levelToEntityMap <$> genLevel newLevelNum) levs
+    cEID <- use characterEntityID
+    pCharacter <- use $ entities . at cEID
+    entities . at cEID .= Nothing
+    levels .= levs'
+    entities . at cEID .= pCharacter
+  else say_ ["cant", "goDown"]
+
+  continue
+
+--
 
 handleCommand ToggleRevealAll = do
   val <- debugState . allRevealed <%= not
@@ -551,3 +587,17 @@ showPanel panel = do
   prompt_ @'Continue ["generic", "continue"] Uncancellable
     . const
     $ activePanel .= Nothing
+
+--------------------------------------------------------------------------------
+
+genLevel
+  :: Int -- ^ level number
+  -> AppM Level
+genLevel _num = do
+  let dims = Dimensions 80 80
+  generator <- choose $ CaveAutomata :| [Dungeon]
+  level <- case generator of
+    CaveAutomata -> generateLevel SCaveAutomata CaveAutomata.defaultParams dims
+    Dungeon -> generateLevel SDungeon Dungeon.defaultParams dims
+  characterPosition .= level ^. levelCharacterPosition
+  pure $!! level

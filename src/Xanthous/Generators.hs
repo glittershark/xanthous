@@ -4,6 +4,7 @@
 --------------------------------------------------------------------------------
 module Xanthous.Generators
   ( generate
+  , Generator(..)
   , SGenerator(..)
   , GeneratorInput
   , generateFromInput
@@ -20,7 +21,7 @@ module Xanthous.Generators
   , levelToEntityMap
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding (Level)
+import           Xanthous.Prelude
 import           Data.Array.Unboxed
 import           System.Random (RandomGen)
 import qualified Options.Applicative as Opt
@@ -31,7 +32,7 @@ import qualified Xanthous.Generators.Dungeon as Dungeon
 import           Xanthous.Generators.Util
 import           Xanthous.Generators.LevelContents
 import           Xanthous.Data (Dimensions, Position'(Position), Position)
-import           Xanthous.Data.EntityMap (EntityMap)
+import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Environment
 import           Xanthous.Entities.Item (Item)
@@ -116,8 +117,11 @@ data Level = Level
   , _levelItems             :: !(EntityMap Item)
   , _levelCreatures         :: !(EntityMap Creature)
   , _levelTutorialMessage   :: !(EntityMap GroundMessage)
+  , _levelStaircases        :: !(EntityMap Staircase)
   , _levelCharacterPosition :: !Position
   }
+  deriving stock (Generic)
+  deriving anyclass (NFData)
 makeLenses ''Level
 
 generateLevel
@@ -134,6 +138,9 @@ generateLevel gen ps dims = do
   _levelCreatures <- randomCreatures cells
   _levelDoors <- randomDoors cells
   _levelCharacterPosition <- chooseCharacterPosition cells
+  let upStaircase = _EntityMap # [(_levelCharacterPosition, UpStaircase)]
+  downStaircase <- placeDownStaircase cells
+  let _levelStaircases = upStaircase <> downStaircase
   _levelTutorialMessage <- tutorialMessage cells _levelCharacterPosition
   pure Level {..}
 
@@ -144,3 +151,4 @@ levelToEntityMap level
   <> (SomeEntity <$> level ^. levelItems)
   <> (SomeEntity <$> level ^. levelCreatures)
   <> (SomeEntity <$> level ^. levelTutorialMessage)
+  <> (SomeEntity <$> level ^. levelStaircases)

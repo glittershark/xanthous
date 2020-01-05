@@ -3,13 +3,18 @@ module Xanthous.Entities.Environment
   (
     -- * Walls
     Wall(..)
+
     -- * Doors
   , Door(..)
   , open
   , locked
   , unlockedDoor
+
     -- * Messages
   , GroundMessage(..)
+
+    -- * Stairs
+  , Staircase(..)
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -121,4 +126,29 @@ instance Entity GroundMessage where
   blocksVision = const False
   description = const "a message on the ground. Press r. to read it."
   entityChar = const "≈"
+  entityCollision = const Nothing
+
+--------------------------------------------------------------------------------
+
+data Staircase = UpStaircase | DownStaircase
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary Staircase
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ 'TagSingleConstructors 'True
+                        , 'SumEnc 'ObjWithSingleField
+                        ]
+           Staircase
+instance Brain Staircase where step = brainVia Brainless
+
+instance Draw Staircase where
+  draw UpStaircase = str "<"
+  draw DownStaircase = str ">"
+
+instance Entity Staircase where
+  blocksVision = const False
+  description UpStaircase = "a staircase leading upwards"
+  description DownStaircase = "a staircase leading downwards"
+  entityChar UpStaircase = "<"
+  entityChar DownStaircase = ">"
   entityCollision = const Nothing

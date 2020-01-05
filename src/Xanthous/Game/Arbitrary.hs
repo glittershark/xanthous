@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 module Xanthous.Game.Arbitrary where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding (levels, foldMap)
+import           Xanthous.Prelude hiding (foldMap)
 --------------------------------------------------------------------------------
 import           Test.QuickCheck
 import           System.Random
@@ -23,13 +23,13 @@ instance Arbitrary GameState where
     chr <- arbitrary @Character
     charPos <- arbitrary
     _messageHistory <- arbitrary
-    levels <- arbitrary
+    levs <- arbitrary
     let (_characterEntityID, currentLevel) =
           EntityMap.insertAtReturningID charPos (SomeEntity chr)
-          $ extract levels
-        _levels = levels & current .~ currentLevel
+          $ extract levs
+        _levels = levs & current .~ currentLevel
     _revealedPositions <- fmap setFromList . sublistOf
-                         $ foldMap EntityMap.positions levels
+                         $ foldMap EntityMap.positions levs
     _randomGen <- mkStdGen <$> arbitrary
     let _promptState = NoPrompt -- TODO
     _activePanel <- arbitrary

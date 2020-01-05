@@ -14,7 +14,7 @@ module Xanthous.Data.Levels
   , ComonadStore(..)
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding ((<.>), Empty, foldMap, levels)
+import           Xanthous.Prelude hiding ((<.>), Empty, foldMap)
 import           Xanthous.Util (between, EqProp, EqEqProp(..))
 import           Xanthous.Util.Comonad (current)
 import           Xanthous.Orphans ()

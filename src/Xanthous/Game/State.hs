@@ -7,6 +7,7 @@
 module Xanthous.Game.State
   ( GameState(..)
   , entities
+  , levels
   , revealedPositions
   , messageHistory
   , randomGen
@@ -58,7 +59,7 @@ module Xanthous.Game.State
   , allRevealed
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding (levels)
+import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           Data.List.NonEmpty ( NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty

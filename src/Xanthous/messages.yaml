@@ -23,6 +23,14 @@ pickUp:
   pickUp: You pick up the {{item.itemType.name}}
   nothingToPickUp: "There's nothing here to pick up"
 
+cant:
+  goUp:
+    - You can't go up here
+    - There's nothing here that would let you go up
+  goDown:
+    - You can't go down here
+    - There's nothing here that would let you go down
+
 open:
   prompt: Direction to open (hjklybnu.)?
   success: "You open the door."

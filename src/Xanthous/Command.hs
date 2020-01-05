@@ -23,6 +23,8 @@ data Command
   | Read
   | ShowInventory
   | Wield
+  | GoUp
+  | GoDown
 
     -- | TODO replace with `:` commands
   | ToggleRevealAll
@@ -41,6 +43,8 @@ commandFromKey (KChar 'S') [] = Just Save
 commandFromKey (KChar 'r') [] = Just Read
 commandFromKey (KChar 'i') [] = Just ShowInventory
 commandFromKey (KChar 'w') [] = Just Wield
+commandFromKey (KChar '<') [] = Just GoUp
+commandFromKey (KChar '>') [] = Just GoDown
 
 -- DEBUG COMMANDS --
 commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll

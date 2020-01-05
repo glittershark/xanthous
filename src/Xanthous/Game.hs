@@ -1,5 +1,6 @@
 module Xanthous.Game
   ( GameState(..)
+  , levels
   , entities
   , revealedPositions
   , messageHistory
