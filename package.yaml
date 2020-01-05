@@ -26,6 +26,7 @@ dependencies:
 - checkers
 - classy-prelude
 - comonad
+- comonad-extras
 - constraints
 - containers
 - data-default
@@ -48,6 +49,7 @@ dependencies:
 - MonadRandom
 - mtl
 - optparse-applicative
+- pointed
 - random
 - random-fu
 - random-extras
@@ -59,6 +61,7 @@ dependencies:
 - stache
 - semigroupoids
 - tomland
+- text
 - text-zipper
 - vector
 - vty

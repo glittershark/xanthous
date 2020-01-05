@@ -29,4 +29,7 @@ in self: super: with pkgs.haskell.lib; rec {
       };
       version = "0.12.0";
     };
+
+  comonad-extras = appendPatch (markUnbroken super.comonad-extras)
+    [ ./build/update-comonad-extras.patch ];
 }

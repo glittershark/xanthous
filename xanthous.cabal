@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 36af39a9e3b4e97923c1b363d7d84e2c99f126efd908778d0d048d0c472f2723
+-- hash: eb0a7cd56cc2ea885be582c8ea7113a5f50f96a8d1b12ed27ca1a0271a45ad03
 
 name:           xanthous
 version:        0.1.0.0
@@ -37,6 +37,7 @@ library
       Xanthous.Data.EntityChar
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
+      Xanthous.Data.Levels
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
@@ -65,6 +66,7 @@ library
       Xanthous.Random
       Xanthous.Resource
       Xanthous.Util
+      Xanthous.Util.Comonad
       Xanthous.Util.Graph
       Xanthous.Util.Graphics
       Xanthous.Util.Inflection
@@ -89,6 +91,7 @@ library
     , checkers
     , classy-prelude
     , comonad
+    , comonad-extras
     , constraints
     , containers
     , data-default
@@ -109,6 +112,7 @@ library
     , megaparsec
     , mtl
     , optparse-applicative
+    , pointed
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -120,6 +124,7 @@ library
     , semigroupoids
     , stache
     , streams
+    , text
     , text-zipper
     , tomland
     , vector
@@ -139,6 +144,7 @@ executable xanthous
       Xanthous.Data.EntityChar
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
+      Xanthous.Data.Levels
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
@@ -167,6 +173,7 @@ executable xanthous
       Xanthous.Random
       Xanthous.Resource
       Xanthous.Util
+      Xanthous.Util.Comonad
       Xanthous.Util.Graph
       Xanthous.Util.Graphics
       Xanthous.Util.Inflection
@@ -190,6 +197,7 @@ executable xanthous
     , checkers
     , classy-prelude
     , comonad
+    , comonad-extras
     , constraints
     , containers
     , data-default
@@ -210,6 +218,7 @@ executable xanthous
     , megaparsec
     , mtl
     , optparse-applicative
+    , pointed
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -221,6 +230,7 @@ executable xanthous
     , semigroupoids
     , stache
     , streams
+    , text
     , text-zipper
     , tomland
     , vector
@@ -238,6 +248,7 @@ test-suite test
       Xanthous.Data.EntityCharSpec
       Xanthous.Data.EntityMap.GraphicsSpec
       Xanthous.Data.EntityMapSpec
+      Xanthous.Data.LevelsSpec
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
       Xanthous.GameSpec
@@ -265,6 +276,7 @@ test-suite test
     , checkers
     , classy-prelude
     , comonad
+    , comonad-extras
     , constraints
     , containers
     , data-default
@@ -286,6 +298,7 @@ test-suite test
     , megaparsec
     , mtl
     , optparse-applicative
+    , pointed
     , quickcheck-instances
     , quickcheck-text
     , random
@@ -300,6 +313,7 @@ test-suite test
     , tasty
     , tasty-hunit
     , tasty-quickcheck
+    , text
     , text-zipper
     , tomland
     , vector

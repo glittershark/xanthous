@@ -5,15 +5,17 @@
 --------------------------------------------------------------------------------
 module Xanthous.Game.Arbitrary where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude
+import           Xanthous.Prelude hiding (levels, foldMap)
 --------------------------------------------------------------------------------
 import           Test.QuickCheck
 import           System.Random
+import           Data.Foldable (foldMap)
 --------------------------------------------------------------------------------
-import           Xanthous.Game.State
+import           Xanthous.Data.Levels
+import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Entities ()
 import           Xanthous.Entities.Character
-import qualified Xanthous.Data.EntityMap as EntityMap
+import           Xanthous.Game.State
 --------------------------------------------------------------------------------
 
 instance Arbitrary GameState where
@@ -21,9 +23,13 @@ instance Arbitrary GameState where
     chr <- arbitrary @Character
     charPos <- arbitrary
     _messageHistory <- arbitrary
-    (_characterEntityID, _entities) <- arbitrary <&>
-      EntityMap.insertAtReturningID charPos (SomeEntity chr)
-    _revealedPositions <- fmap setFromList . sublistOf $ EntityMap.positions _entities
+    levels <- arbitrary
+    let (_characterEntityID, currentLevel) =
+          EntityMap.insertAtReturningID charPos (SomeEntity chr)
+          $ extract levels
+        _levels = levels & current .~ currentLevel
+    _revealedPositions <- fmap setFromList . sublistOf
+                         $ foldMap EntityMap.positions levels
     _randomGen <- mkStdGen <$> arbitrary
     let _promptState = NoPrompt -- TODO
     _activePanel <- arbitrary

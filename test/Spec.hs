@@ -1,7 +1,10 @@
-import Test.Prelude
+--------------------------------------------------------------------------------
+import           Test.Prelude
+--------------------------------------------------------------------------------
 import qualified Xanthous.Data.EntityCharSpec
 import qualified Xanthous.Data.EntityMapSpec
 import qualified Xanthous.Data.EntityMap.GraphicsSpec
+import qualified Xanthous.Data.LevelsSpec
 import qualified Xanthous.DataSpec
 import qualified Xanthous.Entities.RawsSpec
 import qualified Xanthous.GameSpec
@@ -12,6 +15,7 @@ import qualified Xanthous.Util.GraphicsSpec
 import qualified Xanthous.Util.GraphSpec
 import qualified Xanthous.Util.InflectionSpec
 import qualified Xanthous.UtilSpec
+--------------------------------------------------------------------------------
 
 main :: IO ()
 main = defaultMain test
@@ -21,6 +25,7 @@ test = testGroup "Xanthous"
   [ Xanthous.Data.EntityCharSpec.test
   , Xanthous.Data.EntityMapSpec.test
   , Xanthous.Data.EntityMap.GraphicsSpec.test
+  , Xanthous.Data.LevelsSpec.test
   , Xanthous.Entities.RawsSpec.test
   , Xanthous.GameSpec.test
   , Xanthous.Generators.UtilSpec.test

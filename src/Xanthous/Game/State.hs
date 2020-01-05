@@ -58,7 +58,7 @@ module Xanthous.Game.State
   , allRevealed
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude
+import           Xanthous.Prelude hiding (levels)
 --------------------------------------------------------------------------------
 import           Data.List.NonEmpty ( NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
@@ -80,6 +80,7 @@ import qualified Graphics.Vty.Image as Vty
 --------------------------------------------------------------------------------
 import           Xanthous.Util (KnownBool(..))
 import           Xanthous.Data
+import           Xanthous.Data.Levels
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data.EntityChar
 import           Xanthous.Data.VectorBag
@@ -359,8 +360,8 @@ instance Draw SomeEntity where
   drawPriority (SomeEntity ent) = drawPriority ent
 
 instance Brain SomeEntity where
-  step ticks (Positioned pos (SomeEntity ent)) =
-    fmap SomeEntity <$> step ticks (Positioned pos ent)
+  step ticks (Positioned p (SomeEntity ent)) =
+    fmap SomeEntity <$> step ticks (Positioned p ent)
 
 downcastEntity :: forall (a :: Type). (Typeable a) => SomeEntity -> Maybe a
 downcastEntity (SomeEntity e) = cast e
@@ -413,7 +414,7 @@ instance Arbitrary DebugState where
   arbitrary = genericArbitrary
 
 data GameState = GameState
-  { _entities          :: !(EntityMap SomeEntity)
+  { _levels            :: !(Levels (EntityMap SomeEntity))
   , _revealedPositions :: !(Set Position)
   , _characterEntityID :: !EntityID
   , _messageHistory    :: !MessageHistory
@@ -432,6 +433,9 @@ data GameState = GameState
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            GameState
 makeLenses ''GameState
+
+entities :: Lens' GameState (EntityMap SomeEntity)
+entities = levels . current
 
 instance Eq GameState where
   (==) = (==) `on` \gs ->

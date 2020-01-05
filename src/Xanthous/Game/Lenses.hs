@@ -25,6 +25,7 @@ import           Control.Monad.Random (getRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
 import           Xanthous.Data
+import           Xanthous.Data.Levels
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
 import           Xanthous.Entities.Character (Character, mkCharacter)
@@ -38,11 +39,12 @@ initialStateFromSeed :: Int -> GameState
 initialStateFromSeed seed =
   let _randomGen = mkStdGen seed
       chr = mkCharacter
-      (_characterEntityID, _entities)
+      (_characterEntityID, level)
         = EntityMap.insertAtReturningID
           (Position 0 0)
           (SomeEntity chr)
           mempty
+      _levels = oneLevel level
       _messageHistory = mempty
       _revealedPositions = mempty
       _promptState = NoPrompt
@@ -108,4 +110,4 @@ entitiesCollision
 entitiesCollision = join . maximumMay . fmap entityCollision
 
 collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
-collisionAt pos = uses (entities . EntityMap.atPosition pos) entitiesCollision
+collisionAt p = uses (entities . EntityMap.atPosition p) entitiesCollision
