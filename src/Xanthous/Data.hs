@@ -79,6 +79,8 @@ module Xanthous.Data
   , edges
   , neighborDirections
   , neighborPositions
+  , arrayNeighbors
+  , rotations
 
     -- *
   , Hitpoints(..)
@@ -88,11 +90,13 @@ import           Xanthous.Prelude hiding (Left, Down, Right, (.=))
 --------------------------------------------------------------------------------
 import           Linear.V2 hiding (_x, _y)
 import qualified Linear.V2 as L
+import           Linear.V4 hiding (_x, _y)
 import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
 import           Brick (Location(Location), Edges(..))
 import           Data.Monoid (Product(..), Sum(..))
+import           Data.Array.IArray
 import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson
                  ( ToJSON(..), FromJSON(..), object, (.=), (.:), withObject)
@@ -280,7 +284,7 @@ instance Opposite Direction where
   opposite DownRight = UpLeft
   opposite Here      = Here
 
-move :: Direction -> Position -> Position
+move :: Num a => Direction -> Position' a -> Position' a
 move Up        = y -~ 1
 move Down      = y +~ 1
 move Left      = x -~ 1
@@ -375,7 +379,8 @@ data Neighbors a = Neighbors
   , _bottomRight :: a
   }
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
-  deriving anyclass (NFData)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary (Neighbors a)
 makeFieldsNoPrefix ''Neighbors
 
 instance Applicative Neighbors where
@@ -420,8 +425,38 @@ neighborDirections = Neighbors
   , _bottomRight = DownRight
   }
 
-neighborPositions :: Position -> Neighbors Position
+neighborPositions :: Num a => Position' a -> Neighbors (Position' a)
 neighborPositions pos = (`move` pos) <$> neighborDirections
+
+arrayNeighbors
+  :: (IArray a e, Ix i, Num i)
+  => a (i, i) e
+  -> (i, i)
+  -> Neighbors (Maybe e)
+arrayNeighbors arr center = arrLookup <$> neighborPositions (_Position # center)
+  where
+    arrLookup (view _Position -> pos)
+      | inRange (bounds arr) pos = Just $ arr ! pos
+      | otherwise                = Nothing
+
+-- | Returns a list of all 4 90-degree rotations of the given neighbors
+rotations :: Neighbors a -> V4 (Neighbors a)
+rotations orig@(Neighbors tl t tr l r bl b br) = V4
+   orig                            -- tl t  tr
+                                   -- l     r
+                                   -- bl b  br
+
+   (Neighbors bl l tl b t br r tr) -- bl l tl
+                                   -- b    t
+                                   -- br r tr
+
+   (Neighbors br b bl r l tr t tl) -- br b bl
+                                   -- r    l
+                                   -- tr t tl
+
+   (Neighbors tr r br t b tl l bl) -- tr r br
+                                   -- t    b
+                                   -- tl l bl
 
 --------------------------------------------------------------------------------
 

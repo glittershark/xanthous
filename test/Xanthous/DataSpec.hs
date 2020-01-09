@@ -1,9 +1,11 @@
 --------------------------------------------------------------------------------
 module Xanthous.DataSpec (main, test) where
 --------------------------------------------------------------------------------
-import Test.Prelude hiding (Right, Left, Down)
-import Xanthous.Data
+import Test.Prelude hiding (Right, Left, Down, toList, all)
 import Data.Group
+import Data.Foldable (toList, all)
+--------------------------------------------------------------------------------
+import Xanthous.Data
 --------------------------------------------------------------------------------
 
 main :: IO ()
@@ -44,14 +46,14 @@ test = testGroup "Xanthous.Data"
     , testProperty "asPosition isUnit" $ \dir ->
         dir /= Here ==> isUnit (asPosition dir)
     , testGroup "Move"
-      [ testCase "Up"        $ move Up mempty        @?= Position 0 (-1)
-      , testCase "Down"      $ move Down mempty      @?= Position 0 1
-      , testCase "Left"      $ move Left mempty      @?= Position (-1) 0
-      , testCase "Right"     $ move Right mempty     @?= Position 1 0
-      , testCase "UpLeft"    $ move UpLeft mempty    @?= Position (-1) (-1)
-      , testCase "UpRight"   $ move UpRight mempty   @?= Position 1 (-1)
-      , testCase "DownLeft"  $ move DownLeft mempty  @?= Position (-1) 1
-      , testCase "DownRight" $ move DownRight mempty @?= Position 1 1
+      [ testCase "Up"        $ move Up mempty        @?= Position @Int 0 (-1)
+      , testCase "Down"      $ move Down mempty      @?= Position @Int 0 1
+      , testCase "Left"      $ move Left mempty      @?= Position @Int (-1) 0
+      , testCase "Right"     $ move Right mempty     @?= Position @Int 1 0
+      , testCase "UpLeft"    $ move UpLeft mempty    @?= Position @Int (-1) (-1)
+      , testCase "UpRight"   $ move UpRight mempty   @?= Position @Int 1 (-1)
+      , testCase "DownLeft"  $ move DownLeft mempty  @?= Position @Int (-1) 1
+      , testCase "DownRight" $ move DownRight mempty @?= Position @Int 1 1
       ]
     ]
 
@@ -77,6 +79,20 @@ test = testGroup "Xanthous.Data"
       , testProperty "False" $ \dims ->
           not $ boxIntersects (Box @Word (V2 1 1) (V2 2 2))
                             (Box (V2 4 2) dims)
+      ]
+    ]
+
+  , testGroup "Neighbors"
+    [ testGroup "rotations"
+      [ testProperty "always has the same members"
+        $ \(neighs :: Neighbors Int) ->
+          all (\ns -> sort (toList ns) == sort (toList neighs))
+          $ rotations neighs
+      , testProperty "all rotations have the same rotations"
+        $ \(neighs :: Neighbors Int) ->
+          let rots = rotations neighs
+          in all (\ns -> sort (toList $ rotations ns) == sort (toList rots))
+             rots
       ]
     ]
   ]

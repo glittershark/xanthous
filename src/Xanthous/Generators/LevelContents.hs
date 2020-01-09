@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 --------------------------------------------------------------------------------
 module Xanthous.Generators.LevelContents
   ( chooseCharacterPosition
@@ -8,15 +9,19 @@ module Xanthous.Generators.LevelContents
   , tutorialMessage
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude
+import           Xanthous.Prelude hiding (any, toList)
 --------------------------------------------------------------------------------
 import           Control.Monad.Random
 import           Data.Array.IArray (amap, bounds, rangeSize, (!))
 import qualified Data.Array.IArray as Arr
+import           Data.Foldable (any, toList)
 --------------------------------------------------------------------------------
 import           Xanthous.Generators.Util
 import           Xanthous.Random
-import           Xanthous.Data (Position, _Position, positionFromPair)
+import           Xanthous.Data ( Position, _Position, positionFromPair
+                               , rotations, arrayNeighbors, Neighbors(..)
+                               , neighborPositions
+                               )
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
 import           Xanthous.Entities.Raws (rawsWithType, RawType)
 import qualified Xanthous.Entities.Item as Item
@@ -44,22 +49,31 @@ randomDoors :: MonadRandom m => Cells -> m (EntityMap Door)
 randomDoors cells = do
   doorRatio <- getRandomR subsetRange
   let numDoors = floor $ doorRatio * fromIntegral (length candidateCells)
-      doorPositions = positionFromPair <$> take numDoors candidateCells
+      doorPositions =
+        removeAdjacent . fmap positionFromPair . take numDoors $ candidateCells
       doors = zip doorPositions $ repeat unlockedDoor
   pure $ _EntityMap # doors
   where
+    removeAdjacent =
+      foldr (\pos acc ->
+               if pos `elem` (acc >>= toList . neighborPositions)
+               then acc
+               else pos : acc
+            ) []
     candidateCells = filter doorable $ Arr.indices cells
     subsetRange = (0.8 :: Double, 1.0)
-    doorable (x, y) =
-      not (fromMaybe True $ cells ^? ix (x, y))
-      &&
-      ( fromMaybe True $ cells ^? ix (x - 1, y) -- left
-      , fromMaybe True $ cells ^? ix (x, y - 1) -- top
-      , fromMaybe True $ cells ^? ix (x + 1, y) -- right
-      , fromMaybe True $ cells ^? ix (x, y + 1) -- bottom
-      ) `elem` [ (True, False, True, False)
-          , (False, True, False, True)
-          ]
+    doorable pos =
+      not (fromMaybe True $ cells ^? ix pos)
+      && any (teeish . fmap (fromMaybe True))
+        (rotations $ arrayNeighbors cells pos)
+    -- only generate doors at the *ends* of hallways, eg (where O is walkable,
+    -- X is a wall, and D is a door):
+    --
+    -- O O O
+    -- X D X
+    --   O
+    teeish (fmap not -> (Neighbors tl t tr l r _ b _ )) =
+      and [tl, t, tr, b] && (and . fmap not) [l, r]
 
 randomCreatures :: MonadRandom m => Cells -> m (EntityMap Creature)
 randomCreatures = randomEntities Creature.newWithType (0.0007, 0.003)
