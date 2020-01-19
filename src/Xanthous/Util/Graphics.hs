@@ -10,7 +10,10 @@ module Xanthous.Util.Graphics
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 --------------------------------------------------------------------------------
-import qualified Algorithms.Geometry.DelaunayTriangulation.DivideAndConquer
+-- https://github.com/noinia/hgeometry/issues/28
+-- import qualified Algorithms.Geometry.DelaunayTriangulation.DivideAndConquer
+--               as Geometry
+import qualified Algorithms.Geometry.DelaunayTriangulation.Naive
               as Geometry
 import qualified Algorithms.Geometry.DelaunayTriangulation.Types as Geometry
 import           Codec.Picture (imagePixels)
