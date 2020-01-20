@@ -17,6 +17,12 @@ module Xanthous.Game.State
   , characterEntityID
   , GamePromptState(..)
 
+    -- * Game Level
+  , GameLevel(..)
+  , levelEntities
+  , upStaircasePosition
+  , levelRevealedPositions
+
     -- * Messages
   , MessageHistory(..)
   , HasMessages(..)
@@ -80,6 +86,7 @@ import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
 --------------------------------------------------------------------------------
 import           Xanthous.Util (KnownBool(..))
+import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Data
 import           Xanthous.Data.Levels
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
@@ -98,6 +105,7 @@ data MessageHistory
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary MessageHistory
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            MessageHistory
@@ -112,9 +120,6 @@ instance Semigroup MessageHistory where
 
 instance Monoid MessageHistory where
   mempty = MessageHistory mempty 0 Nothing
-
-instance Arbitrary MessageHistory where
-  arbitrary = genericArbitrary
 
 type instance Element MessageHistory = [Text]
 instance MonoFunctor MessageHistory where
@@ -400,6 +405,19 @@ instance
 
 --------------------------------------------------------------------------------
 
+data GameLevel = GameLevel
+  { _levelEntities :: !(EntityMap SomeEntity)
+  , _upStaircasePosition :: !Position
+  , _levelRevealedPositions :: !(Set Position)
+  }
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData)
+  deriving (ToJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+           GameLevel
+
+--------------------------------------------------------------------------------
+
 
 data DebugState = DebugState
   { _allRevealed :: !Bool
@@ -415,8 +433,7 @@ instance Arbitrary DebugState where
   arbitrary = genericArbitrary
 
 data GameState = GameState
-  { _levels            :: !(Levels (EntityMap SomeEntity))
-  , _revealedPositions :: !(Set Position)
+  { _levels            :: !(Levels GameLevel)
   , _characterEntityID :: !EntityID
   , _messageHistory    :: !MessageHistory
   , _randomGen         :: !StdGen
@@ -433,10 +450,15 @@ data GameState = GameState
   deriving (ToJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            GameState
+
+makeLenses ''GameLevel
 makeLenses ''GameState
 
 entities :: Lens' GameState (EntityMap SomeEntity)
-entities = levels . current
+entities = levels . current . levelEntities
+
+revealedPositions :: Lens' GameState (Set Position)
+revealedPositions = levels . current . levelRevealedPositions
 
 instance Eq GameState where
   (==) = (==) `on` \gs ->

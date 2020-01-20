@@ -1,5 +1,6 @@
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns         #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RecordWildCards      #-}
 --------------------------------------------------------------------------------
 module Xanthous.App (makeApp) where
 --------------------------------------------------------------------------------
@@ -298,7 +299,7 @@ handleCommand GoDown = do
   then do
     levs <- use levels
     let newLevelNum = Levels.pos levs + 1
-    levs' <- nextLevel (levelToEntityMap <$> genLevel newLevelNum) levs
+    levs' <- nextLevel (levelToGameLevel <$> genLevel newLevelNum) levs
     cEID <- use characterEntityID
     pCharacter <- entities . at cEID <<.= Nothing
     levels .= levs'
@@ -600,3 +601,10 @@ genLevel _num = do
     Dungeon -> generateLevel SDungeon Dungeon.defaultParams dims
   characterPosition .= level ^. levelCharacterPosition
   pure $!! level
+
+levelToGameLevel :: Level -> GameLevel
+levelToGameLevel level =
+  let _levelEntities = levelToEntityMap level
+      _upStaircasePosition = level ^. levelCharacterPosition
+      _levelRevealedPositions = mempty
+  in GameLevel {..}

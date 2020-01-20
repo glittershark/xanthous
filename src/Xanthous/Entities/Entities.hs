@@ -40,6 +40,8 @@ instance FromJSON SomeEntity where
       "GroundMessage" -> SomeEntity @GroundMessage <$> obj .: "data"
       _ -> fail . unpack $ "Invalid entity type \"" <> entityType <> "\""
 
+deriving via WithOptions '[ FieldLabelModifier '[Drop 1] ] GameLevel
+  instance FromJSON GameLevel
 deriving via WithOptions '[ FieldLabelModifier '[Drop 1] ] GameState
   instance FromJSON GameState
 

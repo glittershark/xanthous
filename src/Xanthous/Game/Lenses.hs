@@ -39,14 +39,16 @@ initialStateFromSeed :: Int -> GameState
 initialStateFromSeed seed =
   let _randomGen = mkStdGen seed
       chr = mkCharacter
-      (_characterEntityID, level)
+      _upStaircasePosition = Position 0 0
+      (_characterEntityID, _levelEntities)
         = EntityMap.insertAtReturningID
-          (Position 0 0)
+          _upStaircasePosition
           (SomeEntity chr)
           mempty
+      _levelRevealedPositions = mempty
+      level = GameLevel {..}
       _levels = oneLevel level
       _messageHistory = mempty
-      _revealedPositions = mempty
       _promptState = NoPrompt
       _activePanel = Nothing
       _debugState = DebugState

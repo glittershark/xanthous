@@ -16,20 +16,26 @@ import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Entities ()
 import           Xanthous.Entities.Character
 import           Xanthous.Game.State
+import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 --------------------------------------------------------------------------------
+
+deriving via GenericArbitrary GameLevel instance Arbitrary GameLevel
 
 instance Arbitrary GameState where
   arbitrary = do
     chr <- arbitrary @Character
-    charPos <- arbitrary
+    _upStaircasePosition <- arbitrary
     _messageHistory <- arbitrary
-    levs <- arbitrary
-    let (_characterEntityID, currentLevel) =
-          EntityMap.insertAtReturningID charPos (SomeEntity chr)
-          $ extract levs
-        _levels = levs & current .~ currentLevel
-    _revealedPositions <- fmap setFromList . sublistOf
-                         $ foldMap EntityMap.positions levs
+    levs <- arbitrary @(Levels GameLevel)
+    _levelRevealedPositions <-
+      fmap setFromList
+      . sublistOf
+      . foldMap (EntityMap.positions . _levelEntities)
+      $ levs
+    let (_characterEntityID, _levelEntities) =
+          EntityMap.insertAtReturningID _upStaircasePosition (SomeEntity chr)
+          $ levs ^. current . levelEntities
+        _levels = levs & current .~ GameLevel {..}
     _randomGen <- mkStdGen <$> arbitrary
     let _promptState = NoPrompt -- TODO
     _activePanel <- arbitrary
@@ -38,6 +44,8 @@ instance Arbitrary GameState where
     pure $ GameState {..}
 
 
+instance CoArbitrary GameLevel
+instance Function GameLevel
 instance CoArbitrary GameState
 instance Function GameState
 deriving newtype instance CoArbitrary (m (a, GameState)) => CoArbitrary (AppT m a)
