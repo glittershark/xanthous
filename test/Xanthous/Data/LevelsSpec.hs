@@ -37,6 +37,12 @@ test = testGroup "Xanthous.Data.Levels"
       , testProperty "extract is total" $ \(levels :: Levels Int) genned ->
           let levels' = runIdentity . nextLevel (Identity genned) $ levels
           in total $ extract levels'
+      , testProperty "uses the generated level as the next level"
+        $ \(levels :: Levels Int) genned ->
+          let levels' = seek (length levels - 1) levels
+              levels'' = runIdentity . nextLevel (Identity genned) $ levels'
+          in counterexample (show levels'')
+             $ extract levels'' === genned
       ]
     , testGroup "prevLevel"
       [ testProperty "seeks backwards" $ \(levels :: Levels Int) ->

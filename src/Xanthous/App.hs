@@ -300,8 +300,7 @@ handleCommand GoDown = do
     let newLevelNum = Levels.pos levs + 1
     levs' <- nextLevel (levelToEntityMap <$> genLevel newLevelNum) levs
     cEID <- use characterEntityID
-    pCharacter <- use $ entities . at cEID
-    entities . at cEID .= Nothing
+    pCharacter <- entities . at cEID <<.= Nothing
     levels .= levs'
     entities . at cEID .= pCharacter
   else say_ ["cant", "goDown"]

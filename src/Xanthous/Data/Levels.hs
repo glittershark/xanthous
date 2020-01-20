@@ -102,7 +102,7 @@ nextLevel genLevel levs
   = pure $ seeks succ levs
   | otherwise
   = genLevel <&> \level ->
-      seek (pos levs + 1) . partialMkLevels $ level <| allLevels levs
+      seek (pos levs + 1) . partialMkLevels $ allLevels levs |> level
 
 -- | Go to the previous level. Returns Nothing if 'pos' is 0
 prevLevel :: Levels level -> Maybe (Levels level)
