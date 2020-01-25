@@ -167,8 +167,7 @@ handleCommand Drop = do
   selectItemFromInventory_ ["drop", "menu"] Cancellable id
     (say_ ["drop", "nothing"])
     $ \(MenuResult item) -> do
-      charPos <- use characterPosition
-      entities . EntityMap.atPosition charPos %= (SomeEntity item <|)
+      entitiesAtCharacter %= (SomeEntity item <|)
       say ["drop", "dropped"] $ object [ "item" A..= item ]
   continue
 
@@ -277,9 +276,7 @@ handleCommand Save = do
         exitSuccess
 
 handleCommand GoUp = do
-  charPos <- use characterPosition
-  hasStairs <- uses (entities . EntityMap.atPosition charPos)
-              $ elem (SomeEntity UpStaircase)
+  hasStairs <- uses entitiesAtCharacter $ elem (SomeEntity UpStaircase)
   if hasStairs
   then uses levels prevLevel >>= \case
     Just levs' -> levels .= levs'
@@ -291,9 +288,7 @@ handleCommand GoUp = do
   continue
 
 handleCommand GoDown = do
-  charPos <- use characterPosition
-  hasStairs <- uses (entities . EntityMap.atPosition charPos)
-              $ elem (SomeEntity DownStaircase)
+  hasStairs <- uses entitiesAtCharacter $ elem (SomeEntity DownStaircase)
 
   if hasStairs
   then do

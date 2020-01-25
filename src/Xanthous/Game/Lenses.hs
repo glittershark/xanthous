@@ -10,6 +10,7 @@ module Xanthous.Game.Lenses
   , characterVisiblePositions
   , getInitialState
   , initialStateFromSeed
+  , entitiesAtCharacter
 
     -- * Collisions
   , Collision(..)
@@ -28,6 +29,7 @@ import           Xanthous.Data
 import           Xanthous.Data.Levels
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
+import           Xanthous.Data.VectorBag
 import           Xanthous.Entities.Character (Character, mkCharacter)
 import           {-# SOURCE #-} Xanthous.Entities.Entities ()
 --------------------------------------------------------------------------------
@@ -113,3 +115,10 @@ entitiesCollision = join . maximumMay . fmap entityCollision
 
 collisionAt :: MonadState GameState m => Position -> m (Maybe Collision)
 collisionAt p = uses (entities . EntityMap.atPosition p) entitiesCollision
+
+entitiesAtCharacter :: Lens' GameState (VectorBag SomeEntity)
+entitiesAtCharacter = lens getter setter
+  where
+    getter gs = gs ^. entities . EntityMap.atPosition (gs ^. characterPosition)
+    setter gs ents = gs
+      & entities . EntityMap.atPosition (gs ^. characterPosition) .~ ents
