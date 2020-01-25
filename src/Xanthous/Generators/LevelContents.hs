@@ -76,7 +76,7 @@ randomDoors cells = do
       and [tl, t, tr, b] && (and . fmap not) [l, r]
 
 randomCreatures :: MonadRandom m => Cells -> m (EntityMap Creature)
-randomCreatures = randomEntities Creature.newWithType (0.0007, 0.003)
+randomCreatures = randomEntities Creature.newWithType (0.0007, 0.002)
 
 tutorialMessage :: MonadRandom m
   => Cells
