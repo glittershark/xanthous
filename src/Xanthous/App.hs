@@ -304,6 +304,7 @@ handleCommand GoDown = do
     pCharacter <- entities . at cEID <<.= Nothing
     levels .= levs'
     entities . at cEID .= pCharacter
+    characterPosition .= extract levs' ^. upStaircasePosition
   else say_ ["cant", "goDown"]
 
   continue
@@ -599,7 +600,6 @@ genLevel _num = do
   level <- case generator of
     CaveAutomata -> generateLevel SCaveAutomata CaveAutomata.defaultParams dims
     Dungeon -> generateLevel SDungeon Dungeon.defaultParams dims
-  characterPosition .= level ^. levelCharacterPosition
   pure $!! level
 
 levelToGameLevel :: Level -> GameLevel
