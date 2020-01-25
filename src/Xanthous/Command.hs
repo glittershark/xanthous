@@ -16,6 +16,7 @@ data Command
   | PickUp
   | Drop
   | Open
+  | Close
   | Wait
   | Eat
   | Look
@@ -37,6 +38,7 @@ commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
 commandFromKey (KChar ',') [] = Just PickUp
 commandFromKey (KChar 'd') [] = Just Drop
 commandFromKey (KChar 'o') [] = Just Open
+commandFromKey (KChar 'c') [] = Just Close
 commandFromKey (KChar ';') [] = Just Look
 commandFromKey (KChar 'e') [] = Just Eat
 commandFromKey (KChar 'S') [] = Just Save

@@ -35,7 +35,16 @@ open:
   prompt: Direction to open (hjklybnu.)?
   success: "You open the door."
   locked: "That door is locked"
-  nothingToOpen: "There's nothing to open there"
+  nothingToOpen: "There's nothing to open there."
+  alreadyOpen: "That door is already open."
+
+close:
+  prompt: Direction to close (hjklybnu.)?
+  success:
+    - You close the door.
+    - You shut the door.
+  nothingToClose: "There's nothing to close there."
+  alreadyClosed: "That door is already closed."
 
 look:
   prompt: Select a position on the map to describe (use Enter to confirm)

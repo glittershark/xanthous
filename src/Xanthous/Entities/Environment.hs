@@ -7,6 +7,7 @@ module Xanthous.Entities.Environment
     -- * Doors
   , Door(..)
   , open
+  , closed
   , locked
   , unlockedDoor
 
@@ -98,6 +99,9 @@ instance Entity Door where
   entityChar _ = "d"
   entityCollision door | door ^. open = Nothing
                        | otherwise = Just Stop
+
+closed :: Lens' Door Bool
+closed = open . involuted not
 
 -- | A closed, unlocked door
 unlockedDoor :: Door

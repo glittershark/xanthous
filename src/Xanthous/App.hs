@@ -52,7 +52,7 @@ import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
 import           Xanthous.Entities.Environment
-                 (Door, open, locked, GroundMessage(..), Staircase(..))
+                 (Door, open, closed, locked, GroundMessage(..), Staircase(..))
 import           Xanthous.Entities.RawTypes
                  ( edible, eatMessage, hitpointsHealed
                  , attackMessage
@@ -182,10 +182,26 @@ handleCommand Open = do
       doors <- uses entities $ entitiesAtPositionWithType @Door pos
       if | null doors -> say_ ["open", "nothingToOpen"]
          | any (view $ _2 . locked) doors -> say_ ["open", "locked"]
+         | all (view $ _2 . open) doors   -> say_ ["open", "alreadyOpen"]
          | otherwise -> do
              for_ doors $ \(eid, _) ->
                entities . ix eid . positioned . _SomeEntity . open .= True
              say_ ["open", "success"]
+      pure ()
+  stepGame -- TODO
+  continue
+
+handleCommand Close = do
+  prompt_ @'DirectionPrompt ["close", "prompt"] Cancellable
+    $ \(DirectionResult dir) -> do
+      pos <- move dir <$> use characterPosition
+      doors <- uses entities $ entitiesAtPositionWithType @Door pos
+      if | null doors -> say_ ["close", "nothingToClose"]
+         | all (view $ _2 . closed) doors -> say_ ["close", "alreadyClosed"]
+         | otherwise -> do
+             for_ doors $ \(eid, _) ->
+               entities . ix eid . positioned . _SomeEntity . closed .= True
+             say_ ["close", "success"]
       pure ()
   stepGame -- TODO
   continue
