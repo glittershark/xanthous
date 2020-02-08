@@ -295,6 +295,7 @@ instance
 
 class Brain a where
   step :: Ticks -> Positioned a -> AppM (Positioned a)
+  -- | Does this entity ever move on its own?
   entityCanMove :: a -> Bool
   entityCanMove = const False
 
@@ -326,6 +327,12 @@ class ( Show a, Eq a, Ord a, NFData a
       , Draw a, Brain a
       ) => Entity a where
   blocksVision :: a -> Bool
+
+  -- | Does this entity block a large object from being put in the same tile as
+  -- it - eg a a door being closed on it
+  blocksObject :: a -> Bool
+  blocksObject = const False
+
   description :: a -> Text
   entityChar :: a -> EntityChar
   entityCollision :: a -> Maybe Collision
@@ -368,6 +375,7 @@ instance Draw SomeEntity where
 instance Brain SomeEntity where
   step ticks (Positioned p (SomeEntity ent)) =
     fmap SomeEntity <$> step ticks (Positioned p ent)
+  entityCanMove (SomeEntity ent) = entityCanMove ent
 
 downcastEntity :: forall (a :: Type). (Typeable a) => SomeEntity -> Maybe a
 downcastEntity (SomeEntity e) = cast e

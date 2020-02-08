@@ -66,6 +66,7 @@ instance Brain Creature where
 
 instance Entity Creature where
   blocksVision _ = False
+  blocksObject _ = True
   description = view $ creatureType . Raw.description
   entityChar = view $ creatureType . char
   entityCollision = const $ Just Combat

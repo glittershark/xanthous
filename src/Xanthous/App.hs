@@ -26,6 +26,7 @@ import           Xanthous.Data
                  ( move
                  , Dimensions'(Dimensions)
                  , positioned
+                 , position
                  , Position
                  , Ticks
                  , (|*|)
@@ -195,12 +196,32 @@ handleCommand Close = do
   prompt_ @'DirectionPrompt ["close", "prompt"] Cancellable
     $ \(DirectionResult dir) -> do
       pos <- move dir <$> use characterPosition
-      doors <- uses entities $ entitiesAtPositionWithType @Door pos
+      (nonDoors, doors) <- uses entities
+        $ partitionEithers
+        . toList
+        . map ( (matching . aside $ _SomeEntity @Door)
+              . over _2 (view positioned)
+              )
+        . EntityMap.atPositionWithIDs pos
       if | null doors -> say_ ["close", "nothingToClose"]
          | all (view $ _2 . closed) doors -> say_ ["close", "alreadyClosed"]
+         | any (blocksObject . snd) nonDoors ->
+           say ["close", "blocked"]
+           $ object [ "entityDescriptions"
+                    A..= ( toSentence . map description . filter blocksObject
+                         . map snd
+                         ) nonDoors
+                    , "blockOrBlocks"
+                    A..= ( if length nonDoors == 1
+                           then "blocks"
+                           else "block"
+                         :: Text)
+                    ]
          | otherwise -> do
              for_ doors $ \(eid, _) ->
                entities . ix eid . positioned . _SomeEntity . closed .= True
+             for_ nonDoors $ \(eid, _) ->
+               entities . ix eid . position %= move dir
              say_ ["close", "success"]
       pure ()
   stepGame -- TODO
