@@ -38,7 +38,6 @@ instance Arbitrary Item where
   arbitrary = Item <$> arbitrary
 
 instance Entity Item where
-  blocksVision _ = False
   description = view $ itemType . Raw.description
   entityChar = view $ itemType . Raw.char
   entityCollision = const Nothing

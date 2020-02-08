@@ -92,6 +92,7 @@ import           Xanthous.Data.Levels
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data.EntityChar
 import           Xanthous.Data.VectorBag
+import           Xanthous.Data.Entities
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Resource
@@ -315,24 +316,12 @@ brainVia _ ticks = fmap coerce . step ticks . coerce @_ @(Positioned brain)
 
 --------------------------------------------------------------------------------
 
-
-data Collision
-  = Stop   -- ^ Can't move through this
-  | Combat -- ^ Moving into this equates to hitting it with a stick
-  deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (NFData)
-
 class ( Show a, Eq a, Ord a, NFData a
       , ToJSON a, FromJSON a
       , Draw a, Brain a
       ) => Entity a where
-  blocksVision :: a -> Bool
-
-  -- | Does this entity block a large object from being put in the same tile as
-  -- it - eg a a door being closed on it
-  blocksObject :: a -> Bool
-  blocksObject = const False
-
+  entityAttributes :: a -> EntityAttributes
+  entityAttributes = const defaultEntityAttributes
   description :: a -> Text
   entityChar :: a -> EntityChar
   entityCollision :: a -> Maybe Collision
@@ -406,8 +395,8 @@ instance
   , Draw entity, Brain entity
   )
   => Entity (DeriveEntity blocksVision description entityChar entity) where
-
-  blocksVision _ = boolVal @blocksVision
+  entityAttributes _ = defaultEntityAttributes
+    & blocksVision .~ boolVal @blocksVision
   description _ = pack . symbolVal $ Proxy @description
   entityChar _ = fromString . symbolVal $ Proxy @entityChar
 

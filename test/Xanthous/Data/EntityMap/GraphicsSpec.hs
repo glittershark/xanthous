@@ -42,6 +42,5 @@ instance Brain TestEntity where
   step _ = pure
 instance Draw TestEntity
 instance Entity TestEntity where
-  blocksVision _ = False
   description _ = ""
   entityChar _ = "e"

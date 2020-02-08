@@ -84,7 +84,7 @@ instance Draw WieldedItem where
   draw = draw . view wieldedItem
 
 instance Entity WieldedItem where
-  blocksVision = blocksVision . view wieldedItem
+  entityAttributes = entityAttributes . view wieldedItem
   description = description . view wieldedItem
   entityChar = entityChar . view wieldedItem
 
@@ -232,7 +232,6 @@ instance Brain Character where
     else hp + hitpointRecoveryRate |*| ticks
 
 instance Entity Character where
-  blocksVision _ = False
   description _ = "yourself"
   entityChar _ = "@"
 

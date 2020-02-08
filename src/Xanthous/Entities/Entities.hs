@@ -46,8 +46,7 @@ deriving via WithOptions '[ FieldLabelModifier '[Drop 1] ] GameState
   instance FromJSON GameState
 
 instance Entity SomeEntity where
-  blocksVision (SomeEntity ent) = blocksVision ent
-  blocksObject (SomeEntity ent) = blocksObject ent
+  entityAttributes (SomeEntity ent) = entityAttributes ent
   description (SomeEntity ent) = description ent
   entityChar (SomeEntity ent) = entityChar ent
   entityCollision (SomeEntity ent) = entityCollision ent

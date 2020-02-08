@@ -40,6 +40,7 @@ import           Xanthous.Entities.RawTypes hiding
 import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Game.State
 import           Xanthous.Data
+import           Xanthous.Data.Entities
 import           Xanthous.Entities.Creature.Hippocampus
 --------------------------------------------------------------------------------
 
@@ -65,8 +66,8 @@ instance Brain Creature where
   entityCanMove = const True
 
 instance Entity Creature where
-  blocksVision _ = False
-  blocksObject _ = True
+  entityAttributes _ = defaultEntityAttributes
+    & blocksObject .~ True
   description = view $ creatureType . Raw.description
   entityChar = view $ creatureType . char
   entityCollision = const $ Just Combat

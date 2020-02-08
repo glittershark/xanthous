@@ -35,6 +35,7 @@ import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.Levels (prevLevel, nextLevel)
 import qualified Xanthous.Data.Levels as Levels
+import           Xanthous.Data.Entities (blocksObject)
 import           Xanthous.Game
 import           Xanthous.Game.State
 import           Xanthous.Game.Draw (drawGame)
@@ -205,17 +206,19 @@ handleCommand Close = do
         . EntityMap.atPositionWithIDs pos
       if | null doors -> say_ ["close", "nothingToClose"]
          | all (view $ _2 . closed) doors -> say_ ["close", "alreadyClosed"]
-         | any (blocksObject . snd) nonDoors ->
+         | any (view blocksObject . entityAttributes . snd) nonDoors ->
            say ["close", "blocked"]
            $ object [ "entityDescriptions"
-                    A..= ( toSentence . map description . filter blocksObject
-                         . map snd
-                         ) nonDoors
+                      A..= ( toSentence
+                           . map description
+                           . filter (view blocksObject . entityAttributes)
+                           . map snd
+                           ) nonDoors
                     , "blockOrBlocks"
-                    A..= ( if length nonDoors == 1
-                           then "blocks"
-                           else "block"
-                         :: Text)
+                      A..= ( if length nonDoors == 1
+                             then "blocks"
+                             else "block"
+                           :: Text)
                     ]
          | otherwise -> do
              for_ doors $ \(eid, _) ->

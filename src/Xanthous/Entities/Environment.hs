@@ -29,6 +29,7 @@ import Data.Aeson.Generic.DerivingVia
 --------------------------------------------------------------------------------
 import Xanthous.Entities.Draw.Util
 import Xanthous.Data
+import Xanthous.Data.Entities
 import Xanthous.Game.State
 import Xanthous.Util.QuickCheck
 --------------------------------------------------------------------------------
@@ -48,7 +49,9 @@ instance FromJSON Wall where
 instance Brain Wall where step = brainVia Brainless
 
 instance Entity Wall where
-  blocksVision _ = True
+  entityAttributes _ = defaultEntityAttributes
+    & blocksVision .~ True
+    & blocksObject .~ True
   description _ = "a wall"
   entityChar _ = "┼"
 
@@ -93,7 +96,8 @@ instance Draw Door where
 instance Brain Door where step = brainVia Brainless
 
 instance Entity Door where
-  blocksVision = not . view open
+  entityAttributes door = defaultEntityAttributes
+    & blocksVision .~ not (door ^. open)
   description door | door ^. open = "an open door"
                    | otherwise    = "a closed door"
   entityChar _ = "d"
@@ -127,7 +131,6 @@ newtype GroundMessage = GroundMessage Text
 instance Brain GroundMessage where step = brainVia Brainless
 
 instance Entity GroundMessage where
-  blocksVision = const False
   description = const "a message on the ground. Press r. to read it."
   entityChar = const "≈"
   entityCollision = const Nothing
@@ -150,7 +153,6 @@ instance Draw Staircase where
   draw DownStaircase = str ">"
 
 instance Entity Staircase where
-  blocksVision = const False
   description UpStaircase = "a staircase leading upwards"
   description DownStaircase = "a staircase leading downwards"
   entityChar UpStaircase = "<"

@@ -11,6 +11,7 @@ import Xanthous.Prelude hiding (lines)
 --------------------------------------------------------------------------------
 import Xanthous.Util (takeWhileInclusive)
 import Xanthous.Data
+import Xanthous.Data.Entities
 import Xanthous.Data.EntityMap
 import Xanthous.Game.State
 import Xanthous.Util.Graphics (circle, line)
@@ -29,7 +30,8 @@ linesOfSight
   -> [[(Position, Vector (EntityID, e))]]
 linesOfSight (view _Position -> pos) visionRadius em
   = entitiesOnLines
-  <&> takeWhileInclusive (none (blocksVision . snd) . snd)
+  <&> takeWhileInclusive
+      (none (view blocksVision . entityAttributes . snd) . snd)
   where
     radius = circle pos $ fromIntegral visionRadius
     lines = line pos <$> radius
