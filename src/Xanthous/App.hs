@@ -2,7 +2,10 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE RecordWildCards      #-}
 --------------------------------------------------------------------------------
-module Xanthous.App (makeApp) where
+module Xanthous.App
+  ( makeApp
+  , RunType(..)
+  ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 import           Brick hiding (App, halt, continue, raw)
@@ -66,12 +69,17 @@ import qualified Xanthous.Generators.Dungeon as Dungeon
 
 type App = Brick.App GameState () Name
 
-makeApp :: IO App
-makeApp = pure $ Brick.App
+data RunType = NewGame | LoadGame
+  deriving stock (Eq)
+
+makeApp :: RunType -> IO App
+makeApp rt = pure $ Brick.App
   { appDraw = drawGame
   , appChooseCursor = const headMay
   , appHandleEvent = \game event -> runAppM (handleEvent event) game
-  , appStartEvent = runAppM $ startEvent >> get
+  , appStartEvent = case rt of
+      NewGame -> runAppM $ startEvent >> get
+      LoadGame -> pure
   , appAttrMap = const $ attrMap defAttr []
   }
 
@@ -86,12 +94,8 @@ startEvent = do
     Nothing -> prompt_ @'StringPrompt ["character", "namePrompt"] Uncancellable
       $ \(StringResult s) -> do
         character . characterName ?= s
-        whenM (uses sentWelcome not) $ say ["welcome"] =<< use character
-        sentWelcome .= True
-    Just n ->
-      whenM (uses sentWelcome not) $ do
-        say ["welcome"] $ object [ "characterName" A..= n ]
-        sentWelcome .= True
+        say ["welcome"] =<< use character
+    Just n -> say ["welcome"] $ object [ "characterName" A..= n ]
 
 initLevel :: AppM ()
 initLevel = do

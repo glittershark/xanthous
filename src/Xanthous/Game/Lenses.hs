@@ -56,7 +56,6 @@ initialStateFromSeed seed =
       _debugState = DebugState
         { _allRevealed = False
         }
-      _sentWelcome = False
   in GameState {..}
 
 

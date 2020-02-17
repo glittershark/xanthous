@@ -9,7 +9,7 @@ import           Control.Exception (finally)
 import           System.Exit (die)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Game as Game
-import           Xanthous.App (makeApp)
+import           Xanthous.App
 import           Xanthous.Generators
                  ( GeneratorInput
                  , parseGeneratorInput
@@ -94,7 +94,7 @@ thanks = putStr "\n\n" >> putStrLn "Thanks for playing Xanthous!"
 
 runGame :: RunParams -> IO ()
 runGame rparams = do
-  app <- makeApp
+  app <- makeApp NewGame
   gameSeed <- maybe getRandom pure $ seed rparams
   when (isNothing $ seed rparams)
     . putStrLn
@@ -113,7 +113,7 @@ runGame rparams = do
 
 loadGame :: FilePath -> IO ()
 loadGame saveFile = do
-  app <- makeApp
+  app <- makeApp LoadGame
   gameState <- maybe (die "Invalid save file!") pure
               =<< Game.loadGame . fromStrict <$> readFile @IO saveFile
   _game' <- gameState `deepseq` defaultMain app gameState `finally` thanks
