@@ -30,16 +30,45 @@ import           Linear.V2
 --------------------------------------------------------------------------------
 
 
-circle :: (Num i, Integral i, Ix i)
+-- | Generate a circle centered at the given point and with the given radius
+-- using the <midpoint circle algorithm
+-- https://en.wikipedia.org/wiki/Midpoint_circle_algorithm>.
+--
+-- Code taken from <https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#Haskell>
+circle :: (Num i, Ord i)
        => (i, i) -- ^ center
        -> i      -- ^ radius
        -> [(i, i)]
-circle (ox, oy) radius
-  = pointsFromRaster (ox + radius) (oy + radius)
-  $ stroke 1 JoinRound (CapRound, CapRound)
-  $ Raster.circle (Raster.V2 (fromIntegral ox) (fromIntegral oy))
-  $ fromIntegral radius
+circle (x₀, y₀) radius
+  -- Four initial points, plus the generated points
+  = (x₀, y₀ + radius) : (x₀, y₀ - radius) : (x₀ + radius, y₀) : (x₀ - radius, y₀) : points
+    where
+      -- Creates the (x, y) octet offsets, then maps them to absolute points in all octets.
+      points = concatMap generatePoints $ unfoldr step initialValues
 
+      generatePoints (x, y)
+        = [ (x₀ `xop` x', y₀ `yop` y')
+          | (x', y') <- [(x, y), (y, x)]
+          , xop <- [(+), (-)]
+          , yop <- [(+), (-)]
+          ]
+
+      initialValues = (1 - radius, 1, (-2) * radius, 0, radius)
+
+      step (f, ddf_x, ddf_y, x, y)
+        | x >= y = Nothing
+        | otherwise = Just ((x', y'), (f', ddf_x', ddf_y', x', y'))
+        where
+          (f', ddf_y', y') | f >= 0 = (f + ddf_y' + ddf_x', ddf_y + 2, y - 1)
+                           | otherwise = (f + ddf_x, ddf_y, y)
+          ddf_x' = ddf_x + 2
+          x' = x + 1
+
+
+-- | Generate a *filled* circle centered at the given point and with the given
+-- radius using the Rasterific package. Note that since this uses a different
+-- implementation, this is not a strict superset of the 'circle' function
+-- (unfortunately - would like to make that not the case!)
 filledCircle :: (Num i, Integral i, Ix i)
              => (i, i) -- ^ center
              -> i      -- ^ radius
@@ -71,8 +100,6 @@ pointsFromRaster w h raster
     pixels = toListOf imagePixels
            $ renderDrawing @Word8 (fromIntegral w) (fromIntegral h) 0
            $ withTexture (uniformTexture 1) raster
-
-
 
 -- | Draw a line between two points using Bresenham's line drawing algorithm
 --

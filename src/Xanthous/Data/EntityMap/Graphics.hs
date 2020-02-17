@@ -17,8 +17,16 @@ import Xanthous.Game.State
 import Xanthous.Util.Graphics (circle, line)
 --------------------------------------------------------------------------------
 
-visiblePositions :: Entity e => Position -> Word -> EntityMap e -> Set Position
-visiblePositions pos radius = setFromList . positions . visibleEntities pos radius
+-- | Returns a set of positions that are visible, when taking into account
+-- 'blocksVision', from the given position, within the given radius.
+visiblePositions
+  :: Entity e
+  => Position
+  -> Word -- ^ Vision radius
+  -> EntityMap e
+  -> Set Position
+visiblePositions pos radius
+  = setFromList . positions . visibleEntities pos radius
 
 -- | Returns a list of individual lines of sight, each of which is a list of
 -- entities at positions on that line of sight

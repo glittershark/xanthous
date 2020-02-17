@@ -68,6 +68,7 @@ module Xanthous.Data
   , move
   , asPosition
   , directionOf
+  , Cardinal(..)
 
     -- *
   , Corner(..)
@@ -86,12 +87,12 @@ module Xanthous.Data
   , Hitpoints(..)
   ) where
 --------------------------------------------------------------------------------
-import           Xanthous.Prelude hiding (Left, Down, Right, (.=))
+import           Xanthous.Prelude hiding (Left, Down, Right, (.=), elements)
 --------------------------------------------------------------------------------
 import           Linear.V2 hiding (_x, _y)
 import qualified Linear.V2 as L
 import           Linear.V4 hiding (_x, _y)
-import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
+import           Test.QuickCheck (Arbitrary, CoArbitrary, Function, elements)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
 import           Brick (Location(Location), Edges(..))
@@ -267,11 +268,9 @@ data Direction where
   DownLeft  :: Direction
   DownRight :: Direction
   Here      :: Direction
-  deriving stock (Show, Eq, Generic)
-
-instance Arbitrary Direction where
-  arbitrary = genericArbitrary
-  shrink = genericShrink
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (CoArbitrary, Function, NFData)
+  deriving Arbitrary via GenericArbitrary Direction
 
 instance Opposite Direction where
   opposite Up        = Down
@@ -329,6 +328,16 @@ stepTowards (view _Position -> p₁) (view _Position -> p₂)
   | otherwise =
     let (_:p:_) = line p₁ p₂
     in _Position # p
+
+-- | Newtype controlling arbitrary generation to only include cardinal
+-- directions ('Up', 'Down', 'Left', 'Right')
+newtype Cardinal = Cardinal { getCardinal :: Direction }
+  deriving stock (Eq, Show, Ord, Generic)
+  deriving anyclass (NFData, Function, CoArbitrary)
+  deriving newtype (Opposite)
+
+instance Arbitrary Cardinal where
+  arbitrary = Cardinal <$> elements [Up, Down, Left, Right]
 
 --------------------------------------------------------------------------------
 
