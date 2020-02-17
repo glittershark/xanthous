@@ -26,6 +26,7 @@ instance Arbitrary SomeEntity where
     , SomeEntity <$> arbitrary @Wall
     , SomeEntity <$> arbitrary @Door
     , SomeEntity <$> arbitrary @GroundMessage
+    , SomeEntity <$> arbitrary @Staircase
     ]
 
 instance FromJSON SomeEntity where
@@ -38,6 +39,7 @@ instance FromJSON SomeEntity where
       "Wall" -> SomeEntity @Wall <$> obj .: "data"
       "Door" -> SomeEntity @Door <$> obj .: "data"
       "GroundMessage" -> SomeEntity @GroundMessage <$> obj .: "data"
+      "Staircase" -> SomeEntity @Staircase <$> obj .: "data"
       _ -> fail . unpack $ "Invalid entity type \"" <> entityType <> "\""
 
 deriving via WithOptions '[ FieldLabelModifier '[Drop 1] ] GameLevel
