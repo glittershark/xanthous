@@ -19,15 +19,18 @@ Movement uses the nethack-esque hjklybnu.
 
 * Development
 
-#+BEGIN_SRC shell
-$ nix-shell
+Use [[https://github.com/target/lorri][lorri]], or run everything in a ~nix-shell~
 
+#+BEGIN_SRC shell
 # Build (for dev)
-[nix-shell:xanthous]$ cabal new-build
+$ cabal new-build
+
+# Run the game
+$ cabal new-run xanthous
 
 # Run tests
-[nix-shell:xanthous]$ cabal new-run test
+$ cabal new-run test
 
 # Run a repl
-[nix-shell:xanthous]$ cabal new-repl
+$ cabal new-repl
 #+END_SRC
