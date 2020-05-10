@@ -5,7 +5,11 @@
 let
   inherit (nixpkgs) pkgs lib;
   inherit (lib) id;
-  all-hies = import (fetchTarball "https://github.com/infinisil/all-hies/tarball/c6e93d2d641ef48703eabed8ec5cde3d774cb0e5") {};
+  inherit (pkgs) fetchurl;
+  all-hies = import (fetchTarball {
+    url = "https://github.com/infinisil/all-hies/archive/4b6aab017cdf96a90641dc287437685675d598da.tar.gz";
+    sha256 = "0ap12mbzk97zmxk42fk8vqacyvpxk29r2wrnjqpx4m2w9g7gfdya";
+  }) {};
   hie = all-hies.selection { selector = p: { inherit (p) ghc865; }; };
   xanthous =
     (if failOnWarnings then pkgs.haskell.lib.failOnAllWarnings else id)
