@@ -19,6 +19,7 @@ test = testGroup "Xanthous.Data.EntityMap.Graphics"
   [ testGroup "visiblePositions"
     [ testProperty "one step in each cardinal direction is always visible"
       $ \pos (Cardinal dir) (Positive r) (wallPositions :: Set Position)->
+          pos `notMember` wallPositions ==>
           let em = review _EntityMap . map (, Wall) . toList $ wallPositions
               em' = em & atPosition (move dir pos) %~ (Wall <|)
               poss = visiblePositions pos r em'

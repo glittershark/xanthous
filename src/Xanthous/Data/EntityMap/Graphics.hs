@@ -56,8 +56,7 @@ linesOfSight (view _Position -> pos) visionRadius em
 visibleEntities :: Entity e => Position -> Word -> EntityMap e -> EntityMap e
 visibleEntities pos visionRadius
   = fromEIDsAndPositioned
-  . fold
-  . map (\(p, es) -> over _2 (Positioned p) <$> es)
+  . foldMap (\(p, es) -> over _2 (Positioned p) <$> es)
   . fold
   . linesOfSight pos visionRadius
 
