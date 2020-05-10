@@ -5,6 +5,7 @@ import Test.Prelude hiding (head)
 import Xanthous.Util.Graphics
 import Xanthous.Util
 import Data.List (head)
+import Data.Set (isSubsetOf)
 --------------------------------------------------------------------------------
 
 main :: IO ()
@@ -40,12 +41,18 @@ test = testGroup "Xanthous.Util.Graphics"
           , (12,0), (12,1),(12,2),(12,3),(12,4)
           ]
 
-    -- , testProperty "is a subset of filledCircle" $ \center radius ->
-    --     let circ = circle @Int center radius
-    --         filledCirc = filledCircle center radius
-    --     in counterexample ( "circle: " <> show circ
-    --                        <> "\nfilledCircle: " <> show filledCirc)
-    --       $ setFromList circ `isSubsetOf` setFromList filledCirc
+    ]
+  , testGroup "filledCircle"
+    [ testProperty "is a superset of circle" $ \center radius ->
+        let circ = circle @Int center radius
+            filledCirc = filledCircle center radius
+        in counterexample ( "circle: " <> show circ
+                           <> "\nfilledCircle: " <> show filledCirc)
+          $ setFromList circ `isSubsetOf` setFromList filledCirc
+    -- TODO later
+    -- , testProperty "is always contiguous" $ \center radius ->
+    --     let filledCirc = filledCircle center radius
+    --     in counterexample (renderBooleanGraphics filledCirc) $
     ]
   , testGroup "line"
     [ testProperty "starts and ends at the start and end points" $ \start end ->

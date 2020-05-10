@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 -- | Graphics algorithms and utils for rendering things in 2D space
 --------------------------------------------------------------------------------
 module Xanthous.Util.Graphics
@@ -6,6 +7,10 @@ module Xanthous.Util.Graphics
   , line
   , straightLine
   , delaunay
+
+    -- * Debugging and testing tools
+  , renderBooleanGraphics
+  , showBooleanGraphics
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -16,16 +21,13 @@ import           Xanthous.Prelude
 import qualified Algorithms.Geometry.DelaunayTriangulation.Naive
               as Geometry
 import qualified Algorithms.Geometry.DelaunayTriangulation.Types as Geometry
-import           Codec.Picture (imagePixels)
+import           Control.Monad.State (execState, State)
 import qualified Data.Geometry.Point as Geometry
 import           Data.Ext ((:+)(..))
 import           Data.List (unfoldr)
-import           Data.List.NonEmpty (NonEmpty)
-import           Data.Ix (range, Ix)
-import           Data.Word (Word8)
-import qualified Graphics.Rasterific as Raster
-import           Graphics.Rasterific hiding (circle, line, V2(..))
-import           Graphics.Rasterific.Texture (uniformTexture)
+import           Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NE
+import           Data.Ix (Ix)
 import           Linear.V2
 --------------------------------------------------------------------------------
 
@@ -65,41 +67,44 @@ circle (x₀, y₀) radius
           x' = x + 1
 
 
+data FillState i
+  = FillState
+  { _inCircle :: Bool
+  , _result :: NonEmpty (i, i)
+  }
+makeLenses ''FillState
+
+runFillState :: NonEmpty (i, i) -> State (FillState i) a -> [(i, i)]
+runFillState circumference s
+  = toList
+  . view result
+  . execState s
+  $ FillState False circumference
+
 -- | Generate a *filled* circle centered at the given point and with the given
--- radius using the Rasterific package. Note that since this uses a different
--- implementation, this is not a strict superset of the 'circle' function
--- (unfortunately - would like to make that not the case!)
+-- radius by filling a circle generated with 'circle'
 filledCircle :: (Num i, Integral i, Ix i)
              => (i, i) -- ^ center
              -> i      -- ^ radius
              -> [(i, i)]
-filledCircle (ox, oy) radius
-  = pointsFromRaster (ox + radius) (oy + radius)
-  $ fill
-  $ Raster.circle (Raster.V2 (fromIntegral ox) (fromIntegral oy))
-  $ fromIntegral radius
+filledCircle origin radius =
+  case NE.nonEmpty (circle origin radius) of
+    Nothing -> []
+    Just circumference -> runFillState circumference $
+      -- the first and last lines of all circles are solid, so the whole "in the
+      -- circle, out of the circle" thing doesn't work... but that's fine since
+      -- we don't need to fill them. So just skip them
+      for_ [succ minX..pred maxX] $ \x ->
+        for_ [minY..maxY] $ \y -> do
+          let pt = (x, y)
+              next = (x, succ y)
+          whenM (use inCircle) $ result %= NE.cons pt
 
--- showCells . fromPoints . NE.fromList $ filledCircle (15, 15) 7
--- pointsFromRaster :: (Num i, Integral i, Ix i)
---                  => i      -- ^ width
---                  -> i      -- ^ height
---                  -> _
---                  -> [(i, i)]
-pointsFromRaster
-  :: (Integral a, Integral b, Ix a, Ix b)
-  => a
-  -> b
-  -> Drawing Word8 ()
-  -> [(a, b)]
-pointsFromRaster w h raster
-  = map snd
-  $ filter ((== 1) . fst)
-  $ zip pixels
-  $ range ((1, 1), (w, h))
-  where
-    pixels = toListOf imagePixels
-           $ renderDrawing @Word8 (fromIntegral w) (fromIntegral h) 0
-           $ withTexture (uniformTexture 1) raster
+          when (pt `elem` circumference && next `notElem` circumference)
+            $ inCircle %= not
+
+      where
+        ((minX, minY), (maxX, maxY)) = minmaxes circumference
 
 -- | Draw a line between two points using Bresenham's line drawing algorithm
 --
@@ -141,3 +146,29 @@ delaunay
   where
     toPoint (V2 px py, pid) = Geometry.Point2 px py :+ pid
     fromPoint (Geometry.Point2 px py :+ pid) = (V2 px py, pid)
+
+--------------------------------------------------------------------------------
+
+renderBooleanGraphics :: forall i. (Num i, Ord i, Enum i) => [(i, i)] -> String
+renderBooleanGraphics [] = ""
+renderBooleanGraphics (pt : pts') = intercalate "\n" rows
+  where
+    rows = row <$> [minX..maxX]
+    row x = [minY..maxY] <&> \y -> if (x, y) `member` ptSet then 'X' else ' '
+    ((minX, minY), (maxX, maxY)) = minmaxes pts
+    pts = pt :| pts'
+    ptSet :: Set (i, i)
+    ptSet = setFromList $ toList pts
+
+showBooleanGraphics :: forall i. (Num i, Ord i, Enum i) => [(i, i)] -> IO ()
+showBooleanGraphics = putStrLn . pack . renderBooleanGraphics
+
+minmaxes :: forall i. (Ord i) => NonEmpty (i, i) -> ((i, i), (i, i))
+minmaxes xs =
+    ( ( minimum1Of (traverse1 . _1) xs
+      , minimum1Of (traverse1 . _2) xs
+      )
+    , ( maximum1Of (traverse1 . _1) xs
+      , maximum1Of (traverse1 . _2) xs
+      )
+    )
