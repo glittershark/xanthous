@@ -43,7 +43,7 @@ cursorPosition game
   = showCursor Resource.Character (game ^. characterPosition . loc)
 
 drawMessages :: MessageHistory -> Widget Name
-drawMessages = txtWrap . (<> " ") . unwords . oextract
+drawMessages = txtWrap . (<> " ") . unwords . reverse . oextract
 
 drawPromptState :: GamePromptState m -> Widget Name
 drawPromptState NoPrompt = emptyWidget
