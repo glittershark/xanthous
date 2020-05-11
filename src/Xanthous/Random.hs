@@ -9,6 +9,7 @@ module Xanthous.Random
   , evenlyWeighted
   , weightedBy
   , subRand
+  , chance
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -85,3 +86,17 @@ instance (Num w, Ord w, Distribution Uniform w, Excludable w) => Choose (Weighte
 
 subRand :: MonadRandom m => Rand StdGen a -> m a
 subRand sub = evalRand sub . mkStdGen <$> getRandom
+
+-- | Has a @n@ chance of returning 'True'
+--
+-- eg, chance 0.5 will return 'True' half the time
+chance
+  :: (Num w, Ord w, Distribution Uniform w, Excludable w, MonadRandom m)
+  => w
+  -> m Bool
+chance n = choose $ weightedBy (bool 1 (n * 2)) bools
+
+--------------------------------------------------------------------------------
+
+bools :: NonEmpty Bool
+bools = True :| [False]

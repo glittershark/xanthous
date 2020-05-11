@@ -548,9 +548,16 @@ attackAt pos =
         msg <- uses character getAttackMessage
         message msg msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
+
+    whenM (uses character $ isNothing . weapon)
+      $ whenM (chance (0.08 :: Float)) $ do
+        say_ ["combat", "fistSelfDamage"]
+        character %= Character.damage 1
+
     stepGame -- TODO
+  weapon chr = chr ^? inventory . wielded . wieldedItems . wieldableItem
   getAttackMessage chr =
-    case chr ^? inventory . wielded . wieldedItems . wieldableItem of
+    case weapon chr of
       Just wi ->
         fromMaybe (Messages.lookup ["combat", "hit", "generic"])
         $ wi ^. attackMessage

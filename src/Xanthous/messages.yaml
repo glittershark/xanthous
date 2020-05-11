@@ -57,6 +57,9 @@ character:
 combat:
   nothingToAttack: There's nothing to attack there.
   menu: Which creature would you like to attack?
+  fistSelfDamage:
+    - You hit so hard with your fists you hurt yourself!
+    - The punch leaves your knuckles bloody!
   hit:
     fists:
       - You punch the {{creature.creatureType.name}} with your bare fists! It hurts. A lot.
