@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 --------------------------------------------------------------------------------
 module Xanthous.Data.EntityMap.Graphics
   ( visiblePositions

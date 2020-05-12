@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable  #-}

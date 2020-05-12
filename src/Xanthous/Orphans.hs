@@ -1,6 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PackageImports #-}

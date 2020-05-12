@@ -1,6 +1,5 @@
 {-# LANGUAGE PartialTypeSignatures  #-}
 {-# LANGUAGE StandaloneDeriving     #-}
-{-# LANGUAGE ViewPatterns           #-}
 {-# LANGUAGE RoleAnnotations        #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE DeriveTraversable      #-}

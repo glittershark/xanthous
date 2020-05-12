@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 
 module Xanthous.Util.Inflection
   ( toSentence

@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Xanthous.Entities.Character
   ( Character(..)

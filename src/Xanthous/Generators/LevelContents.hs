@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 --------------------------------------------------------------------------------
 module Xanthous.Generators.LevelContents
   ( chooseCharacterPosition

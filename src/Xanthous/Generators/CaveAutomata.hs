@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
