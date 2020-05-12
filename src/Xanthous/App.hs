@@ -9,11 +9,9 @@ module Xanthous.App
 import           Xanthous.Prelude
 import           Brick hiding (App, halt, continue, raw)
 import qualified Brick
-import           Brick.Widgets.Edit (handleEditorEvent)
 import           Graphics.Vty.Attributes (defAttr)
-import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
-import           Control.Monad.State (get, gets, MonadState)
-import           Control.Monad.Random (MonadRandom)
+import           Graphics.Vty.Input.Events (Event(EvKey))
+import           Control.Monad.State (get, gets)
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
@@ -21,8 +19,11 @@ import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Vector as V
 import           System.Exit
 import           System.Directory (doesFileExist)
-import           GHC.TypeLits (TypeError, ErrorMessage(..))
 --------------------------------------------------------------------------------
+import           Xanthous.App.Common
+import           Xanthous.App.Time
+import           Xanthous.App.Prompt
+import           Xanthous.App.Autocommands
 import           Xanthous.Command
 import           Xanthous.Data
                  ( move
@@ -30,20 +31,18 @@ import           Xanthous.Data
                  , positioned
                  , position
                  , Position
-                 , Ticks
                  , (|*|)
                  )
-import           Xanthous.Data.EntityMap (EntityMap)
+import           Xanthous.Data.App (ResourceName, Panel(..), AppEvent(..))
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Data.Levels (prevLevel, nextLevel)
 import qualified Xanthous.Data.Levels as Levels
 import           Xanthous.Data.Entities (blocksObject)
 import           Xanthous.Game
 import           Xanthous.Game.State
+import           Xanthous.Game.Env
 import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Game.Prompt
-import           Xanthous.Monad
-import           Xanthous.Resource (Name, Panel(..))
 import qualified Xanthous.Messages as Messages
 import           Xanthous.Random
 import           Xanthous.Util (removeVectorIndex)
@@ -66,24 +65,24 @@ import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 import qualified Xanthous.Generators.Dungeon as Dungeon
 --------------------------------------------------------------------------------
 
-type App = Brick.App GameState () Name
+type App = Brick.App GameState AppEvent ResourceName
 
 data RunType = NewGame | LoadGame
   deriving stock (Eq)
 
-makeApp :: RunType -> IO App
-makeApp rt = pure $ Brick.App
+makeApp :: GameEnv -> RunType -> IO App
+makeApp env rt = pure $ Brick.App
   { appDraw = drawGame
   , appChooseCursor = const headMay
-  , appHandleEvent = \game event -> runAppM (handleEvent event) game
+  , appHandleEvent = \game event -> runAppM (handleEvent event) env game
   , appStartEvent = case rt of
-      NewGame -> runAppM $ startEvent >> get
+      NewGame -> runAppM (startEvent >> get) env
       LoadGame -> pure
   , appAttrMap = const $ attrMap defAttr []
   }
 
-runAppM :: AppM a -> GameState -> EventM Name a
-runAppM appm = fmap fst . runAppT appm
+runAppM :: AppM a -> GameEnv -> GameState -> EventM ResourceName a
+runAppM appm ge = fmap fst . runAppT appm ge
 
 startEvent :: AppM ()
 startEvent = do
@@ -104,39 +103,20 @@ initLevel = do
 
 --------------------------------------------------------------------------------
 
-stepGameBy :: Ticks -> AppM ()
-stepGameBy ticks = do
-  ents <- uses entities EntityMap.toEIDsAndPositioned
-  for_ ents $ \(eid, pEntity) -> do
-    pEntity' <- step ticks pEntity
-    entities . ix eid .= pEntity'
-
-  modify updateCharacterVision
-
-  whenM (uses character isDead)
-    . prompt_ @'Continue ["dead"] Uncancellable
-    . const . lift . liftIO
-    $ exitSuccess
-
-ticksPerTurn :: Ticks
-ticksPerTurn = 100
-
-stepGame :: AppM ()
-stepGame = stepGameBy ticksPerTurn
-
---------------------------------------------------------------------------------
-
-handleEvent :: BrickEvent Name () -> AppM (Next GameState)
+handleEvent :: BrickEvent ResourceName AppEvent -> AppM (Next GameState)
 handleEvent ev = use promptState >>= \case
   NoPrompt -> handleNoPromptEvent ev
   WaitingPrompt msg pr -> handlePromptEvent msg pr ev
 
 
-handleNoPromptEvent :: BrickEvent Name () -> AppM (Next GameState)
+handleNoPromptEvent :: BrickEvent ResourceName AppEvent -> AppM (Next GameState)
 handleNoPromptEvent (VtyEvent (EvKey k mods))
   | Just command <- commandFromKey k mods
   = do messageHistory %= nextTurn
        handleCommand command
+handleNoPromptEvent (AppEvent AutoContinue) = do
+  preuse (autocommand . _ActiveAutocommand . _1) >>= traverse_ autoStep
+  continue
 handleNoPromptEvent _ = continue
 
 handleCommand :: Command -> AppM (Next GameState)
@@ -347,6 +327,10 @@ handleCommand GoDown = do
 
   continue
 
+handleCommand (StartAutoMove dir) = do
+  runAutocommand $ AutoMove dir
+  continue
+
 --
 
 handleCommand ToggleRevealAll = do
@@ -355,177 +339,6 @@ handleCommand ToggleRevealAll = do
   continue
 
 --------------------------------------------------------------------------------
-
-handlePromptEvent
-  :: Text -- ^ Prompt message
-  -> Prompt AppM
-  -> BrickEvent Name ()
-  -> AppM (Next GameState)
-
-handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc []))
-  = clearPrompt >> continue
-handlePromptEvent _ pr (VtyEvent (EvKey KEnter []))
-  = clearPrompt >> submitPrompt pr >> continue
-
-handlePromptEvent _ pr@(Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'y') []))
-  = clearPrompt >> submitPrompt pr >> continue
-
-handlePromptEvent _ (Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'n') []))
-  = clearPrompt >> continue
-
-handlePromptEvent
-  msg
-  (Prompt c SStringPrompt (StringPromptState edit) pri cb)
-  (VtyEvent ev)
-  = do
-    edit' <- lift $ handleEditorEvent ev edit
-    let prompt' = Prompt c SStringPrompt (StringPromptState edit') pri cb
-    promptState .= WaitingPrompt msg prompt'
-    continue
-
-handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ cb)
-  (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
-  = clearPrompt >> cb (DirectionResult dir) >> continue
-handlePromptEvent _ (Prompt _ SDirectionPrompt _ _ _) _ = continue
-
-handlePromptEvent _ (Prompt _ SMenu _ items' cb) (VtyEvent (EvKey (KChar chr) []))
-  | Just (MenuOption _ res) <- items' ^. at chr
-  = clearPrompt >> cb (MenuResult res) >> continue
-  | otherwise
-  = continue
-
-handlePromptEvent
-  msg
-  (Prompt c SPointOnMap (PointOnMapPromptState pos) pri cb)
-  (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
-  = let pos' = move dir pos
-        prompt' = Prompt c SPointOnMap (PointOnMapPromptState pos') pri cb
-    in promptState .= WaitingPrompt msg prompt'
-       >> continue
-handlePromptEvent _ (Prompt _ SPointOnMap _ _ _) _ = continue
-
-handlePromptEvent
-  _
-  (Prompt Cancellable _ _ _ _)
-  (VtyEvent (EvKey (KChar 'q') []))
-  = clearPrompt >> continue
-handlePromptEvent _ _ _ = continue
-
-clearPrompt :: AppM ()
-clearPrompt = promptState .= NoPrompt
-
-class NotMenu (pt :: PromptType)
-instance NotMenu 'StringPrompt
-instance NotMenu 'Confirm
-instance NotMenu 'DirectionPrompt
-instance NotMenu 'PointOnMap
-instance NotMenu 'Continue
-instance TypeError ('Text "Cannot use `prompt` or `prompt_` for menu prompts"
-                    ':$$: 'Text "Use `menu` or `menu_` instead")
-         => NotMenu ('Menu a)
-
-prompt
-  :: forall (pt :: PromptType) (params :: Type).
-    (ToJSON params, SingPromptType pt, NotMenu pt)
-  => [Text]                     -- ^ Message key
-  -> params                     -- ^ Message params
-  -> PromptCancellable
-  -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
-  -> AppM ()
-prompt msgPath params cancellable cb = do
-  let pt = singPromptType @pt
-  msg <- Messages.message msgPath params
-  p <- case pt of
-    SPointOnMap -> do
-      charPos <- use characterPosition
-      pure $ mkPointOnMapPrompt cancellable charPos cb
-    SStringPrompt -> pure $ mkPrompt cancellable pt cb
-    SConfirm -> pure $ mkPrompt cancellable pt cb
-    SDirectionPrompt -> pure $ mkPrompt cancellable pt cb
-    SContinue -> pure $ mkPrompt cancellable pt cb
-    SMenu -> error "unreachable"
-  promptState .= WaitingPrompt msg p
-
-prompt_
-  :: forall (pt :: PromptType).
-    (SingPromptType pt, NotMenu pt)
-  => [Text] -- ^ Message key
-  -> PromptCancellable
-  -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
-  -> AppM ()
-prompt_ msg = prompt msg $ object []
-
-confirm
-  :: ToJSON params
-  => [Text] -- ^ Message key
-  -> params
-  -> AppM ()
-  -> AppM ()
-confirm msgPath params
-  = prompt @'Confirm msgPath params Cancellable . const
-
-confirm_ :: [Text] -> AppM () -> AppM ()
-confirm_ msgPath = confirm msgPath $ object []
-
-menu :: forall (a :: Type) (params :: Type).
-       (ToJSON params)
-     => [Text]                            -- ^ Message key
-     -> params                            -- ^ Message params
-     -> PromptCancellable
-     -> Map Char (MenuOption a)           -- ^ Menu items
-     -> (PromptResult ('Menu a) -> AppM ()) -- ^ Menu promise handler
-     -> AppM ()
-menu msgPath params cancellable items' cb = do
-  msg <- Messages.message msgPath params
-  let p = mkMenu cancellable items' cb
-  promptState .= WaitingPrompt msg p
-
-menu_ :: forall (a :: Type).
-        [Text]                            -- ^ Message key
-      -> PromptCancellable
-      -> Map Char (MenuOption a)           -- ^ Menu items
-      -> (PromptResult ('Menu a) -> AppM ()) -- ^ Menu promise handler
-      -> AppM ()
-menu_ msgPath = menu msgPath $ object []
-
---------------------------------------------------------------------------------
-
-entitiesAtPositionWithType
-  :: forall a. (Entity a, Typeable a)
-  => Position
-  -> EntityMap SomeEntity
-  -> [(EntityMap.EntityID, a)]
-entitiesAtPositionWithType pos em =
-  let someEnts = EntityMap.atPositionWithIDs pos em
-  in flip foldMap someEnts $ \(eid, view positioned -> se) ->
-    case downcastEntity @a se of
-      Just e  -> [(eid, e)]
-      Nothing -> []
-
-describeEntitiesAt :: (MonadState GameState m, MonadRandom m) => Position -> m ()
-describeEntitiesAt pos =
-  use ( entities
-      . EntityMap.atPosition pos
-      . to (filter (not . entityIs @Character))
-      ) >>= \case
-        Empty -> pure ()
-        ents  -> describeEntities ents
-
-describeEntities
-  :: ( Entity entity
-    , MonadRandom m
-    , MonadState GameState m
-    , MonoFoldable (f Text)
-    , Functor f
-    , Element (f Text) ~ Text
-    )
-  => f entity
-  -> m ()
-describeEntities ents =
-  let descriptions = description <$> ents
-  in say ["entities", "description"]
-     $ object ["entityDescriptions" A..= toSentence descriptions]
-
 attackAt :: Position -> AppM ()
 attackAt pos =
   uses entities (entitiesAtPositionWithType @Creature pos) >>= \case

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 09d294830fde12021527c15ba1e1698afdec092a16c4171ee67dce3256fe0d96
+-- hash: 61744d8e26bf309ee73e128a90af8badee98aedace39a756b6033f51711d3e2e
 
 name:           xanthous
 version:        0.1.0.0
@@ -32,8 +32,13 @@ library
       Main
       Xanthous.AI.Gormlak
       Xanthous.App
+      Xanthous.App.Autocommands
+      Xanthous.App.Common
+      Xanthous.App.Prompt
+      Xanthous.App.Time
       Xanthous.Command
       Xanthous.Data
+      Xanthous.Data.App
       Xanthous.Data.Entities
       Xanthous.Data.EntityChar
       Xanthous.Data.EntityMap
@@ -52,6 +57,7 @@ library
       Xanthous.Game
       Xanthous.Game.Arbitrary
       Xanthous.Game.Draw
+      Xanthous.Game.Env
       Xanthous.Game.Lenses
       Xanthous.Game.Prompt
       Xanthous.Game.State
@@ -65,7 +71,6 @@ library
       Xanthous.Orphans
       Xanthous.Prelude
       Xanthous.Random
-      Xanthous.Resource
       Xanthous.Util
       Xanthous.Util.Comonad
       Xanthous.Util.Graph
@@ -78,7 +83,7 @@ library
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
   ghc-options: -Wall
   build-depends:
       JuicyPixels
@@ -87,6 +92,7 @@ library
     , Rasterific
     , aeson
     , array
+    , async
     , base
     , brick
     , checkers
@@ -109,8 +115,11 @@ library
     , hgeometry
     , hgeometry-combinatorial
     , lens
+    , lifted-async
     , linear
     , megaparsec
+    , mmorph
+    , monad-control
     , mtl
     , optparse-applicative
     , pointed
@@ -140,8 +149,13 @@ executable xanthous
       Data.Aeson.Generic.DerivingVia
       Xanthous.AI.Gormlak
       Xanthous.App
+      Xanthous.App.Autocommands
+      Xanthous.App.Common
+      Xanthous.App.Prompt
+      Xanthous.App.Time
       Xanthous.Command
       Xanthous.Data
+      Xanthous.Data.App
       Xanthous.Data.Entities
       Xanthous.Data.EntityChar
       Xanthous.Data.EntityMap
@@ -160,6 +174,7 @@ executable xanthous
       Xanthous.Game
       Xanthous.Game.Arbitrary
       Xanthous.Game.Draw
+      Xanthous.Game.Env
       Xanthous.Game.Lenses
       Xanthous.Game.Prompt
       Xanthous.Game.State
@@ -173,7 +188,6 @@ executable xanthous
       Xanthous.Orphans
       Xanthous.Prelude
       Xanthous.Random
-      Xanthous.Resource
       Xanthous.Util
       Xanthous.Util.Comonad
       Xanthous.Util.Graph
@@ -185,7 +199,7 @@ executable xanthous
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       JuicyPixels
@@ -194,6 +208,7 @@ executable xanthous
     , Rasterific
     , aeson
     , array
+    , async
     , base
     , brick
     , checkers
@@ -216,8 +231,11 @@ executable xanthous
     , hgeometry
     , hgeometry-combinatorial
     , lens
+    , lifted-async
     , linear
     , megaparsec
+    , mmorph
+    , monad-control
     , mtl
     , optparse-applicative
     , pointed
@@ -265,7 +283,7 @@ test-suite test
       Paths_xanthous
   hs-source-dirs:
       test
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O0
   build-depends:
       JuicyPixels
@@ -274,6 +292,7 @@ test-suite test
     , Rasterific
     , aeson
     , array
+    , async
     , base
     , brick
     , checkers
@@ -297,8 +316,11 @@ test-suite test
     , hgeometry-combinatorial
     , lens
     , lens-properties
+    , lifted-async
     , linear
     , megaparsec
+    , mmorph
+    , monad-control
     , mtl
     , optparse-applicative
     , pointed

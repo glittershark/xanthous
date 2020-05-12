@@ -5,12 +5,19 @@ module Xanthous.Monad
   , runAppT
   , continue
   , halt
+
     -- * Messages
   , say
   , say_
   , message
   , message_
   , writeMessage
+
+    -- * Autocommands
+  , cancelAutocommand
+
+    -- * Events
+  , sendEvent
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -18,15 +25,15 @@ import           Control.Monad.Random
 import           Control.Monad.State
 import qualified Brick
 import           Brick (EventM, Next)
-import           Data.Aeson
+import           Brick.BChan (writeBChan)
+import           Data.Aeson (ToJSON, object)
 --------------------------------------------------------------------------------
+import           Xanthous.Data.App (AppEvent)
 import           Xanthous.Game.State
+import           Xanthous.Game.Env
 import           Xanthous.Messages (Message)
 import qualified Xanthous.Messages as Messages
 --------------------------------------------------------------------------------
-
-runAppT :: Monad m => AppT m a -> GameState -> m (a, GameState)
-runAppT appt initialState = flip runStateT initialState . unAppT $ appt
 
 halt :: AppT (EventM n) (Next GameState)
 halt = lift . Brick.halt =<< get
@@ -53,3 +60,17 @@ message_ msg = message msg $ object []
 
 writeMessage :: MonadState GameState m => Text -> m ()
 writeMessage m = messageHistory %= pushMessage m
+
+-- | Cancel the currently active autocommand, if any
+cancelAutocommand :: (MonadState GameState m, MonadIO m) => m ()
+cancelAutocommand = do
+  traverse_ (liftIO . cancel . snd) =<< preuse (autocommand . _ActiveAutocommand)
+  autocommand .= NoAutocommand
+
+--------------------------------------------------------------------------------
+
+-- | Send an event to the app in an environment where the game env is available
+sendEvent :: (MonadReader GameEnv m, MonadIO m) => AppEvent -> m ()
+sendEvent evt = do
+  ec <- view eventChan
+  liftIO $ writeBChan ec evt

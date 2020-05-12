@@ -268,7 +268,7 @@ data Direction where
   DownRight :: Direction
   Here      :: Direction
   deriving stock (Show, Eq, Ord, Generic)
-  deriving anyclass (CoArbitrary, Function, NFData)
+  deriving anyclass (CoArbitrary, Function, NFData, ToJSON, FromJSON, Hashable)
   deriving Arbitrary via GenericArbitrary Direction
 
 instance Opposite Direction where

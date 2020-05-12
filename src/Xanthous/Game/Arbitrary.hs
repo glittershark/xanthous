@@ -40,6 +40,7 @@ instance Arbitrary GameState where
     let _promptState = NoPrompt -- TODO
     _activePanel <- arbitrary
     _debugState <- arbitrary
+    let _autocommand = NoAutocommand
     pure $ GameState {..}
 
 
@@ -47,4 +48,3 @@ instance CoArbitrary GameLevel
 instance Function GameLevel
 instance CoArbitrary GameState
 instance Function GameState
-deriving newtype instance CoArbitrary (m (a, GameState)) => CoArbitrary (AppT m a)

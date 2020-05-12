@@ -1,7 +1,8 @@
 --------------------------------------------------------------------------------
-module Xanthous.Resource
+module Xanthous.Data.App
   ( Panel(..)
-  , Name(..)
+  , ResourceName(..)
+  , AppEvent(..)
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -20,7 +21,7 @@ data Panel
   deriving Arbitrary via GenericArbitrary Panel
 
 
-data Name
+data ResourceName
   = MapViewport -- ^ The main viewport where we display the game content
   | Character   -- ^ The character
   | MessageBox  -- ^ The box where we display messages to the user
@@ -28,4 +29,11 @@ data Name
   | Panel Panel -- ^ A panel in the game
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
-  deriving Arbitrary via GenericArbitrary Name
+  deriving Arbitrary via GenericArbitrary ResourceName
+
+data AppEvent
+  = AutoContinue -- ^ Continue whatever autocommand has been requested by the
+                 --   user
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
+  deriving Arbitrary via GenericArbitrary AppEvent

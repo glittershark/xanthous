@@ -56,6 +56,7 @@ initialStateFromSeed seed =
       _debugState = DebugState
         { _allRevealed = False
         }
+      _autocommand = NoAutocommand
   in GameState {..}
 
 

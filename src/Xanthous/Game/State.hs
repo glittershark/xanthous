@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TemplateHaskell      #-}
@@ -14,6 +15,7 @@ module Xanthous.Game.State
   , activePanel
   , promptState
   , characterEntityID
+  , autocommand
   , GamePromptState(..)
 
     -- * Game Level
@@ -31,9 +33,16 @@ module Xanthous.Game.State
   , previousMessage
   , nextTurn
 
+    -- * Autocommands
+  , Autocommand(..)
+  , AutocommandState(..)
+  , _NoAutocommand
+  , _ActiveAutocommand
+
     -- * App monad
   , AppT(..)
   , AppM
+  , runAppT
 
     -- * Entities
   , Draw(..)
@@ -73,9 +82,11 @@ import           Data.Coerce
 import           System.Random
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
-import           Control.Monad.State.Class
-import           Control.Monad.State
 import           Control.Monad.Random.Class
+import           Control.Monad.State
+import           Control.Monad.Trans.Control (MonadTransControl(..))
+import           Control.Monad.Trans.Compose
+import           Control.Monad.Morph (MFunctor(..))
 import           Brick (EventM, Widget, raw, str, emptyWidget)
 import           Data.Aeson (ToJSON(..), FromJSON(..), Value(Null))
 import qualified Data.Aeson as JSON
@@ -87,6 +98,7 @@ import qualified Graphics.Vty.Image as Vty
 import           Xanthous.Util (KnownBool(..))
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Data
+import           Xanthous.Data.App
 import           Xanthous.Data.Levels
 import           Xanthous.Data.EntityMap (EntityMap, EntityID)
 import           Xanthous.Data.EntityChar
@@ -94,7 +106,7 @@ import           Xanthous.Data.VectorBag
 import           Xanthous.Data.Entities
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
-import           Xanthous.Resource
+import           Xanthous.Game.Env
 --------------------------------------------------------------------------------
 
 data MessageHistory
@@ -182,15 +194,21 @@ instance Function (GamePromptState m) where
 --------------------------------------------------------------------------------
 
 newtype AppT m a
-  = AppT { unAppT :: StateT GameState m a }
+  = AppT { unAppT :: ReaderT GameEnv (StateT GameState m) a }
   deriving ( Functor
            , Applicative
            , Monad
            , MonadState GameState
+           , MonadReader GameEnv
+           , MonadIO
            )
-       via (StateT GameState m)
+       via (ReaderT GameEnv (StateT GameState m))
+  deriving ( MonadTrans
+           , MFunctor
+           )
+       via (ReaderT GameEnv `ComposeT` StateT GameState)
 
-type AppM = AppT (EventM Name)
+type AppM = AppT (EventM ResourceName)
 
 --------------------------------------------------------------------------------
 
@@ -414,6 +432,50 @@ data GameLevel = GameLevel
 
 --------------------------------------------------------------------------------
 
+data Autocommand
+  = AutoMove Direction
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, Hashable, ToJSON, FromJSON, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary Autocommand
+{-# ANN module ("HLint: ignore Use newtype instead of data" :: String) #-}
+
+data AutocommandState
+  = NoAutocommand
+  | ActiveAutocommand Autocommand (Async ())
+  deriving stock (Eq, Ord, Generic)
+  deriving anyclass (Hashable)
+
+instance Show AutocommandState where
+  show NoAutocommand = "NoAutocommand"
+  show (ActiveAutocommand ac _) =
+    "(ActiveAutocommand " <> show ac <> " <Async>)"
+
+instance ToJSON AutocommandState where
+  toJSON = const Null
+
+instance FromJSON AutocommandState where
+  parseJSON Null = pure NoAutocommand
+  parseJSON _ = fail "Invalid AutocommandState; expected null"
+
+instance NFData AutocommandState where
+  rnf NoAutocommand = ()
+  rnf (ActiveAutocommand ac t) = ac `deepseq` t `seq` ()
+
+instance CoArbitrary AutocommandState where
+  coarbitrary NoAutocommand = variant @Int 1
+  coarbitrary (ActiveAutocommand ac t)
+    = variant @Int 2
+    . coarbitrary ac
+    . coarbitrary (hash t)
+
+instance Function AutocommandState where
+  function = functionMap onlyNoAC (const NoAutocommand)
+    where
+      onlyNoAC NoAutocommand = ()
+      onlyNoAC _ = error "Can't handle autocommands in Function"
+
+--------------------------------------------------------------------------------
+
 
 data DebugState = DebugState
   { _allRevealed :: !Bool
@@ -439,6 +501,7 @@ data GameState = GameState
 
   , _promptState       :: !(GamePromptState AppM)
   , _debugState        :: !DebugState
+  , _autocommand       :: !AutocommandState
   }
   deriving stock (Show, Generic)
   deriving anyclass (NFData)
@@ -467,8 +530,12 @@ instance Eq GameState where
 
 --------------------------------------------------------------------------------
 
-instance MonadTrans AppT where
-  lift = AppT . lift
+runAppT :: Monad m => AppT m a -> GameEnv -> GameState -> m (a, GameState)
+runAppT appt env initialState
+  = flip runStateT initialState
+  . flip runReaderT env
+  . unAppT
+  $ appt
 
 instance (Monad m) => MonadRandom (AppT m) where
   getRandomR rng = randomGen %%= randomR rng
@@ -476,9 +543,16 @@ instance (Monad m) => MonadRandom (AppT m) where
   getRandomRs rng = uses randomGen $ randomRs rng
   getRandoms = uses randomGen randoms
 
-instance (MonadIO m) => MonadIO (AppT m) where
-  liftIO = lift . liftIO
+instance MonadTransControl AppT where
+  type StT AppT a = (a, GameState)
+  liftWith f
+    = AppT
+    . ReaderT $ \e
+    -> StateT $ \s
+    -> (,s) <$> f (\action -> runAppT action e s)
+  restoreT = AppT . ReaderT . const . StateT . const
 
 --------------------------------------------------------------------------------
 
 makeLenses ''DebugState
+makePrisms ''AutocommandState

@@ -2,6 +2,8 @@ module Main ( main ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (finally)
 import           Brick
+import qualified Brick.BChan
+import qualified Graphics.Vty as Vty
 import qualified Options.Applicative as Opt
 import           System.Random
 import           Control.Monad.Random (getRandom)
@@ -9,6 +11,7 @@ import           Control.Exception (finally)
 import           System.Exit (die)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Game as Game
+import           Xanthous.Game.Env (GameEnv(..))
 import           Xanthous.App
 import           Xanthous.Generators
                  ( GeneratorInput
@@ -92,9 +95,8 @@ optParser = Opt.info
 thanks :: IO ()
 thanks = putStr "\n\n" >> putStrLn "Thanks for playing Xanthous!"
 
-runGame :: RunParams -> IO ()
-runGame rparams = do
-  app <- makeApp NewGame
+newGame :: RunParams -> IO ()
+newGame rparams = do
   gameSeed <- maybe getRandom pure $ seed rparams
   when (isNothing $ seed rparams)
     . putStrLn
@@ -102,23 +104,33 @@ runGame rparams = do
   let initialState = Game.initialStateFromSeed gameSeed &~ do
         for_ (characterName rparams) $ \cn ->
           Game.character . Character.characterName ?= cn
-  _game' <- defaultMain app initialState `finally` do
-    putStr "\n\n"
-    putStrLn "Thanks for playing Xanthous!"
+  runGame NewGame initialState `finally` do
+    thanks
     when (isNothing $ seed rparams)
       . putStrLn
       $ "Seed: " <> tshow gameSeed
     putStr "\n\n"
-  pure ()
 
 loadGame :: FilePath -> IO ()
 loadGame saveFile = do
-  app <- makeApp LoadGame
   gameState <- maybe (die "Invalid save file!") pure
               =<< Game.loadGame . fromStrict <$> readFile @IO saveFile
-  _game' <- gameState `deepseq` defaultMain app gameState `finally` thanks
-  pure ()
+  gameState `deepseq` runGame LoadGame gameState
 
+runGame :: RunType -> Game.GameState -> IO ()
+runGame rt gameState = do
+  eventChan <- Brick.BChan.newBChan 10
+  let gameEnv = GameEnv eventChan
+  app <- makeApp gameEnv rt
+  let buildVty = Vty.mkVty Vty.defaultConfig
+  initialVty <- buildVty
+  _game' <- customMain
+    initialVty
+    buildVty
+    (Just eventChan)
+    app
+    gameState
+  pure ()
 
 runGenerate :: GeneratorInput -> Dimensions -> Maybe Int -> IO ()
 runGenerate input dims mSeed = do
@@ -139,7 +151,7 @@ runGenerate input dims mSeed = do
   putStrLn $ showCells res
 
 runCommand :: Command -> IO ()
-runCommand (Run runParams) = runGame runParams
+runCommand (Run runParams) = newGame runParams
 runCommand (Load saveFile) = loadGame saveFile
 runCommand (Generate input dims mSeed) = runGenerate input dims mSeed
 

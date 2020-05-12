@@ -19,6 +19,7 @@ dependencies:
 
 - aeson
 - array
+- async
 - QuickCheck
 - quickcheck-text
 - quickcheck-instances
@@ -44,8 +45,11 @@ dependencies:
 - hgeometry-combinatorial
 - JuicyPixels
 - lens
+- lifted-async
 - linear
 - megaparsec
+- mmorph
+- monad-control
 - MonadRandom
 - mtl
 - optparse-applicative

@@ -10,6 +10,8 @@ import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit
 --------------------------------------------------------------------------------
 import           Xanthous.Data
+import           Xanthous.Data.App (ResourceName, Panel(..))
+import qualified Xanthous.Data.App as Resource
 import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game.State
@@ -29,12 +31,10 @@ import           Xanthous.Game
                  , debugState, allRevealed
                  )
 import           Xanthous.Game.Prompt
-import           Xanthous.Resource (Name, Panel(..))
-import qualified Xanthous.Resource as Resource
 import           Xanthous.Orphans ()
 --------------------------------------------------------------------------------
 
-cursorPosition :: GameState -> Widget Name -> Widget Name
+cursorPosition :: GameState -> Widget ResourceName -> Widget ResourceName
 cursorPosition game
   | WaitingPrompt _ (Prompt _ SPointOnMap (PointOnMapPromptState pos) _ _)
     <- game ^. promptState
@@ -42,10 +42,10 @@ cursorPosition game
   | otherwise
   = showCursor Resource.Character (game ^. characterPosition . loc)
 
-drawMessages :: MessageHistory -> Widget Name
+drawMessages :: MessageHistory -> Widget ResourceName
 drawMessages = txtWrap . (<> " ") . unwords . reverse . oextract
 
-drawPromptState :: GamePromptState m -> Widget Name
+drawPromptState :: GamePromptState m -> Widget ResourceName
 drawPromptState NoPrompt = emptyWidget
 drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
   case (pt, ps, pri) of
@@ -67,7 +67,7 @@ drawEntities
   -> (Position -> Bool)
     -- ^ Has a given position *ever* been seen by the character?
   -> EntityMap SomeEntity -- ^ all entities
-  -> Widget Name
+  -> Widget ResourceName
 drawEntities isVisible isRevealed allEnts
   = vBox rows
   where
@@ -90,7 +90,7 @@ drawEntities isVisible isRevealed allEnts
            $ maximumBy (compare `on` drawPriority)
            <$> fromNullable ents
 
-drawMap :: GameState -> Widget Name
+drawMap :: GameState -> Widget ResourceName
 drawMap game
   = viewport Resource.MapViewport Both
   . cursorPosition game
@@ -106,7 +106,7 @@ drawMap game
 bullet :: Char
 bullet = '•'
 
-drawInventoryPanel :: GameState -> Widget Name
+drawInventoryPanel :: GameState -> Widget ResourceName
 drawInventoryPanel game
   =   drawWielded  (game ^. character . inventory . wielded)
   <=> drawBackpack (game ^. character . inventory . backpack)
@@ -122,7 +122,7 @@ drawInventoryPanel game
               )
       <=> txt " "
 
-    drawBackpack :: Vector Item -> Widget Name
+    drawBackpack :: Vector Item -> Widget ResourceName
     drawBackpack Empty = txtWrap "Your backpack is empty right now."
     drawBackpack backpackItems
       = txtWrap ( "You are currently carrying the following items in your "
@@ -134,7 +134,7 @@ drawInventoryPanel game
               backpackItems)
 
 
-drawPanel :: GameState -> Panel -> Widget Name
+drawPanel :: GameState -> Panel -> Widget ResourceName
 drawPanel game panel
   = border
   . hLimit 35
@@ -143,7 +143,7 @@ drawPanel game panel
       InventoryPanel -> drawInventoryPanel
   $ game
 
-drawCharacterInfo :: Character -> Widget Name
+drawCharacterInfo :: Character -> Widget ResourceName
 drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
   where
     charName | Just n <- ch ^. characterName
@@ -154,7 +154,7 @@ drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
         = txt "Hitpoints: "
       <+> txt (tshow $ let Hitpoints hp = characterHitpoints ch in hp)
 
-drawGame :: GameState -> [Widget Name]
+drawGame :: GameState -> [Widget ResourceName]
 drawGame game
   = pure
   . withBorderStyle unicode

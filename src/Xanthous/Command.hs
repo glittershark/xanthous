@@ -4,6 +4,7 @@ module Xanthous.Command where
 import Xanthous.Prelude hiding (Left, Right, Down)
 --------------------------------------------------------------------------------
 import Graphics.Vty.Input (Key(..), Modifier(..))
+import qualified Data.Char as Char
 --------------------------------------------------------------------------------
 import Xanthous.Data (Direction(..))
 --------------------------------------------------------------------------------
@@ -11,6 +12,7 @@ import Xanthous.Data (Direction(..))
 data Command
   = Quit
   | Move Direction
+  | StartAutoMove Direction
   | PreviousMessage
   | PickUp
   | Drop
@@ -33,6 +35,10 @@ commandFromKey :: Key -> [Modifier] -> Maybe Command
 commandFromKey (KChar 'q') [] = Just Quit
 commandFromKey (KChar '.') [] = Just Wait
 commandFromKey (KChar (directionFromChar -> Just dir)) [] = Just $ Move dir
+commandFromKey (KChar c) []
+  | Char.isUpper c
+  , Just dir <- directionFromChar $ Char.toLower c
+  = Just $ StartAutoMove dir
 commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
 commandFromKey (KChar ',') [] = Just PickUp
 commandFromKey (KChar 'd') [] = Just Drop

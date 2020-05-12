@@ -30,8 +30,8 @@ import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
 import           Xanthous.Util (smallestNotIn)
 import           Xanthous.Data (Direction, Position)
-import           Xanthous.Resource (Name)
-import qualified Xanthous.Resource as Resource
+import           Xanthous.Data.App (ResourceName)
+import qualified Xanthous.Data.App as Resource
 --------------------------------------------------------------------------------
 
 data PromptType where
@@ -120,12 +120,13 @@ instance Arbitrary (PromptResult 'Continue) where
 --------------------------------------------------------------------------------
 
 data PromptState pt where
-  StringPromptState     :: Editor Text Name -> PromptState 'StringPrompt
-  DirectionPromptState  ::                    PromptState 'DirectionPrompt
-  ContinuePromptState   ::                    PromptState 'Continue
-  ConfirmPromptState    ::                    PromptState 'Confirm
-  MenuPromptState       :: forall a.               PromptState ('Menu a)
-  PointOnMapPromptState :: Position         -> PromptState 'PointOnMap
+  StringPromptState
+    :: Editor Text ResourceName     -> PromptState 'StringPrompt
+  DirectionPromptState  ::            PromptState 'DirectionPrompt
+  ContinuePromptState   ::            PromptState 'Continue
+  ConfirmPromptState    ::            PromptState 'Confirm
+  MenuPromptState       :: forall a.       PromptState ('Menu a)
+  PointOnMapPromptState :: Position -> PromptState 'PointOnMap
 
 instance NFData (PromptState pt) where
   rnf sps@(StringPromptState ed) = sps `deepseq` ed `deepseq` ()
