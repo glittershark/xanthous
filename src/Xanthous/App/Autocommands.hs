@@ -4,16 +4,24 @@ module Xanthous.App.Autocommands
   , autoStep
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
+import           Xanthous.Prelude
 --------------------------------------------------------------------------------
-import Control.Concurrent (threadDelay)
+import           Control.Concurrent (threadDelay)
+import qualified Data.Aeson as A
+import           Data.Aeson (object)
+import           Data.List.NonEmpty (nonEmpty)
+import qualified Data.List.NonEmpty as NE
+import           Control.Monad.State (gets)
 --------------------------------------------------------------------------------
-import Xanthous.App.Common
-import Xanthous.App.Time
-import Xanthous.Data
-import Xanthous.Data.App
-import Xanthous.Entities.Character (speed)
-import Xanthous.Game.State
+import           Xanthous.App.Common
+import           Xanthous.App.Time
+import           Xanthous.Data
+import           Xanthous.Data.App
+import           Xanthous.Entities.Character (speed)
+import           Xanthous.Entities.Creature (Creature, creatureType)
+import           Xanthous.Entities.RawTypes (hostile)
+import           Xanthous.Game.State
+import           Xanthous.Game.Lenses (characterVisibleEntities)
 --------------------------------------------------------------------------------
 
 autoStep :: Autocommand -> AppM ()
@@ -24,7 +32,20 @@ autoStep (AutoMove dir) = do
       characterPosition .= newPos
       stepGameBy =<< uses (character . speed) (|*| 1)
       describeEntitiesAt newPos
+      maybeVisibleEnemies <- nonEmpty <$> enemiesInSight
+      for_ maybeVisibleEnemies $ \visibleEnemies -> do
+        say ["autoMove", "enemyInSight"]
+          $ object [ "firstEntity" A..= NE.head visibleEnemies ]
+        cancelAutocommand
     Just _ -> cancelAutocommand
+  where
+    enemiesInSight :: AppM [Creature]
+    enemiesInSight = do
+      ents <- gets characterVisibleEntities
+      pure $ ents
+         ^.. folded
+           . _SomeEntity @Creature
+           . filtered (view $ creatureType . hostile)
 
 --------------------------------------------------------------------------------
 

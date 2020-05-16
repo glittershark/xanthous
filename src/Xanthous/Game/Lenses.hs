@@ -8,6 +8,7 @@ module Xanthous.Game.Lenses
   , characterPosition
   , updateCharacterVision
   , characterVisiblePositions
+  , characterVisibleEntities
   , getInitialState
   , initialStateFromSeed
   , entitiesAtCharacter
@@ -28,7 +29,8 @@ import           Xanthous.Game.State
 import           Xanthous.Data
 import           Xanthous.Data.Levels
 import qualified Xanthous.Data.EntityMap as EntityMap
-import           Xanthous.Data.EntityMap.Graphics (visiblePositions)
+import           Xanthous.Data.EntityMap.Graphics
+                 (visiblePositions, visibleEntities)
 import           Xanthous.Data.VectorBag
 import           Xanthous.Entities.Character (Character, mkCharacter)
 import           {-# SOURCE #-} Xanthous.Entities.Entities ()
@@ -100,6 +102,11 @@ characterVisiblePositions :: GameState -> Set Position
 characterVisiblePositions game =
   let charPos = game ^. characterPosition
   in visiblePositions charPos visionRadius $ game ^. entities
+
+characterVisibleEntities :: GameState -> EntityMap.EntityMap SomeEntity
+characterVisibleEntities game =
+  let charPos = game ^. characterPosition
+  in visibleEntities charPos visionRadius $ game ^. entities
 
 entitiesCollision
   :: ( Functor f

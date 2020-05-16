@@ -9,6 +9,7 @@ module Xanthous.Entities.RawTypes
 
     -- * Creatures
   , CreatureType(..)
+  , hostile
 
     -- * Items
   , ItemType(..)
@@ -62,6 +63,9 @@ data CreatureType = CreatureType
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        CreatureType
 makeFieldsNoPrefix ''CreatureType
+
+hostile :: Lens' CreatureType Bool
+hostile = friendly . involuted not
 
 --------------------------------------------------------------------------------
 
@@ -127,4 +131,3 @@ data EntityRaw
        via WithOptions '[ SumEnc ObjWithSingleField ]
                        EntityRaw
 makePrisms ''EntityRaw
-
