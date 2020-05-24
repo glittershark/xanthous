@@ -11,6 +11,7 @@ import qualified Xanthous.Entities.RawsSpec
 import qualified Xanthous.GameSpec
 import qualified Xanthous.Generators.UtilSpec
 import qualified Xanthous.MessageSpec
+import qualified Xanthous.Messages.TemplateSpec
 import qualified Xanthous.OrphansSpec
 import qualified Xanthous.Util.GraphicsSpec
 import qualified Xanthous.Util.GraphSpec
@@ -32,6 +33,7 @@ test = testGroup "Xanthous"
   , Xanthous.GameSpec.test
   , Xanthous.Generators.UtilSpec.test
   , Xanthous.MessageSpec.test
+  , Xanthous.Messages.TemplateSpec.test
   , Xanthous.OrphansSpec.test
   , Xanthous.DataSpec.test
   , Xanthous.UtilSpec.test

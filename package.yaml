@@ -53,6 +53,7 @@ dependencies:
 - MonadRandom
 - mtl
 - optparse-applicative
+- parser-combinators
 - pointed
 - random
 - random-fu

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 61744d8e26bf309ee73e128a90af8badee98aedace39a756b6033f51711d3e2e
+-- hash: 4c80448c82dc61f97ea9809ad646f7ad66b0f57ca297e4d44ee596c7a1ef42fe
 
 name:           xanthous
 version:        0.1.0.0
@@ -67,6 +67,7 @@ library
       Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
       Xanthous.Messages
+      Xanthous.Messages.Template
       Xanthous.Monad
       Xanthous.Orphans
       Xanthous.Prelude
@@ -122,6 +123,7 @@ library
     , monad-control
     , mtl
     , optparse-applicative
+    , parser-combinators
     , pointed
     , quickcheck-instances
     , quickcheck-text
@@ -184,6 +186,7 @@ executable xanthous
       Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
       Xanthous.Messages
+      Xanthous.Messages.Template
       Xanthous.Monad
       Xanthous.Orphans
       Xanthous.Prelude
@@ -238,6 +241,7 @@ executable xanthous
     , monad-control
     , mtl
     , optparse-applicative
+    , parser-combinators
     , pointed
     , quickcheck-instances
     , quickcheck-text
@@ -274,6 +278,7 @@ test-suite test
       Xanthous.Entities.RawsSpec
       Xanthous.GameSpec
       Xanthous.Generators.UtilSpec
+      Xanthous.Messages.TemplateSpec
       Xanthous.MessageSpec
       Xanthous.OrphansSpec
       Xanthous.Util.GraphicsSpec
@@ -323,6 +328,7 @@ test-suite test
     , monad-control
     , mtl
     , optparse-applicative
+    , parser-combinators
     , pointed
     , quickcheck-instances
     , quickcheck-text
