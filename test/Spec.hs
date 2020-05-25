@@ -6,6 +6,7 @@ import qualified Xanthous.Data.EntityMapSpec
 import qualified Xanthous.Data.EntityMap.GraphicsSpec
 import qualified Xanthous.Data.LevelsSpec
 import qualified Xanthous.Data.EntitiesSpec
+import qualified Xanthous.Data.NestedMapSpec
 import qualified Xanthous.DataSpec
 import qualified Xanthous.Entities.RawsSpec
 import qualified Xanthous.GameSpec
@@ -27,8 +28,9 @@ test = testGroup "Xanthous"
   [ Xanthous.Data.EntityCharSpec.test
   , Xanthous.Data.EntityMapSpec.test
   , Xanthous.Data.EntityMap.GraphicsSpec.test
-  , Xanthous.Data.LevelsSpec.test
   , Xanthous.Data.EntitiesSpec.test
+  , Xanthous.Data.LevelsSpec.test
+  , Xanthous.Data.NestedMapSpec.test
   , Xanthous.Entities.RawsSpec.test
   , Xanthous.GameSpec.test
   , Xanthous.Generators.UtilSpec.test

@@ -24,6 +24,7 @@ dependencies:
 - quickcheck-text
 - quickcheck-instances
 - brick
+- bifunctors
 - checkers
 - classy-prelude
 - comonad

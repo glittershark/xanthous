@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4c80448c82dc61f97ea9809ad646f7ad66b0f57ca297e4d44ee596c7a1ef42fe
+-- hash: 0486cac7957fae1f9badffdd082f0c5eb5910eb8c066569123b0f57bc6fa0d8b
 
 name:           xanthous
 version:        0.1.0.0
@@ -44,6 +44,7 @@ library
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
       Xanthous.Data.Levels
+      Xanthous.Data.NestedMap
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
@@ -95,6 +96,7 @@ library
     , array
     , async
     , base
+    , bifunctors
     , brick
     , checkers
     , classy-prelude
@@ -163,6 +165,7 @@ executable xanthous
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
       Xanthous.Data.Levels
+      Xanthous.Data.NestedMap
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
       Xanthous.Entities.Creature
@@ -213,6 +216,7 @@ executable xanthous
     , array
     , async
     , base
+    , bifunctors
     , brick
     , checkers
     , classy-prelude
@@ -274,6 +278,7 @@ test-suite test
       Xanthous.Data.EntityMap.GraphicsSpec
       Xanthous.Data.EntityMapSpec
       Xanthous.Data.LevelsSpec
+      Xanthous.Data.NestedMapSpec
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
       Xanthous.GameSpec
@@ -299,6 +304,7 @@ test-suite test
     , array
     , async
     , base
+    , bifunctors
     , brick
     , checkers
     , classy-prelude
