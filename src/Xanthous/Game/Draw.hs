@@ -98,9 +98,6 @@ drawMap game
     (`member` characterVisiblePositions game)
     (\pos -> (game ^. debugState . allRevealed)
             || (pos `member` (game ^. revealedPositions)))
-    -- FIXME: this will break down as soon as creatures can walk around on their
-    -- own, since we don't want to render things walking around when the
-    -- character can't see them
     (game ^. entities)
 
 bullet :: Char
