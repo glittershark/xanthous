@@ -1,6 +1,8 @@
 { nixpkgs ? import ./nixpkgs.nix {}
+, pkgs ? nixpkgs.pkgs
 , compiler ? "ghc865"
 , failOnWarnings ? false
+, ...
 }:
 let
   inherit (nixpkgs) pkgs lib;
