@@ -20,8 +20,7 @@ in self: super: with pkgs.haskell.lib; rec {
       sha256 = "12k41wd9fd1y3jd5djwcpwg2s1cva87wh14i0m1yn49zax9wl740";
     } {};
 
-  vinyl = pkgs.haskell.lib.overrideSrc
-    (pkgs.haskell.lib.markUnbroken super.vinyl)
+  vinyl = overrideSrc (markUnbroken super.vinyl)
     rec {
       src = nixpkgs.fetchzip {
         url = "mirror://hackage/vinyl-${version}/vinyl-${version}.tar.gz";
@@ -32,4 +31,20 @@ in self: super: with pkgs.haskell.lib; rec {
 
   comonad-extras = appendPatch (markUnbroken super.comonad-extras)
     [ ./build/update-comonad-extras.patch ];
+
+  ghc-prof-flamegraph = overrideCabal super.ghc-prof-flamegraph (oldAttrs: rec {
+    version = "0.2.0.0";
+
+    src = nixpkgs.fetchFromGitHub {
+      owner = "fpco";
+      repo = "ghc-prof-flamegraph";
+      rev = "8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14";
+      sha256 = "1i05pw495y5n24s1313iip8njn1lkf22a89izvi19iw7qkx062hr";
+      fetchSubmodules = true;
+    };
+
+    libraryHaskellDepends = oldAttrs.libraryHaskellDepends ++ [
+      self.optparse-applicative
+    ];
+  });
 }

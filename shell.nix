@@ -27,4 +27,7 @@ let
 
   inherit (pkgs.haskell.lib) addBuildTools;
 in
-(addBuildTools drv (with haskellPackages; [ cabal-install ])).env
+(addBuildTools drv (with haskellPackages; [
+  cabal-install
+  ghc-prof-flamegraph
+])).env
