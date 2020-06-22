@@ -30,4 +30,5 @@ in
 (addBuildTools drv (with haskellPackages; [
   cabal-install
   ghc-prof-flamegraph
+  hp2pretty
 ])).env
