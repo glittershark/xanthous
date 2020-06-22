@@ -163,9 +163,11 @@ floodFill = go mempty
                    (if y == maxBound then y else succ y)]
         in foldl' (\r idx' ->
                      if arr ! idx'
-                     then r <> go (r & contains idx' .~ True) arr idx'
+                     then r <> (let r' = r & contains idx' .~ True
+                               in r' `seq` go r' arr idx')
                      else r)
            (res & contains idx .~ True) neighbors
+{-# SPECIALIZE floodFill :: UArray (Word, Word) Bool -> (Word, Word) -> Set (Word, Word) #-}
 
 -- | Gives a list of all the disconnected regions in a cell array, represented
 -- each as lists of points
@@ -188,6 +190,7 @@ regions arr
   where
     findFirstPoint :: a (i, j) Bool -> Maybe (i, j)
     findFirstPoint = fmap fst . headMay . filter snd . assocs
+{-# SPECIALIZE regions :: UArray (Word, Word) Bool -> [Set (Word, Word)] #-}
 
 fillAll :: (IArray a Bool, Ix i, Foldable f) => f i -> a i Bool -> a i Bool
 fillAll ixes a = accum (const fst) a $ (, (False, ())) <$> toList ixes
