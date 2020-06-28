@@ -13,6 +13,7 @@ import           Xanthous.Entities.Character
 import           Xanthous.Entities.Item
 import           Xanthous.Entities.Creature
 import           Xanthous.Entities.Environment
+import           Xanthous.Entities.Marker
 import           Xanthous.Game.State
 import           Xanthous.Util.QuickCheck
 import           Data.Aeson.Generic.DerivingVia
@@ -27,6 +28,7 @@ instance Arbitrary SomeEntity where
     , SomeEntity <$> arbitrary @Door
     , SomeEntity <$> arbitrary @GroundMessage
     , SomeEntity <$> arbitrary @Staircase
+    , SomeEntity <$> arbitrary @Marker
     ]
 
 instance FromJSON SomeEntity where
@@ -40,6 +42,7 @@ instance FromJSON SomeEntity where
       "Door" -> SomeEntity @Door <$> obj .: "data"
       "GroundMessage" -> SomeEntity @GroundMessage <$> obj .: "data"
       "Staircase" -> SomeEntity @Staircase <$> obj .: "data"
+      "Marker" -> SomeEntity @Marker <$> obj .: "data"
       _ -> fail . unpack $ "Invalid entity type \"" <> entityType <> "\""
 
 deriving via WithOptions '[ FieldLabelModifier '[Drop 1] ] GameLevel
