@@ -1,8 +1,6 @@
-{-# LANGUAGE PartialTypeSignatures #-}
 module Xanthous.Generators.Village
-  -- ( fromCave
-  -- )
-  where
+  ( fromCave
+  ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (any, failing, toList)
 --------------------------------------------------------------------------------
