@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 88019942f93977e08b513ce6991401694c431b7b2b7b1b5d2afccb3f0afb26ed
+-- hash: 5f419c8c149f045c818a2fb392b1233a0958e71e92d7a837deabc412e2b5adda
 
 name:           xanthous
 version:        0.1.0.0
@@ -68,6 +68,7 @@ library
       Xanthous.Generators.Dungeon
       Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
+      Xanthous.Generators.Village
       Xanthous.Messages
       Xanthous.Messages.Template
       Xanthous.Monad
@@ -126,6 +127,7 @@ library
     , monad-control
     , mtl
     , optparse-applicative
+    , parallel
     , parser-combinators
     , pointed
     , quickcheck-instances
@@ -142,6 +144,7 @@ library
     , text
     , text-zipper
     , tomland
+    , transformers
     , vector
     , vty
     , witherable
@@ -191,6 +194,7 @@ executable xanthous
       Xanthous.Generators.Dungeon
       Xanthous.Generators.LevelContents
       Xanthous.Generators.Util
+      Xanthous.Generators.Village
       Xanthous.Messages
       Xanthous.Messages.Template
       Xanthous.Monad
@@ -248,6 +252,7 @@ executable xanthous
     , monad-control
     , mtl
     , optparse-applicative
+    , parallel
     , parser-combinators
     , pointed
     , quickcheck-instances
@@ -264,6 +269,7 @@ executable xanthous
     , text
     , text-zipper
     , tomland
+    , transformers
     , vector
     , vty
     , witherable
@@ -290,6 +296,7 @@ test-suite test
       Xanthous.Messages.TemplateSpec
       Xanthous.MessageSpec
       Xanthous.OrphansSpec
+      Xanthous.RandomSpec
       Xanthous.Util.GraphicsSpec
       Xanthous.Util.GraphSpec
       Xanthous.Util.InflectionSpec
@@ -338,6 +345,7 @@ test-suite test
     , monad-control
     , mtl
     , optparse-applicative
+    , parallel
     , parser-combinators
     , pointed
     , quickcheck-instances
@@ -357,6 +365,84 @@ test-suite test
     , text
     , text-zipper
     , tomland
+    , transformers
+    , vector
+    , vty
+    , witherable
+    , xanthous
+    , yaml
+    , zlib
+  default-language: Haskell2010
+
+benchmark benchmark
+  type: exitcode-stdio-1.0
+  main-is: Bench.hs
+  other-modules:
+      Bench.Prelude
+      Xanthous.Generators.UtilBench
+      Xanthous.RandomBench
+      Paths_xanthous
+  hs-source-dirs:
+      bench
+  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      JuicyPixels
+    , MonadRandom
+    , QuickCheck
+    , Rasterific
+    , aeson
+    , array
+    , async
+    , base
+    , bifunctors
+    , brick
+    , checkers
+    , classy-prelude
+    , comonad
+    , comonad-extras
+    , constraints
+    , containers
+    , criterion
+    , data-default
+    , deepseq
+    , directory
+    , fgl
+    , fgl-arbitrary
+    , file-embed
+    , filepath
+    , generic-arbitrary
+    , generic-lens
+    , generic-monoid
+    , groups
+    , hgeometry
+    , hgeometry-combinatorial
+    , lens
+    , lifted-async
+    , linear
+    , megaparsec
+    , mmorph
+    , monad-control
+    , mtl
+    , optparse-applicative
+    , parallel
+    , parser-combinators
+    , pointed
+    , quickcheck-instances
+    , quickcheck-text
+    , random
+    , random-extras
+    , random-fu
+    , random-source
+    , raw-strings-qq
+    , reflection
+    , semigroupoids
+    , stache
+    , streams
+    , text
+    , text-zipper
+    , tomland
+    , transformers
     , vector
     , vty
     , witherable

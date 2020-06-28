@@ -70,6 +70,7 @@ parseParams = Params
       <> Opt.help "Number of generations to run the automata for"
       <> Opt.metavar "STEPS"
       )
+  <**> Opt.helper
   where
     parseChance = readWithGuard
       (between 0 1)

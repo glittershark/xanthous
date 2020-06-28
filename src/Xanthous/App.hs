@@ -15,7 +15,6 @@ import           Control.Monad.State (get, gets)
 import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
-import           Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Vector as V
 import           System.Exit
 import           System.Directory (doesFileExist)

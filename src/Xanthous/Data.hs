@@ -79,8 +79,17 @@ module Xanthous.Data
   , edges
   , neighborDirections
   , neighborPositions
+  , neighborCells
   , arrayNeighbors
   , rotations
+  , HasTopLeft(..)
+  , HasTop(..)
+  , HasTopRight(..)
+  , HasLeft(..)
+  , HasRight(..)
+  , HasBottomLeft(..)
+  , HasBottom(..)
+  , HasBottomRight(..)
 
     -- *
   , Hitpoints(..)
@@ -438,6 +447,9 @@ neighborDirections = Neighbors
 
 neighborPositions :: Num a => Position' a -> Neighbors (Position' a)
 neighborPositions pos = (`move` pos) <$> neighborDirections
+
+neighborCells :: Num a => (a, a) -> Neighbors (a, a)
+neighborCells = map (view _Position) . neighborPositions . review _Position
 
 arrayNeighbors
   :: (IArray a e, Ix i, Num i)

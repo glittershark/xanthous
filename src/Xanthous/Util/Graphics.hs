@@ -128,6 +128,8 @@ line pa@(xa, ya) pb@(xb, yb)
         (newY, newError) = if (2 * tempError) >= δx
                            then (yTemp + ystep, tempError - δx)
                            else (yTemp, tempError)
+{-# SPECIALIZE line :: (Int, Int) -> (Int, Int) -> [(Int, Int)] #-}
+{-# SPECIALIZE line :: (Word, Word) -> (Word, Word) -> [(Word, Word)] #-}
 
 straightLine :: (Num i, Ord i) => (i, i) -> (i, i) -> [(i, i)]
 straightLine pa@(xa, _) pb@(_, yb) = line pa midpoint ++ line midpoint pb

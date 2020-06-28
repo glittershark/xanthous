@@ -6,7 +6,7 @@ module Xanthous.Generators
   ( generate
   , Generator(..)
   , SGenerator(..)
-  , GeneratorInput
+  , GeneratorInput(..)
   , generateFromInput
   , parseGeneratorInput
   , showCells
@@ -17,6 +17,7 @@ module Xanthous.Generators
   , levelDoors
   , levelCharacterPosition
   , levelTutorialMessage
+  , levelExtra
   , generateLevel
   , levelToEntityMap
   ) where
@@ -31,6 +32,7 @@ import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
 import qualified Xanthous.Generators.Dungeon as Dungeon
 import           Xanthous.Generators.Util
 import           Xanthous.Generators.LevelContents
+import           Xanthous.Generators.Village as Village
 import           Xanthous.Data (Dimensions, Position'(Position), Position)
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
@@ -118,6 +120,7 @@ data Level = Level
   , _levelCreatures         :: !(EntityMap Creature)
   , _levelTutorialMessage   :: !(EntityMap GroundMessage)
   , _levelStaircases        :: !(EntityMap Staircase)
+  , _levelExtra             :: !(EntityMap SomeEntity) -- ^ TODO this is a bit of a hack...
   , _levelCharacterPosition :: !Position
   }
   deriving stock (Generic)
@@ -134,6 +137,8 @@ generateLevel gen ps dims = do
   rand <- mkStdGen <$> getRandom
   let cells = generate gen ps dims rand
       _levelWalls = cellsToWalls cells
+  village <- generateVillage cells gen
+  let _levelExtra = village
   _levelItems <- randomItems cells
   _levelCreatures <- randomCreatures cells
   _levelDoors <- randomDoors cells
@@ -152,3 +157,12 @@ levelToEntityMap level
   <> (SomeEntity <$> level ^. levelCreatures)
   <> (SomeEntity <$> level ^. levelTutorialMessage)
   <> (SomeEntity <$> level ^. levelStaircases)
+  <> (level ^. levelExtra)
+
+generateVillage
+  :: MonadRandom m
+  => Cells -- ^ Wall positions
+  -> SGenerator gen
+  -> m (EntityMap SomeEntity)
+generateVillage wallPositions SCaveAutomata = Village.fromCave wallPositions
+generateVillage _ _ = pure mempty

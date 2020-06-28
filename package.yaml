@@ -54,6 +54,7 @@ dependencies:
 - MonadRandom
 - mtl
 - optparse-applicative
+- parallel
 - parser-combinators
 - pointed
 - random
@@ -67,6 +68,7 @@ dependencies:
 - stache
 - semigroupoids
 - tomland
+- transformers
 - text
 - text-zipper
 - vector

@@ -10,6 +10,7 @@ module Xanthous.Random
   , weightedBy
   , subRand
   , chance
+  , chooseSubset
   ) where
 --------------------------------------------------------------------------------
 import Xanthous.Prelude
@@ -17,6 +18,7 @@ import Xanthous.Prelude
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Control.Monad.Random.Class (MonadRandom(getRandomR, getRandom))
 import           Control.Monad.Random (Rand, evalRand, mkStdGen, StdGen)
+import           Data.Functor.Compose
 import           Data.Random.Shuffle.Weighted
 import           Data.Random.Distribution
 import           Data.Random.Distribution.Uniform
@@ -66,10 +68,16 @@ instance Choose (a, a) where
   choose (x, y) = choose (x :| [y])
 
 newtype Weighted w t a = Weighted (t (w, a))
+  deriving (Functor, Foldable) via (t `Compose` (,) w)
+
+instance Traversable t => Traversable (Weighted w t) where
+  traverse f (Weighted twa) = Weighted <$> (traverse . traverse) f twa
 
 evenlyWeighted :: [a] -> Weighted Int [] a
 evenlyWeighted = Weighted . itoList
 
+-- | Weight the elements of some functor by a function. Larger values of 'w' per
+-- its 'Ord' instance will be more likely to be generated
 weightedBy :: Functor t => (a -> w) -> t a -> Weighted w t a
 weightedBy weighting xs = Weighted $ (weighting &&& id) <$> xs
 
@@ -95,6 +103,14 @@ chance
   => w
   -> m Bool
 chance n = choose $ weightedBy (bool 1 (n * 2)) bools
+
+-- | Choose a random subset of *about* @w@ of the elements of the given
+-- 'Witherable' structure
+chooseSubset :: ( Num w, Ord w, Distribution Uniform w, Excludable w
+               , Witherable t
+               , MonadRandom m
+               ) => w -> t a -> m (t a)
+chooseSubset = filterA . const . chance
 
 --------------------------------------------------------------------------------
 

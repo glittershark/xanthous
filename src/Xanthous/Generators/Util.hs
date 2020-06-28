@@ -75,9 +75,6 @@ numAliveNeighborsM cells (x, y) = do
             ny = fromIntegral $ fromIntegral y + j
         in readArray cells (nx, ny)
 
-    neighborPositions :: [(Int, Int)]
-    neighborPositions = [(i, j) | i <- [-1..1], j <- [-1..1], (i, j) /= (0, 0)]
-
 numAliveNeighbors
   :: forall a i j
   . (IArray a Bool, Ix (i, j), Integral i, Integral j)
@@ -103,8 +100,8 @@ numAliveNeighbors cells (x, y) =
             ny = fromIntegral $ fromIntegral y + j
         in cells ! (nx, ny)
 
-    neighborPositions :: [(Int, Int)]
-    neighborPositions = [(i, j) | i <- [-1..1], j <- [-1..1], (i, j) /= (0, 0)]
+neighborPositions :: [(Int, Int)]
+neighborPositions = [(i, j) | i <- [-1..1], j <- [-1..1], (i, j) /= (0, 0)]
 
 fillOuterEdgesM :: (MArray a Bool m, Ix i, Ix j) => a (i, j) Bool -> m ()
 fillOuterEdgesM arr = do
@@ -137,7 +134,6 @@ floodFill :: forall a i j.
             , Enum i , Enum j
             , Bounded i , Bounded j
             , Eq i , Eq j
-            , Show i, Show j
             )
           => a (i, j) Bool -- ^ array
           -> (i, j)        -- ^ position
@@ -145,7 +141,6 @@ floodFill :: forall a i j.
 floodFill = go mempty
   where
     go :: Set (i, j) -> a (i, j) Bool -> (i, j) -> Set (i, j)
-    -- TODO pass result in rather than passing seen in, return result
     go res arr@(bounds -> arrBounds) idx@(x, y)
       | not (inRange arrBounds idx) =  res
       | not (arr ! idx) =  res
@@ -177,7 +172,6 @@ regions :: forall a i j.
           , Enum i , Enum j
           , Bounded i , Bounded j
           , Eq i , Eq j
-          , Show i, Show j
           )
         => a (i, j) Bool
         -> [Set (i, j)]
