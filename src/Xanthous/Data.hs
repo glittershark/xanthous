@@ -387,8 +387,11 @@ data Neighbors a = Neighbors
   , _bottomRight :: a
   }
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
-  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving anyclass (NFData, CoArbitrary, Function, MonoFoldable)
   deriving Arbitrary via GenericArbitrary (Neighbors a)
+
+type instance Element (Neighbors a) = a
+
 makeFieldsNoPrefix ''Neighbors
 
 instance Applicative Neighbors where

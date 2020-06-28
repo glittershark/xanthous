@@ -71,6 +71,7 @@ dependencies:
 - text-zipper
 - vector
 - vty
+- witherable
 - yaml
 - zlib
 

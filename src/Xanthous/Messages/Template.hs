@@ -28,7 +28,7 @@ module Xanthous.Messages.Template
 where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding
-                 (many, concat, try, elements, some, parts)
+                 (many, concat, try, elements, some, parts, Filter)
 --------------------------------------------------------------------------------
 import           Test.QuickCheck hiding (label)
 import           Test.QuickCheck.Instances.Text ()
@@ -113,7 +113,7 @@ instance Eq Template where
 
 instance Arbitrary Template where
   arbitrary = sized . fix $ \gen n ->
-    let leaves = [ Literal . filter (`notElem` ['\\', '{']) <$> arbitrary
+    let leaves = [ Literal . pack . filter (`notElem` ['\\', '{']) <$> arbitrary
                  , Subst <$> arbitrary
                  ]
         subtree = gen $ n `div` 2

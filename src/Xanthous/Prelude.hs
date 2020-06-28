@@ -7,7 +7,9 @@ module Xanthous.Prelude
   , module Control.Lens
   , module Data.Void
   , module Control.Comonad
+  , module Data.Witherable
 
+  , (&!)
 
     -- * Classy-Prelude addons
   , ninsertSet
@@ -16,12 +18,15 @@ module Xanthous.Prelude
   ) where
 --------------------------------------------------------------------------------
 import ClassyPrelude hiding
-  (return, (<|), unsnoc, uncons, cons, snoc, index, (<.>), Index, say)
+  ( return, (<|), unsnoc, uncons, cons, snoc, index, (<.>), Index, say
+  , catMaybes, filter, mapMaybe, hashNub, ordNub
+  )
 import Data.Kind
 import GHC.TypeLits hiding (Text)
 import Control.Lens hiding (levels, Level)
 import Data.Void
 import Control.Comonad
+import Data.Witherable
 --------------------------------------------------------------------------------
 
 ninsertSet
@@ -34,3 +39,7 @@ ndeleteSet x = deleteSet x . toNullable
 
 toVector :: (MonoFoldable (f a), Element (f a) ~ a) => f a -> Vector a
 toVector = fromList . toList
+
+infixl 1 &!
+(&!) :: a -> (a -> b) -> b
+(&!) = flip ($!)

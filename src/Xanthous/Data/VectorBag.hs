@@ -35,6 +35,7 @@ newtype VectorBag a = VectorBag (Vector a)
     , Semigroup
     , Arbitrary
     , CoArbitrary
+    , Filterable
     )
 makeWrapped ''VectorBag
 
@@ -58,6 +59,11 @@ instance AsEmpty (VectorBag a) where
   _Empty = prism' (const $ VectorBag Empty) $ \case
     (VectorBag Empty) -> Just ()
     _ -> Nothing
+
+instance Witherable VectorBag where
+  wither f (VectorBag v) = VectorBag <$> wither f v
+  witherM f (VectorBag v) = VectorBag <$> witherM f v
+  filterA p (VectorBag v) = VectorBag <$> filterA p v
 
 {-
     TODO:

@@ -62,7 +62,7 @@ test = testGroup "Xanthous.Messages.Template"
     ]
   ]
   where
-    genLiteral = filter (`notElem` ['\\', '{']) <$> arbitrary
+    genLiteral = pack . filter (`notElem` ['\\', '{']) <$> arbitrary
     parseCase name input expected =
       testCase name $ testParse template input @?= Right expected
     testParse p = over _Left errorBundlePretty . runParser p "<test>"

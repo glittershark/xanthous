@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0486cac7957fae1f9badffdd082f0c5eb5910eb8c066569123b0f57bc6fa0d8b
+-- hash: 88019942f93977e08b513ce6991401694c431b7b2b7b1b5d2afccb3f0afb26ed
 
 name:           xanthous
 version:        0.1.0.0
@@ -53,6 +53,7 @@ library
       Xanthous.Entities.Entities
       Xanthous.Entities.Environment
       Xanthous.Entities.Item
+      Xanthous.Entities.Marker
       Xanthous.Entities.Raws
       Xanthous.Entities.RawTypes
       Xanthous.Game
@@ -143,6 +144,7 @@ library
     , tomland
     , vector
     , vty
+    , witherable
     , yaml
     , zlib
   default-language: Haskell2010
@@ -174,6 +176,7 @@ executable xanthous
       Xanthous.Entities.Entities
       Xanthous.Entities.Environment
       Xanthous.Entities.Item
+      Xanthous.Entities.Marker
       Xanthous.Entities.Raws
       Xanthous.Entities.RawTypes
       Xanthous.Game
@@ -263,6 +266,7 @@ executable xanthous
     , tomland
     , vector
     , vty
+    , witherable
     , xanthous
     , yaml
     , zlib
@@ -355,6 +359,7 @@ test-suite test
     , tomland
     , vector
     , vty
+    , witherable
     , xanthous
     , yaml
     , zlib
