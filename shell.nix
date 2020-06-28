@@ -23,7 +23,7 @@ let
     else packageSet
   );
 
-  drv = haskellPackages.callPackage pkg {};
+  drv = pkgs.haskell.lib.doBenchmark (haskellPackages.callPackage pkg {});
 
   inherit (pkgs.haskell.lib) addBuildTools;
 in
