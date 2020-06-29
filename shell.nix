@@ -1,16 +1,16 @@
-{ nixpkgs ? import ./nixpkgs.nix {}, compiler ? "ghc865", withHoogle ? true }:
+{ nixpkgs ? import ./nixpkgs.nix {}
+, pkgs ? nixpkgs.pkgs
+, compiler ? "ghc865"
+, withHoogle ? true
+}:
 let
-  inherit (nixpkgs) pkgs;
-
-  pkg = import ./pkg.nix { inherit nixpkgs; };
+  pkg = import ./pkg.nix { inherit pkgs; };
 
   packageSet = (
     if compiler == "default"
     then pkgs.haskellPackages
     else pkgs.haskell.packages.${compiler}
-  ).override {
-    overrides = import ./haskell-overlay.nix { inherit nixpkgs; };
-  };
+  );
 
   haskellPackages = (
     if withHoogle
@@ -18,7 +18,8 @@ let
       overrides = (self: super: {
         ghc = super.ghc // { withPackages = super.ghc.withHoogle; };
         ghcWithPackages = self.ghc.withPackages;
-      } // (import ./haskell-overlay.nix { inherit nixpkgs; }) self super);
+      } // (import ../../../third_party/haskell_overlay { inherit pkgs; })
+        self super);
     }
     else packageSet
   );

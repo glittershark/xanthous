@@ -16,6 +16,6 @@ let
   xanthous =
     (if failOnWarnings then pkgs.haskell.lib.failOnAllWarnings else id)
       ((pkgs.haskellPackages
-      .extend (import ./haskell-overlay.nix { inherit pkgs; })
+      # .extend (import ./haskell-overlay.nix { inherit pkgs; })
     ).callPackage (import ./pkg.nix { inherit pkgs; }) {}); in
 xanthous // { inherit hie; }
