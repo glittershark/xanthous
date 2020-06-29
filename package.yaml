@@ -28,6 +28,7 @@ dependencies:
 - checkers
 - classy-prelude
 - comonad
+- comonad-extras
 - constraints
 - containers
 - data-default
