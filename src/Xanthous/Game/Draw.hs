@@ -18,17 +18,9 @@ import           Xanthous.Game.State
 import           Xanthous.Entities.Character
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Game
-                 ( GameState(..)
-                 , entities
-                 , revealedPositions
-                 , characterPosition
+                 ( characterPosition
                  , characterVisiblePositions
                  , character
-                 , MessageHistory(..)
-                 , messageHistory
-                 , GamePromptState(..)
-                 , promptState
-                 , debugState, allRevealed
                  )
 import           Xanthous.Game.Prompt
 import           Xanthous.Orphans ()

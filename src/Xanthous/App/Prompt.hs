@@ -17,7 +17,7 @@ import           Brick (BrickEvent(..), Next)
 import           Brick.Widgets.Edit (handleEditorEvent)
 import           Data.Aeson (ToJSON, object)
 import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
-import           GHC.TypeLits (TypeError, ErrorMessage(..))
+import           GHC.TypeLits (ErrorMessage(..))
 --------------------------------------------------------------------------------
 import           Xanthous.App.Common
 import           Xanthous.Data (move)

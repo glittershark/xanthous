@@ -24,7 +24,6 @@ module Xanthous.Generators
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 import           Data.Array.Unboxed
-import           System.Random (RandomGen)
 import qualified Options.Applicative as Opt
 import           Control.Monad.Random
 --------------------------------------------------------------------------------

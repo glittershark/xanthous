@@ -21,7 +21,6 @@ import           Xanthous.Entities.Character (speed)
 import           Xanthous.Entities.Creature (Creature, creatureType)
 import           Xanthous.Entities.RawTypes (hostile)
 import           Xanthous.Game.State
-import           Xanthous.Game.Lenses (characterVisibleEntities)
 --------------------------------------------------------------------------------
 
 autoStep :: Autocommand -> AppM ()
