@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
+cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1
 
-argv=( "$@"  )
-argv=( "${argv[@]/\'/\'\\\'\'}"  )
-argv=( "${argv[@]/#/\'}"  )
-argv=( "${argv[@]/%/\'}"  )
-
-exec nix-shell --pure --run "exec $(nix-build -o dist/nix/hie -A hie)/bin/hie ${argv[*]}"
+exec nix-shell --run "$(nix-build -o dist/bin/hie hie.nix)/bin/hie $*"
