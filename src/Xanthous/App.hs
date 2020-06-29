@@ -112,6 +112,7 @@ handleNoPromptEvent :: BrickEvent ResourceName AppEvent -> AppM (Next GameState)
 handleNoPromptEvent (VtyEvent (EvKey k mods))
   | Just command <- commandFromKey k mods
   = do messageHistory %= nextTurn
+       cancelAutocommand
        handleCommand command
 handleNoPromptEvent (AppEvent AutoContinue) = do
   preuse (autocommand . _ActiveAutocommand . _1) >>= traverse_ autoStep
