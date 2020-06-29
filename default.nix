@@ -1,11 +1,11 @@
 { nixpkgs ? import ./nixpkgs.nix {}
 , pkgs ? nixpkgs.pkgs
+, lib ? nixpkgs.lib
 , compiler ? "ghc865"
 , failOnWarnings ? false
 , ...
 }:
 let
-  inherit (nixpkgs) pkgs lib;
   inherit (lib) id;
   inherit (pkgs) fetchurl;
   all-hies = import (fetchTarball {
@@ -16,6 +16,6 @@ let
   xanthous =
     (if failOnWarnings then pkgs.haskell.lib.failOnAllWarnings else id)
       ((pkgs.haskellPackages
-      .extend (import ./haskell-overlay.nix { inherit nixpkgs; })
-    ).callPackage (import ./pkg.nix { inherit nixpkgs; }) {}); in
+      .extend (import ./haskell-overlay.nix { inherit pkgs; })
+    ).callPackage (import ./pkg.nix { inherit pkgs; }) {}); in
 xanthous // { inherit hie; }

@@ -1,9 +1,6 @@
-{ nixpkgs ? import ./nixpkgs.nix {}
-,
-}:
+{ pkgs ? import ./nixpkgs.nix {} }:
 let
   inherit (builtins) filterSource elem not;
-  inherit (nixpkgs) pkgs;
   gitignoreSource = (import (pkgs.fetchFromGitHub {
     owner = "hercules-ci";
     repo = "gitignore";

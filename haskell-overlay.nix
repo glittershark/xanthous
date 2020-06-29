@@ -1,6 +1,5 @@
-{ nixpkgs ? import ./nixpkgs.nix {} }:
-let inherit (nixpkgs) pkgs;
-in self: super: with pkgs.haskell.lib; rec {
+{ pkgs ? import ./nixpkgs.nix {} }:
+self: super: with pkgs.haskell.lib; rec {
   generic-arbitrary = appendPatch
     super.generic-arbitrary
     [ ./build/generic-arbitrary-export-garbitrary.patch ];
@@ -22,7 +21,7 @@ in self: super: with pkgs.haskell.lib; rec {
 
   vinyl = overrideSrc (markUnbroken super.vinyl)
     rec {
-      src = nixpkgs.fetchzip {
+      src = pkgs.fetchzip {
         url = "mirror://hackage/vinyl-${version}/vinyl-${version}.tar.gz";
         sha256 = "190ffrmm76fh8fi9afkcda2vldf89y7dxj10434h28mbpq55kgsx";
       };
@@ -35,7 +34,7 @@ in self: super: with pkgs.haskell.lib; rec {
   ghc-prof-flamegraph = overrideCabal super.ghc-prof-flamegraph (oldAttrs: rec {
     version = "0.2.0.0";
 
-    src = nixpkgs.fetchFromGitHub {
+    src = pkgs.fetchFromGitHub {
       owner = "fpco";
       repo = "ghc-prof-flamegraph";
       rev = "8edd3b4806adeb25a4d55bed51c3afcc8e7a8e14";
