@@ -8,6 +8,7 @@ module Xanthous.Prelude
   , module Data.Void
   , module Control.Comonad
   , module Data.Witherable
+  , fail
 
   , (&!)
 
@@ -27,6 +28,7 @@ import Control.Lens hiding (levels, Level)
 import Data.Void
 import Control.Comonad
 import Data.Witherable
+import Control.Monad.Fail (fail)
 --------------------------------------------------------------------------------
 
 ninsertSet

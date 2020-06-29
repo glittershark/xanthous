@@ -100,7 +100,7 @@ import           Xanthous.Prelude hiding (Left, Down, Right, (.=), elements)
 import           Linear.V2 hiding (_x, _y)
 import qualified Linear.V2 as L
 import           Linear.V4 hiding (_x, _y)
-import           Test.QuickCheck (Arbitrary, CoArbitrary, Function, elements)
+import           Test.QuickCheck (CoArbitrary, Function, elements)
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Group
 import           Brick (Location(Location), Edges(..))

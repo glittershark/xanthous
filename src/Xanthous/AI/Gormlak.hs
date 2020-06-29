@@ -27,7 +27,7 @@ import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Entities.RawTypes (CreatureType)
 import           Xanthous.Game.State
 import           Xanthous.Game.Lenses
-                 ( Collision(..), entitiesCollision, collisionAt
+                 ( entitiesCollision, collisionAt
                  , character, characterPosition
                  )
 import           Xanthous.Data.EntityMap.Graphics (linesOfSight, canSee)

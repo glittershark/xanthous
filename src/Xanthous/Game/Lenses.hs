@@ -111,7 +111,7 @@ characterVisibleEntities game =
 entitiesCollision
   :: ( Functor f
     , forall xx. MonoFoldable (f xx)
-    , forall xx. Element (f xx) ~ xx
+    , Element (f SomeEntity) ~ SomeEntity
     , Element (f (Maybe Collision)) ~ Maybe Collision
     , Show (f (Maybe Collision))
     , Show (f SomeEntity)

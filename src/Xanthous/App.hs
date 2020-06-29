@@ -18,6 +18,7 @@ import qualified Data.Aeson as A
 import qualified Data.Vector as V
 import           System.Exit
 import           System.Directory (doesFileExist)
+import           Data.List.NonEmpty (NonEmpty(..))
 --------------------------------------------------------------------------------
 import           Xanthous.App.Common
 import           Xanthous.App.Time

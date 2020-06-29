@@ -11,7 +11,6 @@ import           Brick.Widgets.Core (raw)
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
 import           Xanthous.Data.Entities (EntityAttributes(..))
-import           Xanthous.Data.EntityChar (style)
 --------------------------------------------------------------------------------
 
 -- | Mark on the map - for use in debugging / development only.
