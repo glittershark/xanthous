@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: './src'
+      component: 'lib:xanthous'
+    - path: './test'
+      component: 'test:test'
+    - path: './src'
+      component: 'exe:xanthous'
+    - path: './bench'
+      component: 'bench:benchmark'

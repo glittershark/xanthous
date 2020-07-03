@@ -5,13 +5,11 @@
 })).shellFor {
   packages = p: [p.xanthous];
   withHoogle = true;
+  doBenchmark = true;
   buildInputs = with pkgs.haskellPackages; [
     cabal-install
     ghc-prof-flamegraph
     hp2pretty
-  ];
-
-  nativeBuildInputs = [
-    (import ./hie.nix { inherit pkgs; })
+    pkgs.haskell-language-server.ghc883
   ];
 }
