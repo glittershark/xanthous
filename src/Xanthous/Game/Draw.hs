@@ -12,15 +12,14 @@ import           Brick.Widgets.Edit
 import           Xanthous.Data
 import           Xanthous.Data.App (ResourceName, Panel(..))
 import qualified Xanthous.Data.App as Resource
-import           Xanthous.Data.EntityMap (EntityMap, atPosition)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game.State
 import           Xanthous.Entities.Character
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Game
                  ( characterPosition
-                 , characterVisiblePositions
                  , character
+                 , revealedEntitiesAtPosition
                  )
 import           Xanthous.Game.Prompt
 import           Xanthous.Orphans ()
@@ -54,28 +53,18 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
       str ("[" <> pure chr <> "] ") <+> txtWrap m
 
 drawEntities
-  :: (Position -> Bool)
-    -- ^ Is a given position directly visible to the character?
-  -> (Position -> Bool)
-    -- ^ Has a given position *ever* been seen by the character?
-  -> EntityMap SomeEntity -- ^ all entities
+  :: GameState
   -> Widget ResourceName
-drawEntities isVisible isRevealed allEnts
-  = vBox rows
+drawEntities game = vBox rows
   where
+    allEnts = game ^. entities
     entityPositions = EntityMap.positions allEnts
     maxY = fromMaybe 0 $ maximumOf (folded . y) entityPositions
     maxX = fromMaybe 0 $ maximumOf (folded . x) entityPositions
     rows = mkRow <$> [0..maxY]
     mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
     renderEntityAt pos
-      = let entitiesAtPosition = allEnts ^. atPosition pos
-            immobileEntitiesAtPosition =
-              filter (not . entityCanMove) entitiesAtPosition
-        in renderTopEntity pos
-           $ if | isVisible  pos -> entitiesAtPosition
-                | isRevealed pos -> immobileEntitiesAtPosition
-                | otherwise      -> mempty
+      = renderTopEntity pos $ revealedEntitiesAtPosition pos game
     renderTopEntity pos ents
       = let neighbors = EntityMap.neighbors pos allEnts
         in maybe (str " ") (drawWithNeighbors neighbors)
@@ -86,11 +75,7 @@ drawMap :: GameState -> Widget ResourceName
 drawMap game
   = viewport Resource.MapViewport Both
   . cursorPosition game
-  $ drawEntities
-    (`member` characterVisiblePositions game)
-    (\pos -> (game ^. debugState . allRevealed)
-            || (pos `member` (game ^. revealedPositions)))
-    (game ^. entities)
+  $ drawEntities game
 
 bullet :: Char
 bullet = '•'

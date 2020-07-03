@@ -12,6 +12,7 @@ module Xanthous.Game.Lenses
   , getInitialState
   , initialStateFromSeed
   , entitiesAtCharacter
+  , revealedEntitiesAtPosition
 
     -- * Collisions
   , Collision(..)
@@ -129,3 +130,21 @@ entitiesAtCharacter = lens getter setter
     getter gs = gs ^. entities . EntityMap.atPosition (gs ^. characterPosition)
     setter gs ents = gs
       & entities . EntityMap.atPosition (gs ^. characterPosition) .~ ents
+
+-- | Returns all entities at the given position that are revealed to the
+-- character.
+--
+-- Concretely, this is either entities that are *currently* visible to the
+-- character, or entities, that are immobile and that the character has seen
+-- before
+revealedEntitiesAtPosition :: Position -> GameState -> (VectorBag SomeEntity)
+revealedEntitiesAtPosition p gs
+  | p `member` characterVisiblePositions gs
+  = entitiesAtPosition
+  | p `member` (gs ^. revealedPositions)
+  = immobileEntitiesAtPosition
+  | otherwise
+  = mempty
+  where
+    entitiesAtPosition = gs ^. entities . EntityMap.atPosition p
+    immobileEntitiesAtPosition = filter (not . entityCanMove) entitiesAtPosition
