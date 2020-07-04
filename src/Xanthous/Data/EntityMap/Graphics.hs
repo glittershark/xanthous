@@ -44,7 +44,7 @@ linesOfSight (view _Position -> pos) visionRadius em
     lines = line pos <$> radius
     entitiesOnLines :: [[(Position, Vector (EntityID, e))]]
     entitiesOnLines = lines <&> map getPositionedAt
-    getPositionedAt :: (Int, Int) -> (Position, Vector (EntityID, e))
+    getPositionedAt :: V2 Int -> (Position, Vector (EntityID, e))
     getPositionedAt p =
       let ppos = _Position # p
       in (ppos, over _2 (view positioned) <$> atPositionWithIDs ppos em)

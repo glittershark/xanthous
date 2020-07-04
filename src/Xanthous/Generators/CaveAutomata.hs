@@ -19,6 +19,7 @@ import           Xanthous.Util (between)
 import           Xanthous.Util.Optparse
 import           Xanthous.Data (Dimensions, width, height)
 import           Xanthous.Generators.Util
+import           Linear.V2
 --------------------------------------------------------------------------------
 
 data Params = Params
@@ -102,7 +103,7 @@ generate' params dims = do
 stepAutomata :: forall s g. MCells s -> Dimensions -> Params -> CellM g s ()
 stepAutomata cells dims params = do
   origCells <- lift $ cloneMArray @_ @(STUArray s) cells
-  for_ (range ((0, 0), (dims ^. width, dims ^. height))) $ \pos -> do
+  for_ (range (0, V2 (dims ^. width) (dims ^. height))) $ \pos -> do
     neighs <- lift $ numAliveNeighborsM origCells pos
     origValue <- lift $ readArray origCells pos
     lift . writeArray cells pos

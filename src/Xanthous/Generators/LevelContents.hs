@@ -14,13 +14,15 @@ import           Control.Monad.Random
 import           Data.Array.IArray (amap, bounds, rangeSize, (!))
 import qualified Data.Array.IArray as Arr
 import           Data.Foldable (any, toList)
+import           Linear.V2
 --------------------------------------------------------------------------------
 import           Xanthous.Generators.Util
 import           Xanthous.Random
-import           Xanthous.Data ( Position, _Position, positionFromPair
-                               , rotations, arrayNeighbors, Neighbors(..)
-                               , neighborPositions
-                               )
+import           Xanthous.Data
+                 ( positionFromV2,  Position, _Position
+                 , rotations, arrayNeighbors, Neighbors(..)
+                 , neighborPositions
+                 )
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
 import           Xanthous.Entities.Raws (rawsWithType, RawType)
 import qualified Xanthous.Entities.Item as Item
@@ -49,7 +51,7 @@ randomDoors cells = do
   doorRatio <- getRandomR subsetRange
   let numDoors = floor $ doorRatio * fromIntegral (length candidateCells)
       doorPositions =
-        removeAdjacent . fmap positionFromPair . take numDoors $ candidateCells
+        removeAdjacent . fmap positionFromV2 . take numDoors $ candidateCells
       doors = zip doorPositions $ repeat unlockedDoor
   pure $ _EntityMap # doors
   where
@@ -92,8 +94,9 @@ tutorialMessage cells characterPosition = do
     accessiblePositionsWithin :: Int -> Cells -> Position -> [Position]
     accessiblePositionsWithin dist valid pos =
       review _Position
-      <$> filter (\(px, py) -> not $ valid ! (fromIntegral px, fromIntegral py))
-          (circle (pos ^. _Position) dist)
+      <$> filter
+            (\pt -> not $ valid ! (fromIntegral <$> pt))
+            (circle (pos ^. _Position) dist)
 
 randomEntities
   :: forall entity raw m. (MonadRandom m, RawType raw)
@@ -116,10 +119,10 @@ randomEntities newWithType sizeRange cells =
       pure $ _EntityMap # entities
 
 randomPosition :: MonadRandom m => Cells -> m Position
-randomPosition = fmap positionFromPair . choose . impureNonNull . cellCandidates
+randomPosition = fmap positionFromV2 . choose . impureNonNull . cellCandidates
 
 -- cellCandidates :: Cells -> Cells
-cellCandidates :: Cells -> Set (Word, Word)
+cellCandidates :: Cells -> Set (V2 Word)
 cellCandidates
   -- find the largest contiguous region of cells in the cave.
   = maximumBy (compare `on` length)

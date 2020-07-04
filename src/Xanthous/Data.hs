@@ -28,6 +28,7 @@ module Xanthous.Data
   , loc
   , _Position
   , positionFromPair
+  , positionFromV2
   , addPositions
   , diffPositions
   , stepTowards
@@ -176,7 +177,7 @@ instance Num a => Group (Position' a) where
 -- | Positions convert to scalars by discarding their orientation and just
 -- measuring the length from the origin
 instance (Ord a, Num a, Scalar a) => Scalar (Position' a) where
-  scalar = fromIntegral . length . line (0, 0) . view _Position
+  scalar = fromIntegral . length . line 0 . view _Position
   fromScalar n = Position (fromScalar n) (fromScalar n)
 
 data Positioned a where
@@ -220,14 +221,17 @@ loc = iso hither yon
     hither (Position px py) = Location (px, py)
     yon (Location (lx, ly)) = Position lx ly
 
-_Position :: Iso' (Position' a) (a, a)
+_Position :: Iso' (Position' a) (V2 a)
 _Position = iso hither yon
   where
-    hither (Position px py) = (px, py)
-    yon (lx, ly) = Position lx ly
+    hither (Position px py) = (V2 px py)
+    yon (V2 lx ly) = Position lx ly
 
 positionFromPair :: (Num a, Integral i, Integral j) => (i, j) -> Position' a
 positionFromPair (i, j) = Position (fromIntegral i) (fromIntegral j)
+
+positionFromV2 :: (Num a, Integral i) => V2 i -> Position' a
+positionFromV2 (V2 xx yy) = Position (fromIntegral xx) (fromIntegral yy)
 
 -- | Add two positions
 --
@@ -448,13 +452,13 @@ neighborDirections = Neighbors
 neighborPositions :: Num a => Position' a -> Neighbors (Position' a)
 neighborPositions pos = (`move` pos) <$> neighborDirections
 
-neighborCells :: Num a => (a, a) -> Neighbors (a, a)
+neighborCells :: Num a => V2 a -> Neighbors (V2 a)
 neighborCells = map (view _Position) . neighborPositions . review _Position
 
 arrayNeighbors
   :: (IArray a e, Ix i, Num i)
-  => a (i, i) e
-  -> (i, i)
+  => a (V2 i) e
+  -> V2 i
   -> Neighbors (Maybe e)
 arrayNeighbors arr center = arrLookup <$> neighborPositions (_Position # center)
   where

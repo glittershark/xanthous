@@ -73,9 +73,9 @@ fromCave' wallPositions = failing (pure ()) $ do
 
   where
     insertEntity e pt = modify $ EntityMap.insertAt (ptToPos pt) $ SomeEntity e
-    ptToPos pt = _Position # (pt & both %~ fromIntegral)
+    ptToPos pt = _Position # (fromIntegral <$> pt)
 
-    stepOut :: Set (Word, Word) -> [[(Word, Word)]] -> MaybeT m [[(Word, Word)]]
+    stepOut :: Set (V2 Word) -> [[V2 Word]] -> MaybeT m [[V2 Word]]
     stepOut circ rooms = for rooms $ \room ->
       let nextLevels = hashNub $ toList . neighborCells =<< room
       in pure

@@ -39,6 +39,7 @@ import           Xanthous.Entities.Environment
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
 import           Xanthous.Game.State (SomeEntity(..))
+import           Linear.V2
 --------------------------------------------------------------------------------
 
 data Generator
@@ -91,18 +92,18 @@ parseGeneratorInput = Opt.subparser
 
 showCells :: Cells -> Text
 showCells arr =
-  let ((minX, minY), (maxX, maxY)) = bounds arr
+  let (V2 minX minY, V2 maxX maxY) = bounds arr
       showCellVal True = "x"
       showCellVal False = " "
       showCell = showCellVal . (arr !)
-      row r = foldMap (showCell . (, r)) [minX..maxX]
+      row r = foldMap (showCell . (`V2` r)) [minX..maxX]
       rows = row <$> [minY..maxY]
   in intercalate "\n" rows
 
 cellsToWalls :: Cells -> EntityMap Wall
 cellsToWalls cells = foldl' maybeInsertWall mempty . assocs $ cells
   where
-    maybeInsertWall em (pos@(x, y), True)
+    maybeInsertWall em (pos@(V2 x y), True)
       | not (surroundedOnAllSides pos) =
         let x' = fromIntegral x
             y' = fromIntegral y

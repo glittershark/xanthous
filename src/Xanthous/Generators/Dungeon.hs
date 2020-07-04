@@ -159,14 +159,14 @@ fillRoom cells room =
       V2 dimx dimy = room ^. dimensions
   in for_ [posx .. posx + dimx] $ \x ->
        for_ [posy .. posy + dimy] $ \y ->
-         lift $ writeArray cells (x, y) True
+         lift $ writeArray cells (V2 x y) True
 
-corridorBetween :: MonadRandom m => Room -> Room -> m [(Word, Word)]
+corridorBetween :: MonadRandom m => Room -> Room -> m [V2 Word]
 corridorBetween originRoom destinationRoom
   = straightLine <$> origin <*> destination
   where
-    origin = choose . NE.fromList . map toTuple =<< originEdge
-    destination = choose . NE.fromList . map toTuple =<< destinationEdge
+    origin = choose . NE.fromList =<< originEdge
+    destination = choose . NE.fromList =<< destinationEdge
     originEdge = pickEdge originRoom originCorner
     destinationEdge = pickEdge destinationRoom destinationCorner
     pickEdge room corner = choose . over both (boxEdge room) $ cornerEdges corner
@@ -188,4 +188,3 @@ corridorBetween originRoom destinationRoom
         (EQ, EQ) -> TopLeft -- should never happen
 
     destinationCorner = opposite originCorner
-    toTuple (V2 x y) = (x, y)

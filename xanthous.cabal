@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5f419c8c149f045c818a2fb392b1233a0958e71e92d7a837deabc412e2b5adda
+-- hash: bb0a26ab512a1b8d095f3fa71370dcc5221c3f20888042a0d5c41d054dc403cf
 
 name:           xanthous
 version:        0.1.0.0
@@ -106,6 +106,7 @@ library
     , comonad-extras
     , constraints
     , containers
+    , criterion
     , data-default
     , deepseq
     , directory
@@ -231,6 +232,7 @@ executable xanthous
     , comonad-extras
     , constraints
     , containers
+    , criterion
     , data-default
     , deepseq
     , directory
@@ -323,6 +325,7 @@ test-suite test
     , comonad-extras
     , constraints
     , containers
+    , criterion
     , data-default
     , deepseq
     , directory
