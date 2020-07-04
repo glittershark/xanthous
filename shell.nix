@@ -10,6 +10,7 @@
     cabal-install
     ghc-prof-flamegraph
     hp2pretty
+    hlint
     pkgs.haskell-language-server.ghc883
   ];
 }
