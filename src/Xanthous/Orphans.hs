@@ -304,15 +304,8 @@ instance forall t name. (NFData t, Monoid t, NFData name)
                  => NFData (Editor t name) where
   rnf ed = getName @_ @name ed `deepseq` getEditContents ed `deepseq` ()
 
-instance NFData StdGen where
-  -- StdGen's fields are bang-patterned so this is actually correct!
-  rnf sg = sg `seq` ()
-
 deriving via (ReadShowJSON StdGen) instance ToJSON StdGen
 deriving via (ReadShowJSON StdGen) instance FromJSON StdGen
-
-instance Function StdGen where
-  function = functionShow
 
 --------------------------------------------------------------------------------
 
