@@ -146,7 +146,7 @@ delaunay
   -> [((V2 n, p), (V2 n, p))]
 delaunay
   = map (over both fromPoint)
-  . Geometry.triangulationEdges
+  . Geometry.edgesAsPoints
   . Geometry.delaunayTriangulation
   . map toPoint
   where
