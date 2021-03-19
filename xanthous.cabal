@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.1.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bb0a26ab512a1b8d095f3fa71370dcc5221c3f20888042a0d5c41d054dc403cf
+-- hash: b46f24dcf24decf8e16be6f62943648aaafc9272d923945f97d5c26a370ad235
 
 name:           xanthous
 version:        0.1.0.0
@@ -87,7 +87,33 @@ library
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
+  default-extensions:
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingStrategies
+      DerivingVia
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTSyntax
+      GeneralizedNewtypeDeriving
+      KindSignatures
+      LambdaCase
+      MultiWayIf
+      NoImplicitPrelude
+      NoStarIsType
+      OverloadedStrings
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      ViewPatterns
   ghc-options: -Wall
   build-depends:
       JuicyPixels
@@ -140,6 +166,7 @@ library
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , splitmix
     , stache
     , streams
     , text
@@ -213,7 +240,33 @@ executable xanthous
       Paths_xanthous
   hs-source-dirs:
       src
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
+  default-extensions:
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingStrategies
+      DerivingVia
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTSyntax
+      GeneralizedNewtypeDeriving
+      KindSignatures
+      LambdaCase
+      MultiWayIf
+      NoImplicitPrelude
+      NoStarIsType
+      OverloadedStrings
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       JuicyPixels
@@ -266,6 +319,7 @@ executable xanthous
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , splitmix
     , stache
     , streams
     , text
@@ -306,7 +360,33 @@ test-suite test
       Paths_xanthous
   hs-source-dirs:
       test
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
+  default-extensions:
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingStrategies
+      DerivingVia
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTSyntax
+      GeneralizedNewtypeDeriving
+      KindSignatures
+      LambdaCase
+      MultiWayIf
+      NoImplicitPrelude
+      NoStarIsType
+      OverloadedStrings
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O0
   build-depends:
       JuicyPixels
@@ -360,6 +440,7 @@ test-suite test
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , splitmix
     , stache
     , streams
     , tasty
@@ -387,7 +468,33 @@ benchmark benchmark
       Paths_xanthous
   hs-source-dirs:
       bench
-  default-extensions: BlockArguments ConstraintKinds DataKinds DeriveAnyClass DeriveGeneric DerivingStrategies DerivingVia FlexibleContexts FlexibleInstances FunctionalDependencies GADTSyntax GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiWayIf NoImplicitPrelude NoStarIsType OverloadedStrings PolyKinds RankNTypes ScopedTypeVariables TupleSections TypeApplications TypeFamilies TypeOperators ViewPatterns
+  default-extensions:
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingStrategies
+      DerivingVia
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTSyntax
+      GeneralizedNewtypeDeriving
+      KindSignatures
+      LambdaCase
+      MultiWayIf
+      NoImplicitPrelude
+      NoStarIsType
+      OverloadedStrings
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      ViewPatterns
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       JuicyPixels
@@ -440,6 +547,7 @@ benchmark benchmark
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , splitmix
     , stache
     , streams
     , text
