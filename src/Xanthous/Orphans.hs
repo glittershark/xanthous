@@ -18,7 +18,8 @@ import           Graphics.Vty.Attributes
 import           Brick.Widgets.Edit
 import           Data.Text.Zipper.Generic (GenericTextZipper)
 import           Brick.Widgets.Core (getName)
-import           System.Random (StdGen)
+import           System.Random.Internal (StdGen (..))
+import           System.Random.SplitMix (SMGen ())
 import           Test.QuickCheck
 import           "quickcheck-instances" Test.QuickCheck.Instances ()
 import           Text.Megaparsec (errorBundlePretty)
@@ -304,8 +305,15 @@ instance forall t name. (NFData t, Monoid t, NFData name)
                  => NFData (Editor t name) where
   rnf ed = getName @_ @name ed `deepseq` getEditContents ed `deepseq` ()
 
-deriving via (ReadShowJSON StdGen) instance ToJSON StdGen
-deriving via (ReadShowJSON StdGen) instance FromJSON StdGen
+deriving via (ReadShowJSON SMGen) instance ToJSON SMGen
+deriving via (ReadShowJSON SMGen) instance FromJSON SMGen
+
+instance ToJSON StdGen where
+  toJSON = toJSON . unStdGen
+  toEncoding = toEncoding . unStdGen
+
+instance FromJSON StdGen where
+  parseJSON = fmap StdGen . parseJSON
 
 --------------------------------------------------------------------------------
 
@@ -325,6 +333,12 @@ instance forall t n. (CoArbitrary t, CoArbitrary n, Monoid t)
 
 instance CoArbitrary StdGen where
   coarbitrary = coarbitrary . show
+
+instance Function StdGen where
+  function = functionMap unStdGen StdGen
+
+instance Function SMGen where
+  function = functionShow
 
 --------------------------------------------------------------------------------
 

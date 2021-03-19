@@ -28,7 +28,7 @@ module Xanthous.Messages.Template
 where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding
-                 (many, concat, try, elements, some, parts, Filter)
+                 (many, concat, try, elements, some, parts)
 --------------------------------------------------------------------------------
 import           Test.QuickCheck hiding (label)
 import           Test.QuickCheck.Instances.Text ()

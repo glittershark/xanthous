@@ -65,6 +65,7 @@ dependencies:
 - raw-strings-qq
 - reflection
 - Rasterific
+- splitmix
 - streams
 - stache
 - semigroupoids

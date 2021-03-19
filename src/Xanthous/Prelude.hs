@@ -7,7 +7,7 @@ module Xanthous.Prelude
   , module Control.Lens
   , module Data.Void
   , module Control.Comonad
-  , module Data.Witherable
+  , module Witherable
   , fail
 
   , (&!)
@@ -27,7 +27,7 @@ import GHC.TypeLits hiding (Text)
 import Control.Lens hiding (levels, Level)
 import Data.Void
 import Control.Comonad
-import Data.Witherable
+import Witherable
 import Control.Monad.Fail (fail)
 --------------------------------------------------------------------------------
 

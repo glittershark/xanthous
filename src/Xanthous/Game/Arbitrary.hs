@@ -16,6 +16,7 @@ import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Entities ()
 import           Xanthous.Entities.Character
 import           Xanthous.Game.State
+import           Xanthous.Orphans ()
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 --------------------------------------------------------------------------------
 
