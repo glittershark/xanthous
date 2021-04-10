@@ -1,17 +1,17 @@
 { mkDerivation, aeson, array, async, base, bifunctors, brick
 , checkers, classy-prelude, comonad, comonad-extras, constraints
-, containers, criterion, data-default, data-interval, deepseq
-, directory, fgl, fgl-arbitrary, file-embed, filepath
-, generic-arbitrary, generic-lens, groups, hgeometry
+, containers, criterion, data-default, deepseq, directory, fgl
+, fgl-arbitrary, file-embed, filepath, generic-arbitrary
+, generic-lens, generic-monoid, groups, hgeometry
 , hgeometry-combinatorial, hpack, JuicyPixels, lens
 , lens-properties, lib, lifted-async, linear, megaparsec, mmorph
 , monad-control, MonadRandom, mtl, optparse-applicative, parallel
 , parser-combinators, pointed, QuickCheck, quickcheck-instances
 , quickcheck-text, random, random-extras, random-fu, random-source
-, Rasterific, raw-strings-qq, reflection, semigroupoids, semigroups
-, splitmix, stache, streams, tasty, tasty-hunit, tasty-quickcheck
-, text, text-zipper, tomland, transformers, vector, vty, witherable
-, yaml, zlib
+, Rasterific, raw-strings-qq, reflection, semigroupoids, splitmix
+, stache, streams, tasty, tasty-hunit, tasty-quickcheck, text
+, text-zipper, tomland, transformers, vector, vty, witherable, yaml
+, zlib
 }:
 mkDerivation {
   pname = "xanthous";
@@ -22,56 +22,55 @@ mkDerivation {
   libraryHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
     comonad comonad-extras constraints containers criterion
-    data-default data-interval deepseq directory fgl fgl-arbitrary
-    file-embed filepath generic-arbitrary generic-lens groups hgeometry
-    hgeometry-combinatorial JuicyPixels lens lifted-async linear
-    megaparsec mmorph monad-control MonadRandom mtl
+    data-default deepseq directory fgl fgl-arbitrary file-embed
+    filepath generic-arbitrary generic-lens generic-monoid groups
+    hgeometry hgeometry-combinatorial JuicyPixels lens lifted-async
+    linear megaparsec mmorph monad-control MonadRandom mtl
     optparse-applicative parallel parser-combinators pointed QuickCheck
     quickcheck-instances quickcheck-text random random-extras random-fu
     random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams text text-zipper tomland
-    transformers vector vty witherable yaml zlib
+    splitmix stache streams text text-zipper tomland transformers
+    vector vty witherable yaml zlib
   ];
   libraryToolDepends = [ hpack ];
   executableHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
     comonad comonad-extras constraints containers criterion
-    data-default data-interval deepseq directory fgl fgl-arbitrary
-    file-embed filepath generic-arbitrary generic-lens groups hgeometry
-    hgeometry-combinatorial JuicyPixels lens lifted-async linear
-    megaparsec mmorph monad-control MonadRandom mtl
+    data-default deepseq directory fgl fgl-arbitrary file-embed
+    filepath generic-arbitrary generic-lens generic-monoid groups
+    hgeometry hgeometry-combinatorial JuicyPixels lens lifted-async
+    linear megaparsec mmorph monad-control MonadRandom mtl
     optparse-applicative parallel parser-combinators pointed QuickCheck
     quickcheck-instances quickcheck-text random random-extras random-fu
     random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams text text-zipper tomland
-    transformers vector vty witherable yaml zlib
+    splitmix stache streams text text-zipper tomland transformers
+    vector vty witherable yaml zlib
   ];
   testHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
     comonad comonad-extras constraints containers criterion
-    data-default data-interval deepseq directory fgl fgl-arbitrary
-    file-embed filepath generic-arbitrary generic-lens groups hgeometry
-    hgeometry-combinatorial JuicyPixels lens lens-properties
+    data-default deepseq directory fgl fgl-arbitrary file-embed
+    filepath generic-arbitrary generic-lens generic-monoid groups
+    hgeometry hgeometry-combinatorial JuicyPixels lens lens-properties
     lifted-async linear megaparsec mmorph monad-control MonadRandom mtl
     optparse-applicative parallel parser-combinators pointed QuickCheck
     quickcheck-instances quickcheck-text random random-extras random-fu
     random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams tasty tasty-hunit
-    tasty-quickcheck text text-zipper tomland transformers vector vty
-    witherable yaml zlib
+    splitmix stache streams tasty tasty-hunit tasty-quickcheck text
+    text-zipper tomland transformers vector vty witherable yaml zlib
   ];
   benchmarkHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
     comonad comonad-extras constraints containers criterion
-    data-default data-interval deepseq directory fgl fgl-arbitrary
-    file-embed filepath generic-arbitrary generic-lens groups hgeometry
-    hgeometry-combinatorial JuicyPixels lens lifted-async linear
-    megaparsec mmorph monad-control MonadRandom mtl
+    data-default deepseq directory fgl fgl-arbitrary file-embed
+    filepath generic-arbitrary generic-lens generic-monoid groups
+    hgeometry hgeometry-combinatorial JuicyPixels lens lifted-async
+    linear megaparsec mmorph monad-control MonadRandom mtl
     optparse-applicative parallel parser-combinators pointed QuickCheck
     quickcheck-instances quickcheck-text random random-extras random-fu
     random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams text text-zipper tomland
-    transformers vector vty witherable yaml zlib
+    splitmix stache streams text text-zipper tomland transformers
+    vector vty witherable yaml zlib
   ];
   prePatch = "hpack";
   homepage = "https://github.com/glittershark/xanthous#readme";
