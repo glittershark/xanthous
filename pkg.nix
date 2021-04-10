@@ -1,10 +1,10 @@
-{ pkgs ? (import ../../../. {}).third_party }:
+{ depot ? (import ../../../. {})
+, pkgs ? depot.third_party.nixpkgs
+, ... }:
 
 let
-  ignore = pkgs.gitignoreSource.gitignoreFilter ./.;
-in
-
-import (pkgs.haskellPackages.haskellSrc2nix {
+  ignore = depot.third_party.gitignoreSource.gitignoreFilter ./.;
+in import (pkgs.haskellPackages.haskellSrc2nix {
   name = "xanthous";
   src = builtins.path {
     name = "xanthous-source";

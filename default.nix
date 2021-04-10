@@ -4,4 +4,6 @@
 }:
 pkgs.haskell.lib.failOnAllWarnings (
   pkgs.haskellPackages.callPackage (import ./pkg.nix { inherit pkgs; }) {}
-)
+) // {
+  meta.ci = false;
+}
