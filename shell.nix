@@ -1,7 +1,11 @@
-{ pkgs ? (import ../../../. {}).third_party, ... }:
+let
+  depot = import ../../../. {};
+  inherit (depot) third_party;
+  pkgs = third_party.nixpkgs;
+in
 
 (pkgs.haskellPackages.extend (pkgs.haskell.lib.packageSourceOverrides {
-  xanthous = pkgs.gitignoreSource ./.;
+  xanthous = third_party.gitignoreSource ./.;
 })).shellFor {
   packages = p: [p.xanthous];
   withHoogle = true;
