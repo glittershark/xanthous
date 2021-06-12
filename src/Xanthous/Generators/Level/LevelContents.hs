@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-module Xanthous.Generators.LevelContents
+module Xanthous.Generators.Level.LevelContents
   ( chooseCharacterPosition
   , randomItems
   , randomCreatures
@@ -16,7 +16,7 @@ import qualified Data.Array.IArray as Arr
 import           Data.Foldable (any, toList)
 import           Linear.V2
 --------------------------------------------------------------------------------
-import           Xanthous.Generators.Util
+import           Xanthous.Generators.Level.Util
 import           Xanthous.Random
 import           Xanthous.Data
                  ( positionFromV2,  Position, _Position

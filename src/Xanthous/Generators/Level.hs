@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
-module Xanthous.Generators
+module Xanthous.Generators.Level
   ( generate
   , Generator(..)
   , SGenerator(..)
@@ -27,11 +27,11 @@ import           Data.Array.Unboxed
 import qualified Options.Applicative as Opt
 import           Control.Monad.Random
 --------------------------------------------------------------------------------
-import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
-import qualified Xanthous.Generators.Dungeon as Dungeon
-import           Xanthous.Generators.Util
-import           Xanthous.Generators.LevelContents
-import           Xanthous.Generators.Village as Village
+import qualified Xanthous.Generators.Level.CaveAutomata as CaveAutomata
+import qualified Xanthous.Generators.Level.Dungeon as Dungeon
+import           Xanthous.Generators.Level.Util
+import           Xanthous.Generators.Level.LevelContents
+import           Xanthous.Generators.Level.Village as Village
 import           Xanthous.Data (Dimensions, Position'(Position), Position)
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap

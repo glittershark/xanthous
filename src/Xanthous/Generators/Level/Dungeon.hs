@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
-module Xanthous.Generators.Dungeon
+module Xanthous.Generators.Level.Dungeon
   ( Params(..)
   , defaultParams
   , parseParams
@@ -24,7 +24,7 @@ import qualified Options.Applicative as Opt
 --------------------------------------------------------------------------------
 import           Xanthous.Random
 import           Xanthous.Data hiding (x, y, _x, _y, edges)
-import           Xanthous.Generators.Util
+import           Xanthous.Generators.Level.Util
 import           Xanthous.Util.Graphics (delaunay, straightLine)
 import           Xanthous.Util.Graph (mstSubGraph)
 --------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 --------------------------------------------------------------------------------
-module Xanthous.Generators.Util
+module Xanthous.Generators.Level.Util
   ( MCells
   , Cells
   , CellM

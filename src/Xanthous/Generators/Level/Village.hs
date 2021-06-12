@@ -1,4 +1,5 @@
-module Xanthous.Generators.Village
+--------------------------------------------------------------------------------
+module Xanthous.Generators.Level.Village
   ( fromCave
   ) where
 --------------------------------------------------------------------------------
@@ -15,7 +16,7 @@ import           Xanthous.Data
 import           Xanthous.Data.EntityMap (EntityMap)
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Entities.Environment
-import           Xanthous.Generators.Util
+import           Xanthous.Generators.Level.Util
 import           Xanthous.Game.State (SomeEntity(..))
 import           Xanthous.Random
 --------------------------------------------------------------------------------

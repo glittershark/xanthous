@@ -1,6 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 --------------------------------------------------------------------------------
-module Xanthous.Generators.UtilSpec (main, test) where
+module Xanthous.Generators.Level.UtilSpec (main, test) where
 --------------------------------------------------------------------------------
 import Test.Prelude
 import System.Random (mkStdGen)
@@ -15,7 +15,7 @@ import Linear.V2
 --------------------------------------------------------------------------------
 import Xanthous.Util
 import Xanthous.Data (width, height)
-import Xanthous.Generators.Util
+import Xanthous.Generators.Level.Util
 --------------------------------------------------------------------------------
 
 main :: IO ()

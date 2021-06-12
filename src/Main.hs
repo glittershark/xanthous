@@ -13,15 +13,15 @@ import           System.Exit (die)
 import qualified Xanthous.Game as Game
 import           Xanthous.Game.Env (GameEnv(..))
 import           Xanthous.App
-import           Xanthous.Generators
+import           Xanthous.Generators.Level
                  ( GeneratorInput
                  , parseGeneratorInput
                  , generateFromInput
                  , showCells
                  )
 import qualified Xanthous.Entities.Character as Character
-import           Xanthous.Generators.Util (regions)
-import           Xanthous.Generators.LevelContents
+import           Xanthous.Generators.Level.Util (regions)
+import           Xanthous.Generators.Level.LevelContents
 import           Xanthous.Data (Dimensions, Dimensions'(Dimensions))
 import           Data.Array.IArray ( amap )
 --------------------------------------------------------------------------------

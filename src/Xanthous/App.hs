@@ -60,9 +60,9 @@ import           Xanthous.Entities.RawTypes
                  ( edible, eatMessage, hitpointsHealed
                  , attackMessage
                  )
-import           Xanthous.Generators
-import qualified Xanthous.Generators.CaveAutomata as CaveAutomata
-import qualified Xanthous.Generators.Dungeon as Dungeon
+import           Xanthous.Generators.Level
+import qualified Xanthous.Generators.Level.CaveAutomata as CaveAutomata
+import qualified Xanthous.Generators.Level.Dungeon as Dungeon
 --------------------------------------------------------------------------------
 
 type App = Brick.App GameState AppEvent ResourceName

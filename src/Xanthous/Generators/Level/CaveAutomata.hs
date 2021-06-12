@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
-module Xanthous.Generators.CaveAutomata
+module Xanthous.Generators.Level.CaveAutomata
   ( Params(..)
   , defaultParams
   , parseParams
@@ -18,7 +18,7 @@ import qualified Options.Applicative as Opt
 import           Xanthous.Util (between)
 import           Xanthous.Util.Optparse
 import           Xanthous.Data (Dimensions, width, height)
-import           Xanthous.Generators.Util
+import           Xanthous.Generators.Level.Util
 import           Linear.V2
 --------------------------------------------------------------------------------
 
