@@ -6,6 +6,7 @@ import qualified Xanthous.Data.EntityCharSpec
 import qualified Xanthous.Data.EntityMap.GraphicsSpec
 import qualified Xanthous.Data.EntityMapSpec
 import qualified Xanthous.Data.LevelsSpec
+import qualified Xanthous.Data.MemoSpec
 import qualified Xanthous.Data.NestedMapSpec
 import qualified Xanthous.DataSpec
 import qualified Xanthous.Entities.RawsSpec
@@ -30,6 +31,7 @@ test = testGroup "Xanthous"
   , Xanthous.Data.EntityMap.GraphicsSpec.test
   , Xanthous.Data.EntityMapSpec.test
   , Xanthous.Data.LevelsSpec.test
+  , Xanthous.Data.MemoSpec.test
   , Xanthous.Data.NestedMapSpec.test
   , Xanthous.DataSpec.test
   , Xanthous.Entities.RawsSpec.test

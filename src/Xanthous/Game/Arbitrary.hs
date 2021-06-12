@@ -42,6 +42,7 @@ instance Arbitrary GameState where
     _activePanel <- arbitrary
     _debugState <- arbitrary
     let _autocommand = NoAutocommand
+    _memo <- arbitrary
     pure $ GameState {..}
 
 

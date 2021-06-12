@@ -216,9 +216,7 @@ handleCommand Close = do
 
 handleCommand Look = do
   prompt_ @'PointOnMap ["look", "prompt"] Cancellable
-    $ \(PointOnMapResult pos) ->
-      gets (revealedEntitiesAtPosition pos)
-      >>= \case
+    $ \(PointOnMapResult pos) -> revealedEntitiesAtPosition pos >>= \case
         Empty -> say_ ["look", "nothing"]
         ents -> describeEntities ents
   continue

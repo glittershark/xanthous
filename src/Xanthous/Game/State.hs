@@ -16,6 +16,7 @@ module Xanthous.Game.State
   , promptState
   , characterEntityID
   , autocommand
+  , memo
   , GamePromptState(..)
 
     -- * Game Level
@@ -107,6 +108,7 @@ import           Xanthous.Data.Entities
 import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Game.Env
+import           Xanthous.Game.Memo (MemoState)
 --------------------------------------------------------------------------------
 
 data MessageHistory
@@ -502,6 +504,8 @@ data GameState = GameState
   , _promptState       :: !(GamePromptState AppM)
   , _debugState        :: !DebugState
   , _autocommand       :: !AutocommandState
+
+  , _memo              :: MemoState
   }
   deriving stock (Show, Generic)
   deriving anyclass (NFData)

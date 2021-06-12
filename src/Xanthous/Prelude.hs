@@ -21,6 +21,7 @@ module Xanthous.Prelude
 import ClassyPrelude hiding
   ( return, (<|), unsnoc, uncons, cons, snoc, index, (<.>), Index, say
   , catMaybes, filter, mapMaybe, hashNub, ordNub
+  , Memoized, runMemoized
   )
 import Data.Kind
 import GHC.TypeLits hiding (Text)

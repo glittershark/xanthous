@@ -16,5 +16,6 @@ in
     hp2pretty
     hlint
     haskell-language-server
+    cabal2nix
   ];
 }

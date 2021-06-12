@@ -40,7 +40,6 @@ dependencies:
 - file-embed
 - filepath
 - generic-arbitrary
-- generic-monoid
 - generic-lens
 - groups
 - hgeometry
@@ -68,6 +67,7 @@ dependencies:
 - splitmix
 - streams
 - stache
+- semigroups
 - semigroupoids
 - tomland
 - transformers

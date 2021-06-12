@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b46f24dcf24decf8e16be6f62943648aaafc9272d923945f97d5c26a370ad235
+-- hash: f642cb264ff0785d5883884fa8db14adb92ce3d897cfc22e69555089dbc8dfd2
 
 name:           xanthous
 version:        0.1.0.0
@@ -44,6 +44,7 @@ library
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
       Xanthous.Data.Levels
+      Xanthous.Data.Memo
       Xanthous.Data.NestedMap
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
@@ -61,6 +62,7 @@ library
       Xanthous.Game.Draw
       Xanthous.Game.Env
       Xanthous.Game.Lenses
+      Xanthous.Game.Memo
       Xanthous.Game.Prompt
       Xanthous.Game.State
       Xanthous.Generators
@@ -142,7 +144,6 @@ library
     , filepath
     , generic-arbitrary
     , generic-lens
-    , generic-monoid
     , groups
     , hgeometry
     , hgeometry-combinatorial
@@ -166,6 +167,7 @@ library
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , semigroups
     , splitmix
     , stache
     , streams
@@ -198,6 +200,7 @@ executable xanthous
       Xanthous.Data.EntityMap
       Xanthous.Data.EntityMap.Graphics
       Xanthous.Data.Levels
+      Xanthous.Data.Memo
       Xanthous.Data.NestedMap
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
@@ -215,6 +218,7 @@ executable xanthous
       Xanthous.Game.Draw
       Xanthous.Game.Env
       Xanthous.Game.Lenses
+      Xanthous.Game.Memo
       Xanthous.Game.Prompt
       Xanthous.Game.State
       Xanthous.Generators
@@ -295,7 +299,6 @@ executable xanthous
     , filepath
     , generic-arbitrary
     , generic-lens
-    , generic-monoid
     , groups
     , hgeometry
     , hgeometry-combinatorial
@@ -319,6 +322,7 @@ executable xanthous
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , semigroups
     , splitmix
     , stache
     , streams
@@ -344,6 +348,7 @@ test-suite test
       Xanthous.Data.EntityMap.GraphicsSpec
       Xanthous.Data.EntityMapSpec
       Xanthous.Data.LevelsSpec
+      Xanthous.Data.MemoSpec
       Xanthous.Data.NestedMapSpec
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
@@ -415,7 +420,6 @@ test-suite test
     , filepath
     , generic-arbitrary
     , generic-lens
-    , generic-monoid
     , groups
     , hgeometry
     , hgeometry-combinatorial
@@ -440,6 +444,7 @@ test-suite test
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , semigroups
     , splitmix
     , stache
     , streams
@@ -523,7 +528,6 @@ benchmark benchmark
     , filepath
     , generic-arbitrary
     , generic-lens
-    , generic-monoid
     , groups
     , hgeometry
     , hgeometry-combinatorial
@@ -547,6 +551,7 @@ benchmark benchmark
     , raw-strings-qq
     , reflection
     , semigroupoids
+    , semigroups
     , splitmix
     , stache
     , streams

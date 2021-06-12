@@ -27,6 +27,7 @@ import           Control.Monad.State
 import           Control.Monad.Random (getRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
+import qualified Xanthous.Game.Memo as Memo
 import           Xanthous.Data
 import           Xanthous.Data.Levels
 import qualified Xanthous.Data.EntityMap as EntityMap
@@ -35,6 +36,8 @@ import           Xanthous.Data.EntityMap.Graphics
 import           Xanthous.Data.VectorBag
 import           Xanthous.Entities.Character (Character, mkCharacter)
 import           {-# SOURCE #-} Xanthous.Entities.Entities ()
+import Xanthous.Game.Memo (emptyMemoState)
+import Xanthous.Data.Memo (fillWithM)
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState
@@ -60,8 +63,8 @@ initialStateFromSeed seed =
         { _allRevealed = False
         }
       _autocommand = NoAutocommand
+      _memo = emptyMemoState
   in GameState {..}
-
 
 positionedCharacter :: Lens' GameState (Positioned Character)
 positionedCharacter = lens getPositionedCharacter setPositionedCharacter
@@ -96,13 +99,17 @@ visionRadius = 12 -- TODO make this dynamic
 -- | Update the revealed entities at the character's position based on their
 -- vision
 updateCharacterVision :: GameState -> GameState
-updateCharacterVision game
-  = game & revealedPositions <>~ characterVisiblePositions game
+updateCharacterVision = execState $ do
+  positions <- characterVisiblePositions
+  revealedPositions <>= positions
 
-characterVisiblePositions :: GameState -> Set Position
-characterVisiblePositions game =
-  let charPos = game ^. characterPosition
-  in visiblePositions charPos visionRadius $ game ^. entities
+characterVisiblePositions :: MonadState GameState m => m (Set Position)
+characterVisiblePositions = do
+  charPos <- use characterPosition
+  fillWithM
+    (memo . Memo.characterVisiblePositions)
+    charPos
+    (uses entities $ visiblePositions charPos visionRadius)
 
 characterVisibleEntities :: GameState -> EntityMap.EntityMap SomeEntity
 characterVisibleEntities game =
@@ -137,14 +144,18 @@ entitiesAtCharacter = lens getter setter
 -- Concretely, this is either entities that are *currently* visible to the
 -- character, or entities, that are immobile and that the character has seen
 -- before
-revealedEntitiesAtPosition :: Position -> GameState -> (VectorBag SomeEntity)
-revealedEntitiesAtPosition p gs
-  | p `member` characterVisiblePositions gs
-  = entitiesAtPosition
-  | p `member` (gs ^. revealedPositions)
-  = immobileEntitiesAtPosition
-  | otherwise
-  = mempty
-  where
-    entitiesAtPosition = gs ^. entities . EntityMap.atPosition p
-    immobileEntitiesAtPosition = filter (not . entityCanMove) entitiesAtPosition
+revealedEntitiesAtPosition
+  :: MonadState GameState m
+  => Position
+  -> m (VectorBag SomeEntity)
+revealedEntitiesAtPosition p = do
+  cvps <- characterVisiblePositions
+  entitiesAtPosition <- use $ entities . EntityMap.atPosition p
+  revealed <- use revealedPositions
+  let immobileEntitiesAtPosition = filter (not . entityCanMove) entitiesAtPosition
+  pure $ if | p `member` cvps
+              -> entitiesAtPosition
+            | p `member` revealed
+              -> immobileEntitiesAtPosition
+            | otherwise
+              -> mempty

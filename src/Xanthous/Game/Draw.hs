@@ -23,6 +23,8 @@ import           Xanthous.Game
                  )
 import           Xanthous.Game.Prompt
 import           Xanthous.Orphans ()
+import Control.Monad.State.Lazy (evalState)
+import Control.Monad.State.Class ( get, MonadState, gets )
 --------------------------------------------------------------------------------
 
 cursorPosition :: GameState -> Widget ResourceName -> Widget ResourceName
@@ -53,29 +55,28 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
       str ("[" <> pure chr <> "] ") <+> txtWrap m
 
 drawEntities
-  :: GameState
-  -> Widget ResourceName
-drawEntities game = vBox rows
-  where
-    allEnts = game ^. entities
-    entityPositions = EntityMap.positions allEnts
-    maxY = fromMaybe 0 $ maximumOf (folded . y) entityPositions
-    maxX = fromMaybe 0 $ maximumOf (folded . x) entityPositions
-    rows = mkRow <$> [0..maxY]
-    mkRow rowY = hBox $ renderEntityAt . flip Position rowY <$> [0..maxX]
-    renderEntityAt pos
-      = renderTopEntity pos $ revealedEntitiesAtPosition pos game
-    renderTopEntity pos ents
-      = let neighbors = EntityMap.neighbors pos allEnts
-        in maybe (str " ") (drawWithNeighbors neighbors)
-           $ maximumBy (compare `on` drawPriority)
-           <$> fromNullable ents
+  :: forall m. MonadState GameState m
+  => m (Widget ResourceName)
+drawEntities = do
+  allEnts <- use entities
+  let entityPositions = EntityMap.positions allEnts
+      maxY = fromMaybe 0 $ maximumOf (folded . y) entityPositions
+      maxX = fromMaybe 0 $ maximumOf (folded . x) entityPositions
+      rows = traverse mkRow [0..maxY]
+      mkRow rowY = hBox <$> traverse (renderEntityAt . flip Position rowY) [0..maxX]
+      renderEntityAt pos
+        = renderTopEntity pos <$> revealedEntitiesAtPosition pos
+      renderTopEntity pos ents
+        = let neighbors = EntityMap.neighbors pos allEnts
+          in maybe (str " ") (drawWithNeighbors neighbors)
+             $ maximumBy (compare `on` drawPriority)
+             <$> fromNullable ents
+  vBox <$> rows
 
-drawMap :: GameState -> Widget ResourceName
-drawMap game
-  = viewport Resource.MapViewport Both
-  . cursorPosition game
-  $ drawEntities game
+drawMap :: MonadState GameState m => m (Widget ResourceName)
+drawMap = do
+  cursorPos <- gets cursorPosition
+  viewport Resource.MapViewport Both . cursorPos <$> drawEntities
 
 bullet :: Char
 bullet = '•'
@@ -129,15 +130,18 @@ drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints
       <+> txt (tshow $ let Hitpoints hp = characterHitpoints ch in hp)
 
 drawGame :: GameState -> [Widget ResourceName]
-drawGame game
-  = pure
-  . withBorderStyle unicode
-  $ case game ^. promptState of
-       NoPrompt -> drawMessages (game ^. messageHistory)
-       _ -> emptyWidget
-  <=> drawPromptState (game ^. promptState)
-  <=>
-  (maybe emptyWidget (drawPanel game) (game ^. activePanel)
-  <+> border (drawMap game)
-  )
-  <=> drawCharacterInfo (game ^. character)
+drawGame = evalState $ do
+  game <- get
+  drawnMap <- drawMap
+  pure
+    . pure
+    . withBorderStyle unicode
+    $ case game ^. promptState of
+        NoPrompt -> drawMessages (game ^. messageHistory)
+        _ -> emptyWidget
+    <=> drawPromptState (game ^. promptState)
+    <=>
+    (maybe emptyWidget (drawPanel game) (game ^. activePanel)
+    <+> border drawnMap
+    )
+    <=> drawCharacterInfo (game ^. character)
