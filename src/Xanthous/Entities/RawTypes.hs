@@ -70,8 +70,8 @@ hostile = friendly . involuted not
 --------------------------------------------------------------------------------
 
 data EdibleItem = EdibleItem
-  { _hitpointsHealed :: Int
-  , _eatMessage :: Maybe Message
+  { _hitpointsHealed :: !Int
+  , _eatMessage      :: !(Maybe Message)
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -96,12 +96,12 @@ makeFieldsNoPrefix ''WieldableItem
 --------------------------------------------------------------------------------
 
 data ItemType = ItemType
-  { _name            :: Text
-  , _description     :: Text
-  , _longDescription :: Text
-  , _char            :: EntityChar
-  , _edible          :: Maybe EdibleItem
-  , _wieldable       :: Maybe WieldableItem
+  { _name            :: !Text
+  , _description     :: !Text
+  , _longDescription :: !Text
+  , _char            :: !EntityChar
+  , _edible          :: !(Maybe EdibleItem)
+  , _wieldable       :: !(Maybe WieldableItem)
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -122,8 +122,8 @@ isWieldable = has $ wieldable . _Just
 --------------------------------------------------------------------------------
 
 data EntityRaw
-  = Creature CreatureType
-  | Item ItemType
+  = Creature !CreatureType
+  | Item !ItemType
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData)
   deriving Arbitrary via GenericArbitrary EntityRaw
