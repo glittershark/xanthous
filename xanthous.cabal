@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bba18b2b297d73ddcb0a2c365e597a183e6b612ad336e97ca06d9ce87b989656
+-- hash: 3887c4e473843f80e65cb0ae8a1def8fc4871de33e9f425a08820e9a8942e99c
 
 name:           xanthous
 version:        0.1.0.0
@@ -71,6 +71,7 @@ library
       Xanthous.Generators.Level.LevelContents
       Xanthous.Generators.Level.Util
       Xanthous.Generators.Level.Village
+      Xanthous.Generators.Speech
       Xanthous.Messages
       Xanthous.Messages.Template
       Xanthous.Monad
@@ -136,6 +137,7 @@ library
     , containers
     , criterion
     , data-default
+    , data-interval
     , deepseq
     , directory
     , fgl
@@ -227,6 +229,7 @@ executable xanthous
       Xanthous.Generators.Level.LevelContents
       Xanthous.Generators.Level.Util
       Xanthous.Generators.Level.Village
+      Xanthous.Generators.Speech
       Xanthous.Messages
       Xanthous.Messages.Template
       Xanthous.Monad
@@ -291,6 +294,7 @@ executable xanthous
     , containers
     , criterion
     , data-default
+    , data-interval
     , deepseq
     , directory
     , fgl
@@ -412,6 +416,7 @@ test-suite test
     , containers
     , criterion
     , data-default
+    , data-interval
     , deepseq
     , directory
     , fgl
@@ -520,6 +525,7 @@ benchmark benchmark
     , containers
     , criterion
     , data-default
+    , data-interval
     , deepseq
     , directory
     , fgl

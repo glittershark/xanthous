@@ -33,6 +33,7 @@ dependencies:
 - containers
 - criterion
 - data-default
+- data-interval
 - deepseq
 - directory
 - fgl

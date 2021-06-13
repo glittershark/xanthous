@@ -1,10 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 --------------------------------------------------------------------------------
+{-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 module Xanthous.Orphans
   ( ppTemplate
   ) where
@@ -31,6 +31,8 @@ import           Linear
 --------------------------------------------------------------------------------
 import           Xanthous.Util.JSON
 import           Xanthous.Util.QuickCheck
+import qualified Data.Interval as Interval
+import Data.Interval (Interval, Extended (..))
 --------------------------------------------------------------------------------
 
 instance forall s a.
@@ -350,3 +352,23 @@ deriving newtype instance (Arbitrary s, CoArbitrary (m (a, s)))
 deriving via (GenericArbitrary (V2 a)) instance Arbitrary a => Arbitrary (V2 a)
 instance CoArbitrary a => CoArbitrary (V2 a)
 instance Function a => Function (V2 a)
+
+--------------------------------------------------------------------------------
+
+instance Arbitrary r => Arbitrary (Extended r) where
+  arbitrary = oneof [ pure NegInf
+                    , pure PosInf
+                    , Finite <$> arbitrary
+                    ]
+
+instance Arbitrary Interval.Boundary where
+  arbitrary = elements [ Interval.Open , Interval.Closed ]
+
+instance (Ord r, Arbitrary r) => Arbitrary (Interval r) where
+  arbitrary = do
+    lower <- arbitrary
+    upper <- arbitrary
+    pure $ (if upper < lower then flip else id)
+      Interval.interval
+      lower
+      upper

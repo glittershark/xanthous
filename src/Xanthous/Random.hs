@@ -11,9 +11,10 @@ module Xanthous.Random
   , subRand
   , chance
   , chooseSubset
+  , chooseRange
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
+import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Control.Monad.Random.Class (MonadRandom(getRandomR, getRandom))
@@ -25,6 +26,9 @@ import           Data.Random.Distribution.Uniform
 import           Data.Random.Distribution.Uniform.Exclusive
 import           Data.Random.Sample
 import qualified Data.Random.Source as DRS
+import           Data.Interval ( Interval, lowerBound', Extended (Finite)
+                               , upperBound', Boundary (Closed)
+                               )
 --------------------------------------------------------------------------------
 
 instance {-# INCOHERENT #-} (Monad m, MonadRandom m) => DRS.MonadRandom m where
@@ -81,11 +85,13 @@ evenlyWeighted = Weighted . itoList
 weightedBy :: Functor t => (a -> w) -> t a -> Weighted w t a
 weightedBy weighting xs = Weighted $ (weighting &&& id) <$> xs
 
-instance (Num w, Ord w, Distribution Uniform w, Excludable w) => Choose (Weighted w [] a) where
+instance (Num w, Ord w, Distribution Uniform w, Excludable w)
+       => Choose (Weighted w [] a) where
   type RandomResult (Weighted w [] a) = Maybe a
   choose (Weighted ws) = sample $ headMay <$> weightedSample 1 ws
 
-instance (Num w, Ord w, Distribution Uniform w, Excludable w) => Choose (Weighted w NonEmpty a) where
+instance (Num w, Ord w, Distribution Uniform w, Excludable w)
+       => Choose (Weighted w NonEmpty a) where
   type RandomResult (Weighted w NonEmpty a) = a
   choose (Weighted ws) =
     sample
@@ -111,6 +117,33 @@ chooseSubset :: ( Num w, Ord w, Distribution Uniform w, Excludable w
                , MonadRandom m
                ) => w -> t a -> m (t a)
 chooseSubset = filterA . const . chance
+
+-- | Choose a random @n@ in the given interval
+chooseRange
+  :: ( MonadRandom m
+    , Distribution Uniform n
+    , Enum n
+    , Bounded n, Show n, Ord n)
+  => Interval n
+  -> m (Maybe n)
+chooseRange int = traverse sample distribution
+  where
+    (lower, lowerBoundary) = lowerBound' int
+    lowerR = case lower of
+      Finite x -> if lowerBoundary == Closed
+                 then x
+                 else succ x
+      _ -> minBound
+    (upper, upperBoundary) = upperBound' int
+    upperR = case upper of
+      Finite x -> if upperBoundary == Closed
+                 then x
+                 else pred x
+      _ -> maxBound
+    distribution
+      | lowerR <= upperR = Just $ Uniform lowerR upperR
+      | otherwise = Nothing
+
 
 --------------------------------------------------------------------------------
 
