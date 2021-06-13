@@ -1,5 +1,6 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 --------------------------------------------------------------------------------
 module Xanthous.Random
@@ -73,6 +74,10 @@ instance Choose (a, a) where
 
 newtype Weighted w t a = Weighted (t (w, a))
   deriving (Functor, Foldable) via (t `Compose` (,) w)
+
+deriving newtype instance Eq (t (w, a)) => Eq (Weighted w t a)
+deriving newtype instance Show (t (w, a)) => Show (Weighted w t a)
+deriving newtype instance NFData (t (w, a)) => NFData (Weighted w t a)
 
 instance Traversable t => Traversable (Weighted w t) where
   traverse f (Weighted twa) = Weighted <$> (traverse . traverse) f twa
