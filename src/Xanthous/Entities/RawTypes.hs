@@ -10,6 +10,9 @@ module Xanthous.Entities.RawTypes
     -- * Creatures
   , CreatureType(..)
   , hostile
+    -- ** Language
+  , LanguageName(..)
+  , getLanguage
 
     -- * Items
   , ItemType(..)
@@ -30,6 +33,7 @@ module Xanthous.Entities.RawTypes
   , HasEdible(..)
   , HasFriendly(..)
   , HasHitpointsHealed(..)
+  , HasLanguage(..)
   , HasLongDescription(..)
   , HasMaxHitpoints(..)
   , HasName(..)
@@ -46,7 +50,27 @@ import Xanthous.Messages (Message(..))
 import Xanthous.Data (TicksPerTile, Hitpoints)
 import Xanthous.Data.EntityChar
 import Xanthous.Util.QuickCheck
+import Xanthous.Generators.Speech (Language, gormlak, english)
 --------------------------------------------------------------------------------
+
+-- | Identifiers for languages that creatures can speak.
+--
+-- Non-verbal or non-sentient creatures have Nothing as their language
+--
+-- At some point, we will likely want to make languages be defined in data files
+-- somewhere, and reference them that way instead.
+data LanguageName = Gormlak | English
+  deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary LanguageName
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ AllNullaryToStringTag 'True ]
+                       LanguageName
+
+-- | Resolve a 'LanguageName' into an actual 'Language'
+getLanguage :: LanguageName -> Language
+getLanguage Gormlak = gormlak
+getLanguage English = english
 
 data CreatureType = CreatureType
   { _name         :: !Text
@@ -55,12 +79,15 @@ data CreatureType = CreatureType
   , _maxHitpoints :: !Hitpoints
   , _friendly     :: !Bool
   , _speed        :: !TicksPerTile
+  , _language     :: !(Maybe LanguageName)
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Arbitrary via GenericArbitrary CreatureType
   deriving (ToJSON, FromJSON)
-       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+       via WithOptions '[ FieldLabelModifier '[Drop 1]
+                        , OmitNothingFields 'True
+                        ]
                        CreatureType
 makeFieldsNoPrefix ''CreatureType
 

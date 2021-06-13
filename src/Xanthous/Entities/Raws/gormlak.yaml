@@ -11,3 +11,4 @@ Creature:
   maxHitpoints: 5
   speed: 125
   friendly: false
+  language: Gormlak
