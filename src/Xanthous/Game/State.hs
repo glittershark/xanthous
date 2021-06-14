@@ -56,6 +56,8 @@ module Xanthous.Game.State
   , downcastEntity
   , _SomeEntity
   , entityIs
+  , entityTypeName
+
     -- ** Vias
   , Color(..)
   , DrawNothing(..)
@@ -393,6 +395,10 @@ entityIs = isJust . downcastEntity @a
 
 _SomeEntity :: forall a. (Entity a, Typeable a) => Prism' SomeEntity a
 _SomeEntity = prism' SomeEntity downcastEntity
+
+-- | Get the name of the type of 'SomeEntity' as a string
+entityTypeName :: SomeEntity -> Text
+entityTypeName (SomeEntity e) = pack . tyConName . typeRepTyCon $ typeOf e
 
 newtype DeriveEntity
   (blocksVision :: Bool)

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3887c4e473843f80e65cb0ae8a1def8fc4871de33e9f425a08820e9a8942e99c
+-- hash: 715e0ab333afb8723ffec128cf69c065f6f018e9622d65c45d404e5084852f54
 
 name:           xanthous
 version:        0.1.0.0
@@ -356,6 +356,7 @@ test-suite test
       Xanthous.Data.NestedMapSpec
       Xanthous.DataSpec
       Xanthous.Entities.RawsSpec
+      Xanthous.Game.StateSpec
       Xanthous.GameSpec
       Xanthous.Generators.Level.UtilSpec
       Xanthous.Messages.TemplateSpec
