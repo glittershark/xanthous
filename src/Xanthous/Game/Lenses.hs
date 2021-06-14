@@ -9,10 +9,12 @@ module Xanthous.Game.Lenses
   , updateCharacterVision
   , characterVisiblePositions
   , characterVisibleEntities
+  , positionIsCharacterVisible
   , getInitialState
   , initialStateFromSeed
   , entitiesAtCharacter
   , revealedEntitiesAtPosition
+  , hearingRadius
 
     -- * Collisions
   , Collision(..)
@@ -93,8 +95,13 @@ character = positionedCharacter . positioned
 characterPosition :: Lens' GameState Position
 characterPosition = positionedCharacter . position
 
+-- TODO make this dynamic
 visionRadius :: Word
-visionRadius = 12 -- TODO make this dynamic
+visionRadius = 12
+
+-- TODO make this dynamic
+hearingRadius :: Word
+hearingRadius = 12
 
 -- | Update the revealed entities at the character's position based on their
 -- vision
@@ -115,6 +122,10 @@ characterVisibleEntities :: GameState -> EntityMap.EntityMap SomeEntity
 characterVisibleEntities game =
   let charPos = game ^. characterPosition
   in visibleEntities charPos visionRadius $ game ^. entities
+
+positionIsCharacterVisible :: MonadState GameState m => Position -> m Bool
+positionIsCharacterVisible p = (p `elem`) <$> characterVisiblePositions
+-- ^ TODO optimize
 
 entitiesCollision
   :: ( Functor f
@@ -149,11 +160,12 @@ revealedEntitiesAtPosition
   => Position
   -> m (VectorBag SomeEntity)
 revealedEntitiesAtPosition p = do
+  allRev <- use $ debugState . allRevealed
   cvps <- characterVisiblePositions
   entitiesAtPosition <- use $ entities . EntityMap.atPosition p
   revealed <- use revealedPositions
   let immobileEntitiesAtPosition = filter (not . entityCanMove) entitiesAtPosition
-  pure $ if | p `member` cvps
+  pure $ if | allRev || p `member` cvps
               -> entitiesAtPosition
             | p `member` revealed
               -> immobileEntitiesAtPosition

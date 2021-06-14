@@ -37,6 +37,7 @@ module Xanthous.Entities.RawTypes
   , HasLongDescription(..)
   , HasMaxHitpoints(..)
   , HasName(..)
+  , HasSayVerb(..)
   , HasSpeed(..)
   , HasWieldable(..)
   ) where
@@ -80,6 +81,8 @@ data CreatureType = CreatureType
   , _friendly     :: !Bool
   , _speed        :: !TicksPerTile
   , _language     :: !(Maybe LanguageName)
+  , _sayVerb      :: Text -- ^ The verb, in present tense, for when the creature
+                         --   says something
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)

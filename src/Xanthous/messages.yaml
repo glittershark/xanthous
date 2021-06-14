@@ -17,6 +17,10 @@ quit:
 
 entities:
   description: You see here {{entityDescriptions}}
+  say:
+    creature:
+      visible: The {{creature.creatureType.name}} {{creature.creatureType.sayVerb}} "{{message}}"
+      invisible: You hear something yell "{{message}}" in the distance
 
 pickUp:
   menu: What would you like to pick up?

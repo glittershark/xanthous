@@ -12,3 +12,4 @@ Creature:
   speed: 125
   friendly: false
   language: Gormlak
+  sayVerb: yells

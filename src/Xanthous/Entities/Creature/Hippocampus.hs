@@ -7,6 +7,7 @@ module Xanthous.Entities.Creature.Hippocampus
   , initialHippocampus
     -- ** Lenses
   , destination
+  , greetedCharacter
     -- ** Destination
   , Destination(..)
   , destinationFromPos
@@ -50,7 +51,11 @@ destinationFromPos _destinationPosition =
   in Destination{..}
 
 data Hippocampus = Hippocampus
-  { _destination :: !(Maybe Destination)
+  { _destination      :: !(Maybe Destination)
+  , -- | Has this creature greeted the character in any way yet?
+    --
+    -- Some creature types ignore this field
+    _greetedCharacter :: !Bool
   }
   deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -61,4 +66,7 @@ data Hippocampus = Hippocampus
 makeLenses ''Hippocampus
 
 initialHippocampus :: Hippocampus
-initialHippocampus = Hippocampus Nothing
+initialHippocampus = Hippocampus
+  { _destination      = Nothing
+  , _greetedCharacter = False
+  }
