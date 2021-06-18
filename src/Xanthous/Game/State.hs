@@ -442,6 +442,7 @@ data GameLevel = GameLevel
 
 data Autocommand
   = AutoMove Direction
+  | AutoRest
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, Hashable, ToJSON, FromJSON, CoArbitrary, Function)
   deriving Arbitrary via GenericArbitrary Autocommand

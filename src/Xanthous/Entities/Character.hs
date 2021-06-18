@@ -32,6 +32,7 @@ module Xanthous.Entities.Character
   , mkCharacter
   , pickUpItem
   , isDead
+  , isFullyHealed
   , damage
   ) where
 --------------------------------------------------------------------------------
@@ -264,6 +265,11 @@ characterDamage
   = fromMaybe defaultCharacterDamage
   . preview (inventory . wielded . wieldedItems . wieldableItem . Raw.damage)
 
+-- | Is the character fully healed up to or past their initial hitpoints?
+isFullyHealed :: Character -> Bool
+isFullyHealed = (>= initialHitpoints) . characterHitpoints
+
+-- | Is the character dead?
 isDead :: Character -> Bool
 isDead = (== 0) . characterHitpoints
 

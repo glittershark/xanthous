@@ -17,12 +17,13 @@ import           Xanthous.App.Common
 import           Xanthous.App.Time
 import           Xanthous.Data
 import           Xanthous.Data.App
-import           Xanthous.Entities.Character (speed)
+import           Xanthous.Entities.Character (speed, isFullyHealed)
 import           Xanthous.Entities.Creature (Creature, creatureType)
 import           Xanthous.Entities.RawTypes (hostile)
 import           Xanthous.Game.State
 --------------------------------------------------------------------------------
 
+-- | Step the given autocommand forward once
 autoStep :: Autocommand -> AppM ()
 autoStep (AutoMove dir) = do
   newPos <- uses characterPosition $ move dir
@@ -31,20 +32,31 @@ autoStep (AutoMove dir) = do
       characterPosition .= newPos
       stepGameBy =<< uses (character . speed) (|*| 1)
       describeEntitiesAt newPos
-      maybeVisibleEnemies <- nonEmpty <$> enemiesInSight
-      for_ maybeVisibleEnemies $ \visibleEnemies -> do
-        say ["autoMove", "enemyInSight"]
-          $ object [ "firstEntity" A..= NE.head visibleEnemies ]
-        cancelAutocommand
+      cancelIfDanger
     Just _ -> cancelAutocommand
+
+autoStep AutoRest = do
+  done <- uses character isFullyHealed
+  if done
+    then say_ ["autocommands", "doneResting"] >> cancelAutocommand
+    else stepGame >> cancelIfDanger
+
+-- | Cancel the autocommand if the character is in danger
+cancelIfDanger :: AppM ()
+cancelIfDanger = do
+  maybeVisibleEnemies <- nonEmpty <$> enemiesInSight
+  for_ maybeVisibleEnemies $ \visibleEnemies -> do
+    say ["autocommands", "enemyInSight"]
+      $ object [ "firstEntity" A..= NE.head visibleEnemies ]
+    cancelAutocommand
   where
     enemiesInSight :: AppM [Creature]
     enemiesInSight = do
       ents <- gets characterVisibleEntities
       pure $ ents
-         ^.. folded
-           . _SomeEntity @Creature
-           . filtered (view $ creatureType . hostile)
+          ^.. folded
+            . _SomeEntity @Creature
+            . filtered (view $ creatureType . hostile)
 
 --------------------------------------------------------------------------------
 

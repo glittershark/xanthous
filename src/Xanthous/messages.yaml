@@ -113,9 +113,9 @@ drop:
     - You take the {{item.itemType.name}} out of your backpack and put it on the ground.
     - You take the {{item.itemType.name}} out of your backpack and drop it on the ground.
 
-autoMove:
-  enemyInSight:
-    - There's a {{firstEntity.creatureType.name}} nearby!
+autocommands:
+  enemyInSight: There's a {{firstEntity.creatureType.name}} nearby!
+  doneResting: Done resting
 ###
 
 tutorial:

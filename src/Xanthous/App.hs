@@ -330,6 +330,8 @@ handleCommand (StartAutoMove dir) = do
   runAutocommand $ AutoMove dir
   continue
 
+handleCommand Rest = runAutocommand AutoRest >> continue
+
 --
 
 handleCommand ToggleRevealAll = do
