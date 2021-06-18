@@ -300,8 +300,20 @@ deriving stock instance Ord Attr
 
 --------------------------------------------------------------------------------
 
+instance (SemiSequence a, Arbitrary (Element a), Arbitrary a)
+         => Arbitrary (NonNull a) where
+  arbitrary = ncons <$> arbitrary <*> arbitrary
+
+instance ToJSON a => ToJSON (NonNull a) where
+  toJSON = toJSON . toNullable
+
+instance (FromJSON a, MonoFoldable a) => FromJSON (NonNull a) where
+  parseJSON = maybe (fail "Found empty list") pure . fromNullable <=< parseJSON
+
 instance NFData a => NFData (NonNull a) where
   rnf xs = xs `seq` toNullable xs `deepseq` ()
+
+--------------------------------------------------------------------------------
 
 instance forall t name. (NFData t, Monoid t, NFData name)
                  => NFData (Editor t name) where

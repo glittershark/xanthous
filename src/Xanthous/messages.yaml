@@ -71,9 +71,7 @@ combat:
     generic:
       - You hit the {{creature.creatureType.name}}.
       - You attack the {{creature.creatureType.name}}.
-  creatureAttack:
-    - The {{creature.creatureType.name}} hits you!
-    - The {{creature.creatureType.name}} attacks you!
+  creatureAttack: The {{creature.creatureType.name}} {{attackDescription}}
   killed:
     - You kill the {{creature.creatureType.name}}!
     - You've killed the {{creature.creatureType.name}}!

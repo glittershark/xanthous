@@ -10,3 +10,6 @@ Creature:
   maxHitpoints: 3
   speed: 100
   friendly: false
+  attacks:
+  - description: slams into you
+    damage: 1

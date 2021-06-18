@@ -24,7 +24,10 @@ import           Xanthous.Entities.Creature.Hippocampus
 import           Xanthous.Entities.Character (Character)
 import qualified Xanthous.Entities.Character as Character
 import qualified Xanthous.Entities.RawTypes as Raw
-import           Xanthous.Entities.RawTypes (CreatureType, HasLanguage (language), getLanguage)
+import           Xanthous.Entities.RawTypes
+                 ( CreatureType, HasLanguage(language), getLanguage
+                 , HasAttacks (attacks)
+                 )
 import           Xanthous.Game.State
 import           Xanthous.Game.Lenses
                  ( entitiesCollision, collisionAt
@@ -36,6 +39,7 @@ import           Xanthous.Random
 import           Xanthous.Monad (say)
 import           Xanthous.Generators.Speech (word)
 import qualified Linear.Metric as Metric
+import qualified Xanthous.Messages as Messages
 --------------------------------------------------------------------------------
 
 --  TODO move the following two classes to a more central location
@@ -86,7 +90,7 @@ stepGormlak ticks pe@(Positioned pos creature) = do
          $ creature ^. field @"_hippocampus" . destination
   let progress' =
         dest ^. destinationProgress
-        + creature ^. field @"_creatureType" . Raw.speed . invertedRate |*| ticks
+        + creatureType ^. Raw.speed . invertedRate |*| ticks
   if progress' < 1
     then pure
          $ pe'
@@ -106,10 +110,17 @@ stepGormlak ticks pe@(Positioned pos creature) = do
           when (any (entityIs @Character) ents) attackCharacter
           pure pe'
   where
+    creatureType = creature ^. field @"_creatureType"
     vision = visionRadius creature
     attackCharacter = do
-      say ["combat", "creatureAttack"] $ object [ "creature" A..= creature ]
-      character %= Character.damage 1
+      attack <- choose $ creatureType ^. attacks
+      attackDescription <- Messages.render (attack ^. Raw.description)
+                          $ object []
+      say ["combat", "creatureAttack"]
+        $ object [ "creature" A..= creature
+                 , "attackDescription" A..= attackDescription
+                 ]
+      character %= Character.damage (attack ^. Raw.damage)
 
     yellAtCharacter = for_ (creature ^. field @"_creatureType" . language)
       $ \lang -> do

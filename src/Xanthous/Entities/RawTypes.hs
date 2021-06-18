@@ -13,6 +13,8 @@ module Xanthous.Entities.RawTypes
     -- ** Language
   , LanguageName(..)
   , getLanguage
+    -- ** Attacks
+  , Attack(..)
 
     -- * Items
   , ItemType(..)
@@ -25,6 +27,7 @@ module Xanthous.Entities.RawTypes
   , isWieldable
 
     -- * Lens classes
+  , HasAttacks(..)
   , HasAttackMessage(..)
   , HasChar(..)
   , HasDamage(..)
@@ -52,6 +55,7 @@ import Xanthous.Data (TicksPerTile, Hitpoints)
 import Xanthous.Data.EntityChar
 import Xanthous.Util.QuickCheck
 import Xanthous.Generators.Speech (Language, gormlak, english)
+import Xanthous.Orphans ()
 --------------------------------------------------------------------------------
 
 -- | Identifiers for languages that creatures can speak.
@@ -73,6 +77,23 @@ getLanguage :: LanguageName -> Language
 getLanguage Gormlak = gormlak
 getLanguage English = english
 
+-- | Natural attacks for creature types
+data Attack = Attack
+  { -- | the @{{creature}}@ @{{description}}@
+    _description :: !Message
+    -- | Damage dealt
+  , _damage      :: !Hitpoints
+  }
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary Attack
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1]
+                        , OmitNothingFields 'True
+                        ]
+                       Attack
+makeFieldsNoPrefix ''Attack
+
 data CreatureType = CreatureType
   { _name         :: !Text
   , _description  :: !Text
@@ -81,8 +102,10 @@ data CreatureType = CreatureType
   , _friendly     :: !Bool
   , _speed        :: !TicksPerTile
   , _language     :: !(Maybe LanguageName)
-  , _sayVerb      :: !(Maybe Text) -- ^ The verb, in present tense, for when the
-                                  -- creature says something
+  , -- | The verb, in present tense, for when the creature says something
+    _sayVerb      :: !(Maybe Text)
+  , -- | The creature's natural attacks
+    _attacks       :: !(NonNull (Vector Attack))
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)

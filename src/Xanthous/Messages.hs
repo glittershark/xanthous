@@ -9,6 +9,7 @@ module Xanthous.Messages
     -- * Game messages
   , messages
   , render
+  , render_
   , lookup
   , message
   , message_
@@ -17,7 +18,7 @@ module Xanthous.Messages
 import Xanthous.Prelude hiding (lookup)
 --------------------------------------------------------------------------------
 import           Control.Monad.Random.Class (MonadRandom)
-import           Data.Aeson (FromJSON, ToJSON, toJSON)
+import           Data.Aeson (FromJSON, ToJSON, toJSON, object)
 import qualified Data.Aeson as JSON
 import           Data.Aeson.Generic.DerivingVia
 import           Data.FileEmbed
@@ -88,6 +89,10 @@ render :: (MonadRandom m, ToJSON params) => Message -> params -> m Text
 render msg params = do
   tpl <- resolve msg
   pure . toStrict . renderMustache tpl $ toJSON params
+
+-- | Render a message with an empty set of params
+render_ :: (MonadRandom m) => Message -> m Text
+render_ msg = render msg $ object []
 
 lookup :: [Text] -> Message
 lookup path = fromMaybe notFound $ messages ^? ix path
