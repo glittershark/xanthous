@@ -16,6 +16,7 @@ import           Xanthous.Game.State
 import           Xanthous.Game.Prompt
 import           Xanthous.Game.Lenses
 import           Control.Monad.State (modify)
+import qualified Xanthous.Game.Memo as Memo
 --------------------------------------------------------------------------------
 
 
@@ -26,6 +27,7 @@ stepGameBy ticks = do
     pEntity' <- step ticks pEntity
     entities . ix eid .= pEntity'
 
+  clearMemo Memo.characterVisiblePositions
   modify updateCharacterVision
 
   whenM (uses character isDead)

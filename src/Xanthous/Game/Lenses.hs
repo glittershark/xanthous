@@ -3,7 +3,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 --------------------------------------------------------------------------------
 module Xanthous.Game.Lenses
-  ( positionedCharacter
+  ( clearMemo
+  , positionedCharacter
   , character
   , characterPosition
   , updateCharacterVision
@@ -38,8 +39,8 @@ import           Xanthous.Data.EntityMap.Graphics
 import           Xanthous.Data.VectorBag
 import           Xanthous.Entities.Character (Character, mkCharacter)
 import           {-# SOURCE #-} Xanthous.Entities.Entities ()
-import Xanthous.Game.Memo (emptyMemoState)
-import Xanthous.Data.Memo (fillWithM)
+import           Xanthous.Game.Memo (emptyMemoState, MemoState)
+import           Xanthous.Data.Memo (fillWithM, Memoized)
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState
@@ -67,6 +68,9 @@ initialStateFromSeed seed =
       _autocommand = NoAutocommand
       _memo = emptyMemoState
   in GameState {..}
+
+clearMemo :: MonadState GameState m => Lens' MemoState (Memoized k v) -> m ()
+clearMemo l = memo %= Memo.clear l
 
 positionedCharacter :: Lens' GameState (Positioned Character)
 positionedCharacter = lens getPositionedCharacter setPositionedCharacter
