@@ -57,6 +57,11 @@ look:
 
 character:
   namePrompt: "What's your name? "
+  body:
+    knuckles:
+      calluses:
+      - You've started developing calluses on your knuckles from all the punching you've been doing.
+      - You've been fighting with your fists so much they're starting to develop calluses.
 
 combat:
   nothingToAttack: There's nothing to attack there.
@@ -64,6 +69,9 @@ combat:
   fistSelfDamage:
     - You hit so hard with your fists you hurt yourself!
     - The punch leaves your knuckles bloody!
+  fistExtraSelfDamage:
+    - You hurt your already-bloody fists with the strike!
+    - Ouch! Your fists were already bleeding!
   hit:
     fists:
       - You punch the {{creature.creatureType.name}} with your bare fists! It hurts. A lot.

@@ -2,6 +2,7 @@ module Xanthous.UtilSpec (main, test) where
 
 import Test.Prelude
 import Xanthous.Util
+import Control.Monad.State.Lazy (execState)
 
 main :: IO ()
 main = defaultMain test
@@ -24,5 +25,13 @@ test = testGroup "Xanthous.Util"
   , testGroup "takeWhileInclusive"
     [ testProperty "takeWhileInclusive (const True) ≡ id"
       $ \(xs :: [Int]) -> takeWhileInclusive (const True) xs === xs
+    ]
+  , testGroup "endoTimes"
+    [ testCase "endoTimes 4 succ 5"
+      $ endoTimes (4 :: Int) succ (5 :: Int) @?= 9
+    ]
+  , testGroup "modifyKL"
+    [ testCase "_1 += 1"
+      $ execState (modifyKL _1 $ pure . succ) (1 :: Int, 2 :: Int) @?= (2, 2)
     ]
   ]

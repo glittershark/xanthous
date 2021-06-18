@@ -362,10 +362,7 @@ attackAt pos =
         message msg msgParams
         entities . ix creatureID . positioned .= SomeEntity creature'
 
-    whenM (uses character $ isNothing . weapon)
-      $ whenM (chance (0.08 :: Float)) $ do
-        say_ ["combat", "fistSelfDamage"]
-        character %= Character.damage 1
+    whenM (uses character $ isNothing . weapon) handleFists
 
     stepGame -- TODO
   weapon chr = chr ^? inventory . wielded . wieldedItems . wieldableItem
@@ -376,6 +373,16 @@ attackAt pos =
         $ wi ^. attackMessage
       Nothing ->
         Messages.lookup ["combat", "hit", "fists"]
+
+  handleFists = do
+    damageChance <- use $ character . body . knuckles . to fistDamageChance
+    whenM (chance damageChance) $ do
+      damageAmount <- use $ character . body . knuckles . to fistfightingDamage
+      say_ [ "combat" , if damageAmount > 1
+                        then "fistExtraSelfDamage"
+                        else "fistSelfDamage" ]
+      character %= Character.damage damageAmount
+      character . body . knuckles %= damageKnuckles
 
 entityMenu_
   :: (Comonad w, Entity entity)

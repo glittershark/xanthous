@@ -30,7 +30,10 @@ module Xanthous.Util
   , minimum1
 
     -- * Combinators
-  , times, times_
+  , times, times_, endoTimes
+
+    -- * State utilities
+  , modifyK, modifyKL
 
     -- * Type-level programming utils
   , KnownBool(..)
@@ -45,6 +48,7 @@ import           Data.Proxy
 import qualified Data.Vector as V
 import           Data.Semigroup (Max(..), Min(..))
 import           Data.Semigroup.Foldable
+import Control.Monad.State.Class
 --------------------------------------------------------------------------------
 
 newtype EqEqProp a = EqEqProp a
@@ -237,6 +241,13 @@ times n f = traverse f [1..n]
 times_ :: (Applicative f, Num n, Enum n) => n -> f a -> f [a]
 times_ n fa = times n (const fa)
 
+-- | Multiply an endomorphism by an integral
+--
+-- >>> endoTimes (4 :: Int) succ (5 :: Int)
+-- 9
+endoTimes :: Integral n => n -> (a -> a) -> a -> a
+endoTimes n f = appEndo $ stimes n (Endo f)
+
 --------------------------------------------------------------------------------
 
 -- | This class gives a boolean associated with a type-level bool, a'la
@@ -250,3 +261,29 @@ class KnownBool (bool :: Bool) where
 
 instance KnownBool 'True where boolVal = True
 instance KnownBool 'False where boolVal = False
+
+--------------------------------------------------------------------------------
+
+-- | Modify some monadic state via the application of a kleisli endomorphism on
+-- the state itself
+--
+-- Note that any changes made to the state during execution of @k@ will be
+-- overwritten
+--
+-- @@
+-- modifyK pure === pure ()
+-- @@
+modifyK :: MonadState s m => (s -> m s) -> m ()
+modifyK k = get >>= k >>= put
+
+-- | Modify some monadic state via the application of a kleisli endomorphism on
+-- the target of a lens
+--
+-- Note that any changes made to the state during execution of @k@ will be
+-- overwritten
+--
+-- @@
+-- modifyKL id pure === pure ()
+-- @@
+modifyKL :: MonadState s m => LensLike m s s a b -> (a -> m b) -> m ()
+modifyKL l k = get >>= traverseOf l k >>= put
