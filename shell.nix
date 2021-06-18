@@ -10,12 +10,14 @@ in
   packages = p: [p.xanthous];
   withHoogle = true;
   doBenchmark = true;
-  buildInputs = with pkgs.haskellPackages; [
+  buildInputs = (with pkgs.haskellPackages; [
     cabal-install
     ghc-prof-flamegraph
     hp2pretty
     hlint
     haskell-language-server
     cabal2nix
-  ];
+  ]) ++ (with pkgs; [
+    qpdf
+  ]);
 }
