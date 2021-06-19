@@ -95,4 +95,12 @@ test = testGroup "Xanthous.Data"
              rots
       ]
     ]
+
+  , testGroup "units"
+    [ testGroup "unit suffixes"
+      [ testCase "density"
+        $ tshow (10000 :: Grams `Per` Cubic Meters)
+          @?= "10000.0 g/m³"
+      ]
+    ]
   ]

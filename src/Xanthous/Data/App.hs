@@ -8,6 +8,7 @@ module Xanthous.Data.App
 import Xanthous.Prelude
 --------------------------------------------------------------------------------
 import Test.QuickCheck
+import Test.QuickCheck.Instances.Text ()
 import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Util.QuickCheck
@@ -15,8 +16,13 @@ import Xanthous.Util.QuickCheck
 
 -- | Enum for "panels" displayed in the game's UI.
 data Panel
-  = InventoryPanel -- ^ A panel displaying the character's inventory
-  deriving stock (Show, Eq, Ord, Generic, Enum, Bounded)
+  = -- | A panel displaying the character's inventory
+    InventoryPanel
+  | -- | A panel describing an item in the inventory in detail
+    --
+    -- The argument is the full description of the item
+    ItemDescriptionPanel Text
+  deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function, ToJSON, FromJSON)
   deriving Arbitrary via GenericArbitrary Panel
 

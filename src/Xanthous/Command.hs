@@ -24,6 +24,7 @@ data Command
   | Save
   | Read
   | ShowInventory
+  | DescribeInventory
   | Wield
   | GoUp
   | GoDown
@@ -50,6 +51,7 @@ commandFromKey (KChar 'e') [] = Just Eat
 commandFromKey (KChar 'S') [] = Just Save
 commandFromKey (KChar 'r') [] = Just Read
 commandFromKey (KChar 'i') [] = Just ShowInventory
+commandFromKey (KChar 'I') [] = Just DescribeInventory
 commandFromKey (KChar 'w') [] = Just Wield
 commandFromKey (KChar '<') [] = Just GoUp
 commandFromKey (KChar '>') [] = Just GoDown

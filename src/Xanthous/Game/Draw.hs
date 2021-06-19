@@ -116,6 +116,7 @@ drawPanel game panel
   . viewport (Resource.Panel panel) Vertical
   . case panel of
       InventoryPanel -> drawInventoryPanel
+      ItemDescriptionPanel desc -> const $ txtWrap desc
   $ game
 
 drawCharacterInfo :: Character -> Widget ResourceName

@@ -11,6 +11,7 @@
 --------------------------------------------------------------------------------
 -- | Common data types for Xanthous
 --------------------------------------------------------------------------------
+{-# LANGUAGE AllowAmbiguousTypes #-}
 module Xanthous.Data
   ( Opposite(..)
 
@@ -60,6 +61,8 @@ module Xanthous.Data
   , Cubic(..)
   , Grams
   , Meters
+  , Unit(..)
+  , UnitSymbol(..)
 
     -- *
   , Dimensions'(..)
@@ -114,13 +117,14 @@ import           Data.Array.IArray
 import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson
                  ( ToJSON(..), FromJSON(..), object, (.=), (.:), withObject)
+import           Data.Random (Distribution)
+import           Data.Coerce
+import           Data.Proxy (Proxy(Proxy))
 --------------------------------------------------------------------------------
 import           Xanthous.Util (EqEqProp(..), EqProp, between)
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Util.Graphics
-import Data.Random (Distribution)
-import Data.Coerce
 --------------------------------------------------------------------------------
 
 -- | opposite ∘ opposite ≡ id
@@ -146,6 +150,18 @@ instance Integral a => Scalar (ScalarIntegral a) where
 
 deriving via (ScalarIntegral Integer) instance Scalar Integer
 deriving via (ScalarIntegral Word) instance Scalar Word
+
+-- | Units of measure
+class Unit a where
+  unitSuffix :: Text
+type UnitSymbol :: Symbol -> Type -> Type
+newtype UnitSymbol suffix a = UnitSymbol a
+instance KnownSymbol suffix => Unit (UnitSymbol suffix a) where
+  unitSuffix = pack $ symbolVal @suffix Proxy
+
+newtype ShowUnitSuffix a b = ShowUnitSuffix a
+instance (Show b, Unit a, Coercible a b) => Show (ShowUnitSuffix a b) where
+  show a = show (coerce @_ @b a) <> " " <> unpack (unitSuffix @a)
 
 --------------------------------------------------------------------------------
 
@@ -494,16 +510,20 @@ rotations orig@(Neighbors tl t tr l r bl b br) = V4
 --------------------------------------------------------------------------------
 
 newtype Per a b = Rate Double
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON)
        via Double
   deriving (Semigroup, Monoid) via Product Double
+  deriving Show via ShowUnitSuffix (Per a b) Double
 deriving via Double
   instance ( Distribution d Double
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
            )
   => Distribution d (Per a b)
+
+instance (Unit a, Unit b) => Unit (a `Per` b) where
+  unitSuffix = unitSuffix @a <> "/" <> unitSuffix @b
 
 invertRate :: a `Per` b -> b `Per` a
 invertRate (Rate p) = Rate $ 1 / p
@@ -531,42 +551,51 @@ instance forall a. (Scalar a) => MulUnit (Square a) a where
   x' |*| y' = Cubic @a . fromScalar $ scalar x' * scalar y'
 
 newtype Square a = Square a
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving ( Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON
            , Scalar
            )
        via a
-
+  deriving Show via ShowUnitSuffix (Square a) a
 deriving via (a :: Type)
   instance ( Distribution d a
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
            )
   => Distribution d (Square a)
 
+instance Unit a => Unit (Square a) where
+  unitSuffix = unitSuffix @a <> "²"
+
 newtype Cubic a = Cubic a
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving ( Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON
            , Scalar
            )
        via a
-
+  deriving Show via ShowUnitSuffix (Cubic a) a
 deriving via (a :: Type)
   instance ( Distribution d a
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
            )
   => Distribution d (Cubic a)
 
+instance Unit a => Unit (Cubic a) where
+  unitSuffix = unitSuffix @a <> "³"
+
+
 --------------------------------------------------------------------------------
 
 newtype Ticks = Ticks Word
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON) via Word
   deriving (Semigroup, Monoid) via (Sum Word)
   deriving Scalar via ScalarIntegral Ticks
   deriving Arbitrary via GenericArbitrary Ticks
+  deriving Unit via UnitSymbol "ticks" Ticks
+  deriving Show via ShowUnitSuffix Ticks Word
 deriving via Word
   instance ( Distribution d Word
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
@@ -574,11 +603,13 @@ deriving via Word
   => Distribution d Ticks
 
 newtype Tiles = Tiles Double
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (Num, Ord, Enum, Real, ToJSON, FromJSON, Scalar) via Double
   deriving (Semigroup, Monoid) via (Sum Double)
   deriving Arbitrary via GenericArbitrary Tiles
+  deriving Unit via UnitSymbol "m" Tiles
+  deriving Show via ShowUnitSuffix Tiles Double
 deriving via Double
   instance ( Distribution d Double
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
@@ -594,28 +625,30 @@ timesTiles = (|*|)
 --------------------------------------------------------------------------------
 
 newtype Hitpoints = Hitpoints Word
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (Arbitrary, Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON)
        via Word
   deriving (Semigroup, Monoid) via Sum Word
+  deriving Unit via UnitSymbol "hp" Hitpoints
+  deriving Show via ShowUnitSuffix Hitpoints Word
 
 --------------------------------------------------------------------------------
 
 -- | Grams, the fundamental measure of weight in Xanthous.
 newtype Grams = Grams Double
-  deriving stock (Show, Eq, Generic)
+  deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving ( Arbitrary, Num, Ord, Enum, Real, Floating, Fractional, RealFloat
            , RealFrac, Scalar, ToJSON, FromJSON
            )
        via Double
   deriving (Semigroup, Monoid) via Sum Double
+  deriving Unit via UnitSymbol "g" Grams
+  deriving Show via ShowUnitSuffix Grams Double
 
 -- | Every tile is 1 meter
 type Meters = Tiles
-
-
 
 --------------------------------------------------------------------------------
 

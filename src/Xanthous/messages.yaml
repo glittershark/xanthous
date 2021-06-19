@@ -24,7 +24,7 @@ entities:
 
 pickUp:
   menu: What would you like to pick up?
-  pickUp: You pick up the {{item.itemType.name}}
+  pickUp: You pick up the {{item.itemType.name}}.
   nothingToPickUp: "There's nothing here to pick up"
 
 cant:
@@ -100,6 +100,11 @@ read:
   prompt: Direction to read (hjklybnu.)?
   nothing: "There's nothing there to read"
   result: "\"{{message}}\""
+
+inventory:
+  describe:
+    select: Select an item in your inventory to describe
+    nothing: You aren't carrying anything
 
 wield:
   nothing:

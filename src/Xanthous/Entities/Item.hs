@@ -10,6 +10,7 @@ module Xanthous.Entities.Item
   , newWithType
   , isEdible
   , weight
+  , fullDescription
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -61,3 +62,15 @@ isEdible = Raw.isEdible . view itemType
 -- density of its material
 weight :: Item -> Grams
 weight item = (item ^. density) |*| (item ^. volume)
+
+-- | Describe the item in full detail
+fullDescription :: Item -> Text
+fullDescription item = unlines
+  [ item ^. itemType . Raw.description
+  , ""
+  , item ^. itemType . Raw.longDescription
+  , ""
+  , "volume: " <> tshow (item ^. volume)
+  , "density: " <> tshow (item ^. density)
+  , "weight: " <> tshow (weight item)
+  ]
