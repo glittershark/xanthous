@@ -100,7 +100,7 @@ tutorialMessage cells characterPosition = do
 
 randomEntities
   :: forall entity raw m. (MonadRandom m, RawType raw)
-  => (raw -> entity)
+  => (raw -> m entity)
   -> (Float, Float)
   -> Cells
   -> m (EntityMap entity)
@@ -114,7 +114,7 @@ randomEntities newWithType sizeRange cells =
       entities <- for [0..numEntities] $ const $ do
         pos <- randomPosition cells
         raw <- choose raws
-        let entity = newWithType raw
+        entity <- newWithType raw
         pure (pos, entity)
       pure $ _EntityMap # entities
 

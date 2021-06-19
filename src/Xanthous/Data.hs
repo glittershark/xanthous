@@ -6,6 +6,8 @@
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE NoTypeSynonymInstances #-}
 {-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE QuantifiedConstraints  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 --------------------------------------------------------------------------------
 -- | Common data types for Xanthous
 --------------------------------------------------------------------------------
@@ -117,6 +119,8 @@ import           Xanthous.Util (EqEqProp(..), EqProp, between)
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Util.Graphics
+import Data.Random (Distribution)
+import Data.Coerce
 --------------------------------------------------------------------------------
 
 -- | opposite ∘ opposite ≡ id
@@ -495,6 +499,11 @@ newtype Per a b = Rate Double
   deriving (Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON)
        via Double
   deriving (Semigroup, Monoid) via Product Double
+deriving via Double
+  instance ( Distribution d Double
+           , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
+           )
+  => Distribution d (Per a b)
 
 invertRate :: a `Per` b -> b `Per` a
 invertRate (Rate p) = Rate $ 1 / p
@@ -529,6 +538,12 @@ newtype Square a = Square a
            )
        via a
 
+deriving via (a :: Type)
+  instance ( Distribution d a
+           , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
+           )
+  => Distribution d (Square a)
+
 newtype Cubic a = Cubic a
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -536,6 +551,12 @@ newtype Cubic a = Cubic a
            , Scalar
            )
        via a
+
+deriving via (a :: Type)
+  instance ( Distribution d a
+           , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
+           )
+  => Distribution d (Cubic a)
 
 --------------------------------------------------------------------------------
 
@@ -546,6 +567,11 @@ newtype Ticks = Ticks Word
   deriving (Semigroup, Monoid) via (Sum Word)
   deriving Scalar via ScalarIntegral Ticks
   deriving Arbitrary via GenericArbitrary Ticks
+deriving via Word
+  instance ( Distribution d Word
+           , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
+           )
+  => Distribution d Ticks
 
 newtype Tiles = Tiles Double
   deriving stock (Show, Eq, Generic)
@@ -553,6 +579,11 @@ newtype Tiles = Tiles Double
   deriving (Num, Ord, Enum, Real, ToJSON, FromJSON, Scalar) via Double
   deriving (Semigroup, Monoid) via (Sum Double)
   deriving Arbitrary via GenericArbitrary Tiles
+deriving via Double
+  instance ( Distribution d Double
+           , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
+           )
+  => Distribution d Tiles
 
 type TicksPerTile = Ticks `Per` Tiles
 type TilesPerTick = Tiles `Per` Ticks

@@ -33,6 +33,7 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson (ToJSON, FromJSON)
+import           Control.Monad.Random (MonadRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.AI.Gormlak
 import           Xanthous.Entities.RawTypes hiding
@@ -74,11 +75,11 @@ instance Entity Creature where
 
 --------------------------------------------------------------------------------
 
-newWithType :: CreatureType -> Creature
+newWithType :: MonadRandom m => CreatureType -> m Creature
 newWithType _creatureType =
   let _hitpoints = _creatureType ^. maxHitpoints
       _hippocampus = initialHippocampus
-  in Creature {..}
+  in pure Creature {..}
 
 damage :: Hitpoints -> Creature -> Creature
 damage amount = hitpoints %~ \hp ->

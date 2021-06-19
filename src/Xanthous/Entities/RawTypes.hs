@@ -31,6 +31,7 @@ module Xanthous.Entities.RawTypes
   , HasAttackMessage(..)
   , HasChar(..)
   , HasDamage(..)
+  , HasDensity(..)
   , HasDescription(..)
   , HasEatMessage(..)
   , HasEdible(..)
@@ -42,6 +43,7 @@ module Xanthous.Entities.RawTypes
   , HasName(..)
   , HasSayVerb(..)
   , HasSpeed(..)
+  , HasVolume(..)
   , HasWieldable(..)
   ) where
 --------------------------------------------------------------------------------

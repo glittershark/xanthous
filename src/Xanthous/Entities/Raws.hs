@@ -12,6 +12,7 @@ import           Data.FileEmbed
 import qualified Data.Yaml as Yaml
 import           Xanthous.Prelude
 import           System.FilePath.Posix
+import           Control.Monad.Random (MonadRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes
 import           Xanthous.Game.State
@@ -52,8 +53,8 @@ rawsWithType = mapFromList . itoListOf (ifolded . _RawType) $ raws
 
 --------------------------------------------------------------------------------
 
-entityFromRaw :: EntityRaw -> SomeEntity
+entityFromRaw :: MonadRandom m => EntityRaw -> m SomeEntity
 entityFromRaw (Creature creatureType)
-  = SomeEntity $ Creature.newWithType creatureType
+  = SomeEntity <$> Creature.newWithType creatureType
 entityFromRaw (Item itemType)
-  = SomeEntity $ Item.newWithType itemType
+  = SomeEntity <$> Item.newWithType itemType

@@ -48,7 +48,7 @@ import           Data.Proxy
 import qualified Data.Vector as V
 import           Data.Semigroup (Max(..), Min(..))
 import           Data.Semigroup.Foldable
-import Control.Monad.State.Class
+import           Control.Monad.State.Class
 --------------------------------------------------------------------------------
 
 newtype EqEqProp a = EqEqProp a

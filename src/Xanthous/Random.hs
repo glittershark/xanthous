@@ -13,6 +13,7 @@ module Xanthous.Random
   , chance
   , chooseSubset
   , chooseRange
+  , FiniteInterval(..)
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -28,7 +29,7 @@ import           Data.Random.Distribution.Uniform.Exclusive
 import           Data.Random.Sample
 import qualified Data.Random.Source as DRS
 import           Data.Interval ( Interval, lowerBound', Extended (Finite)
-                               , upperBound', Boundary (Closed)
+                               , upperBound', Boundary (Closed), lowerBound, upperBound
                                )
 --------------------------------------------------------------------------------
 
@@ -128,7 +129,9 @@ chooseRange
   :: ( MonadRandom m
     , Distribution Uniform n
     , Enum n
-    , Bounded n, Show n, Ord n)
+    , Bounded n
+    , Ord n
+    )
   => Interval n
   -> m (Maybe n)
 chooseRange int = traverse sample distribution
@@ -149,6 +152,33 @@ chooseRange int = traverse sample distribution
       | lowerR <= upperR = Just $ Uniform lowerR upperR
       | otherwise = Nothing
 
+instance ( Distribution Uniform n
+         , Enum n
+         , Bounded n
+         , Ord n
+         )
+         => Choose (Interval n) where
+  type RandomResult (Interval n) = n
+  choose = fmap (fromMaybe $ error "Invalid interval") . chooseRange
+
+newtype FiniteInterval a
+  = FiniteInterval { unwrapFiniteInterval :: (Interval a) }
+
+instance ( Distribution Uniform n
+         , Ord n
+         )
+         => Choose (FiniteInterval n) where
+  type RandomResult (FiniteInterval n) = n
+  -- TODO broken with open/closed right now
+  choose
+    = sample
+    . uncurry Uniform
+    . over both getFinite
+    . (lowerBound &&& upperBound)
+    . unwrapFiniteInterval
+    where
+      getFinite (Finite x) = x
+      getFinite _ = error "Infinite value"
 
 --------------------------------------------------------------------------------
 
