@@ -12,3 +12,7 @@ Item:
       - You bonk the {{creature.creatureType.name}} over the head with your stick.
       - You bash the {{creature.creatureType.name}} on the noggin with your stick.
       - You whack the {{creature.creatureType.name}} with your stick.
+  # https://www.sciencedirect.com/topics/agricultural-and-biological-sciences/wood-density
+  # it's a hard stick. so it's dense wood.
+  density: 890000 # g/m³
+  volume: [ 0.003, 0.006 ] # ≈3.5 cm radius × ≈1m length

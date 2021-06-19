@@ -89,7 +89,8 @@ type TagSingleConstructors  = 'TagSingleConstructors
 class Demotable (a :: k) where
   demote :: proxy a -> Demoted k
 
-type family All (p :: Type -> Constraint) (xs :: [k]) :: Constraint where
+type All :: (Type -> Constraint) -> [Type] -> Constraint
+type family All p xs where
   All p '[] = ()
   All p (x ': xs) = (p x, All p xs)
 

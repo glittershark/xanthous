@@ -10,3 +10,5 @@ Item:
     hitpointsHealed: 2
     eatMessage:
       - You slurp up the noodles. Yumm!
+  density: 500000
+  volume: 0.001

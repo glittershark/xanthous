@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedLists #-}
 --------------------------------------------------------------------------------
 module Xanthous.OrphansSpec where
 --------------------------------------------------------------------------------
@@ -8,6 +9,10 @@ import           Text.Mustache
 import           Text.Megaparsec (errorBundlePretty)
 import           Graphics.Vty.Attributes
 import qualified Data.Aeson as JSON
+import           Data.Interval (Interval, (<=..<=), (<=..<), (<..<=))
+import           Data.Aeson ( ToJSON(toJSON), object, Value(Array) )
+import           Data.Aeson.Types (fromJSON)
+import           Data.IntegerInterval (Extended(Finite))
 --------------------------------------------------------------------------------
 import           Xanthous.Orphans
 --------------------------------------------------------------------------------
@@ -36,7 +41,32 @@ test = testGroup "Xanthous.Orphans"
         $ JSON.decode (JSON.encode tpl) === Just tpl
     ]
   , testGroup "Attr"
-    [ testProperty "JSON round trip" $ \(attr :: Attr) ->
-        JSON.decode (JSON.encode attr) === Just attr
+    [ jsonRoundTrip @Attr ]
+  , testGroup "Extended"
+    [ jsonRoundTrip @(Extended Int) ]
+  , testGroup "Interval"
+    [ testGroup "JSON"
+      [ jsonRoundTrip @(Interval Int)
+      , testCase "parses a single value as a length-1 interval" $
+          getSuccess (fromJSON $ toJSON (1 :: Int))
+          @?= Just (Finite (1 :: Int) <=..<= Finite 1)
+      , testCase "parses a pair of values as a single-ended interval" $
+          getSuccess (fromJSON $ toJSON ([1, 2] :: [Int]))
+          @?= Just (Finite (1 :: Int) <=..< Finite (2 :: Int))
+      , testCase "parses the full included/excluded syntax" $
+          getSuccess (fromJSON $ Array [ object [ "Excluded" JSON..= (1 :: Int) ]
+                                       , object [ "Included" JSON..= (4 :: Int) ]
+                                       ])
+          @?= Just (Finite (1 :: Int) <..<= Finite (4 :: Int))
+      , testCase "parses open/closed as aliases" $
+          getSuccess (fromJSON $ Array [ object [ "Open" JSON..= (1 :: Int) ]
+                                       , object [ "Closed" JSON..= (4 :: Int) ]
+                                       ])
+          @?= Just (Finite (1 :: Int) <..<= Finite (4 :: Int))
+      ]
     ]
   ]
+  where
+    getSuccess :: JSON.Result a -> Maybe a
+    getSuccess (JSON.Error _) = Nothing
+    getSuccess (JSON.Success r) = Just r

@@ -30,7 +30,7 @@ autoStep (AutoMove dir) = do
   collisionAt newPos >>= \case
     Nothing -> do
       characterPosition .= newPos
-      stepGameBy =<< uses (character . speed) (|*| 1)
+      stepGameBy =<< uses (character . speed) (|*| (1 :: Tiles))
       describeEntitiesAt newPos
       cancelIfDanger
     Just _ -> cancelAutocommand

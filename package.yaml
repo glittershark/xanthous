@@ -94,6 +94,7 @@ default-extensions:
 - GADTSyntax
 - GeneralizedNewtypeDeriving
 - KindSignatures
+- StandaloneKindSignatures
 - LambdaCase
 - MultiWayIf
 - NoImplicitPrelude

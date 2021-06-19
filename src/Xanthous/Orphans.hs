@@ -1,10 +1,10 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE PackageImports #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE PackageImports        #-}
+{-# OPTIONS_GHC -Wno-orphans       #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 --------------------------------------------------------------------------------
-{-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 module Xanthous.Orphans
   ( ppTemplate
   ) where
@@ -28,11 +28,15 @@ import           Text.Mustache
 import           Text.Mustache.Type ( showKey )
 import           Control.Monad.State
 import           Linear
+import qualified Data.Interval as Interval
+import           Data.Interval ( Interval, Extended (..), Boundary (..)
+                               , lowerBound', upperBound', (<=..<), (<=..<=)
+                               , interval)
+import           Test.QuickCheck.Checkers (EqProp ((=-=)))
 --------------------------------------------------------------------------------
 import           Xanthous.Util.JSON
 import           Xanthous.Util.QuickCheck
-import qualified Data.Interval as Interval
-import Data.Interval (Interval, Extended (..))
+import           Xanthous.Util (EqEqProp(EqEqProp))
 --------------------------------------------------------------------------------
 
 instance forall s a.
@@ -241,6 +245,8 @@ instance CoArbitrary a => CoArbitrary (MaybeDefault a) where
 instance (Eq a, Show a, Read a, Function a) => Function (MaybeDefault a) where
   function = functionShow
 
+deriving via (EqEqProp Attr) instance EqProp Attr
+
 instance Arbitrary Attr where
   arbitrary = do
     attrStyle <- arbitrary
@@ -367,11 +373,45 @@ instance Function a => Function (V2 a)
 
 --------------------------------------------------------------------------------
 
-instance Arbitrary r => Arbitrary (Extended r) where
+instance CoArbitrary Boundary
+instance Function Boundary
+
+instance Arbitrary a => Arbitrary (Extended a) where
   arbitrary = oneof [ pure NegInf
                     , pure PosInf
                     , Finite <$> arbitrary
                     ]
+
+instance CoArbitrary a => CoArbitrary (Extended a) where
+  coarbitrary NegInf = variant 1
+  coarbitrary PosInf = variant 2
+  coarbitrary (Finite x) = variant 3 . coarbitrary x
+
+instance (Function a) => Function (Extended a) where
+  function = functionMap g h
+    where
+     g NegInf = Left True
+     g (Finite a) = Right a
+     g PosInf = Left False
+     h (Left False) = PosInf
+     h (Left True) = NegInf
+     h (Right a) = Finite a
+
+instance ToJSON a => ToJSON (Extended a) where
+  toJSON NegInf = String "NegInf"
+  toJSON PosInf = String "PosInf"
+  toJSON (Finite x) = toJSON x
+
+instance FromJSON a => FromJSON (Extended a) where
+  parseJSON (String "NegInf") = pure NegInf
+  parseJSON (String "PosInf") = pure PosInf
+  parseJSON val               = Finite <$> parseJSON val
+
+instance (EqProp a, Show a) => EqProp (Extended a) where
+  NegInf =-= NegInf = property True
+  PosInf =-= PosInf = property True
+  (Finite x) =-= (Finite y) = x =-= y
+  x =-= y = counterexample (show x <> " /= " <> show y) False
 
 instance Arbitrary Interval.Boundary where
   arbitrary = elements [ Interval.Open , Interval.Closed ]
@@ -384,3 +424,60 @@ instance (Ord r, Arbitrary r) => Arbitrary (Interval r) where
       Interval.interval
       lower
       upper
+
+instance CoArbitrary a => CoArbitrary (Interval a) where
+  coarbitrary int = coarbitrary (lowerBound' int) . coarbitrary (upperBound' int)
+
+instance (Function a, Ord a) => Function (Interval a) where
+  function = functionMap g h
+    where
+      g = lowerBound' &&& upperBound'
+      h = uncurry interval
+
+deriving via (EqEqProp (Interval a)) instance Eq a => (EqProp (Interval a))
+
+instance ToJSON a => ToJSON (Interval a) where
+  toJSON x = Array . fromList $
+    [ object [ lowerKey .= lowerVal ]
+    , object [ upperKey .= upperVal ]
+    ]
+    where
+      (lowerVal, lowerBoundary) = lowerBound' x
+      (upperVal, upperBoundary) = upperBound' x
+      upperKey = boundaryToKey upperBoundary
+      lowerKey = boundaryToKey lowerBoundary
+      boundaryToKey Open = "Excluded"
+      boundaryToKey Closed = "Included"
+
+instance forall a. (FromJSON a, Ord a) => FromJSON (Interval a) where
+  parseJSON x =
+    boundPairWithBoundary x
+      <|> boundPairWithoutBoundary x
+      <|> singleVal x
+    where
+      boundPairWithBoundary = withArray "Bound pair" $ \arr -> do
+        checkLength arr
+        lower <- parseBound $ arr ^?! ix 0
+        upper <- parseBound $ arr ^?! ix 1
+        pure $ interval lower upper
+      parseBound = withObject "Bound" $ \obj -> do
+        when (length obj /= 1) $ fail "Expected an object with a single key"
+        let [(k, v)] = obj ^@.. ifolded
+        boundary <- case k of
+          "Excluded" -> pure Open
+          "Open"     -> pure Open
+          "Included" -> pure Closed
+          "Closed"   -> pure Closed
+          _          -> fail "Invalid boundary specification"
+        val <- parseJSON v
+        pure (val, boundary)
+      boundPairWithoutBoundary = withArray "Bound pair" $ \arr -> do
+        checkLength arr
+        lower <- parseJSON $ arr ^?! ix 0
+        upper <- parseJSON $ arr ^?! ix 1
+        pure $ lower <=..< upper
+      singleVal v = do
+        val <- parseJSON v
+        pure $ val <=..<= val
+      checkLength arr =
+        when (length arr /= 2) $ fail "Expected array of length 2"

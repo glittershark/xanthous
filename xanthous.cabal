@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b39d4dd906804ca42f8965c2dbe519434e80622fef7fafce1dca0d211a1c6663
+-- hash: fdfa821ad291b11a2d7a7ee9cc38d7980a9b1f494b77216b141d3424168d621d
 
 name:           xanthous
 version:        0.1.0.0
@@ -104,6 +104,7 @@ library
       GADTSyntax
       GeneralizedNewtypeDeriving
       KindSignatures
+      StandaloneKindSignatures
       LambdaCase
       MultiWayIf
       NoImplicitPrelude
@@ -261,6 +262,7 @@ executable xanthous
       GADTSyntax
       GeneralizedNewtypeDeriving
       KindSignatures
+      StandaloneKindSignatures
       LambdaCase
       MultiWayIf
       NoImplicitPrelude
@@ -385,6 +387,7 @@ test-suite test
       GADTSyntax
       GeneralizedNewtypeDeriving
       KindSignatures
+      StandaloneKindSignatures
       LambdaCase
       MultiWayIf
       NoImplicitPrelude
@@ -494,6 +497,7 @@ benchmark benchmark
       GADTSyntax
       GeneralizedNewtypeDeriving
       KindSignatures
+      StandaloneKindSignatures
       LambdaCase
       MultiWayIf
       NoImplicitPrelude

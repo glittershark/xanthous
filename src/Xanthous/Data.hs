@@ -3,8 +3,6 @@
 {-# LANGUAGE RoleAnnotations        #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE DeriveTraversable      #-}
-{-# LANGUAGE DeriveFoldable         #-}
-{-# LANGUAGE DeriveFunctor          #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE NoTypeSynonymInstances #-}
 {-# LANGUAGE DuplicateRecordFields  #-}
@@ -56,6 +54,10 @@ module Xanthous.Data
   , TicksPerTile
   , TilesPerTick
   , timesTiles
+  , Square(..)
+  , Cubic(..)
+  , Grams
+  , Meters
 
     -- *
   , Dimensions'(..)
@@ -490,9 +492,9 @@ rotations orig@(Neighbors tl t tr l r bl b br) = V4
 newtype Per a b = Rate Double
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
-  deriving (Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON) via Double
+  deriving (Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON)
+       via Double
   deriving (Semigroup, Monoid) via Product Double
-instance Arbitrary (Per a b) where arbitrary = genericArbitrary
 
 invertRate :: a `Per` b -> b `Per` a
 invertRate (Rate p) = Rate $ 1 / p
@@ -500,9 +502,42 @@ invertRate (Rate p) = Rate $ 1 / p
 invertedRate :: Iso (a `Per` b) (b' `Per` a') (b `Per` a) (a' `Per` b')
 invertedRate = iso invertRate invertRate
 
+type (:*:) :: Type -> Type -> Type
+type family (:*:) a b where
+  (a `Per` b) :*: b = a
+  (Square a) :*: a = Cubic a
+  a :*: a = Square a
+
 infixl 7 |*|
-(|*|) :: (Scalar a, Scalar b) => a `Per` b -> b -> a
-(|*|) (Rate rate) b = fromScalar $ rate * scalar b
+class MulUnit a b where
+  (|*|) :: a -> b -> a :*: b
+
+instance (Scalar a, Scalar b) => MulUnit (a `Per` b) b where
+  (Rate rate) |*| b = fromScalar $ rate * scalar b
+
+instance forall a. (Scalar a, a :*: a ~ Square a) => MulUnit a a where
+  x' |*| y' = Square @a . fromScalar $ scalar x' * scalar y'
+
+instance forall a. (Scalar a) => MulUnit (Square a) a where
+  x' |*| y' = Cubic @a . fromScalar $ scalar x' * scalar y'
+
+newtype Square a = Square a
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving ( Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON
+           , Scalar
+           )
+       via a
+
+newtype Cubic a = Cubic a
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving ( Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON
+           , Scalar
+           )
+       via a
+
+--------------------------------------------------------------------------------
 
 newtype Ticks = Ticks Word
   deriving stock (Show, Eq, Generic)
@@ -510,14 +545,14 @@ newtype Ticks = Ticks Word
   deriving (Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON) via Word
   deriving (Semigroup, Monoid) via (Sum Word)
   deriving Scalar via ScalarIntegral Ticks
-instance Arbitrary Ticks where arbitrary = genericArbitrary
+  deriving Arbitrary via GenericArbitrary Ticks
 
 newtype Tiles = Tiles Double
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving (Num, Ord, Enum, Real, ToJSON, FromJSON, Scalar) via Double
   deriving (Semigroup, Monoid) via (Sum Double)
-instance Arbitrary Tiles where arbitrary = genericArbitrary
+  deriving Arbitrary via GenericArbitrary Tiles
 
 type TicksPerTile = Ticks `Per` Tiles
 type TilesPerTick = Tiles `Per` Ticks
@@ -533,6 +568,23 @@ newtype Hitpoints = Hitpoints Word
   deriving (Arbitrary, Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON)
        via Word
   deriving (Semigroup, Monoid) via Sum Word
+
+--------------------------------------------------------------------------------
+
+-- | Grams, the fundamental measure of weight in Xanthous.
+newtype Grams = Grams Double
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving ( Arbitrary, Num, Ord, Enum, Real, Floating, Fractional, RealFloat
+           , RealFrac, Scalar, ToJSON, FromJSON
+           )
+       via Double
+  deriving (Semigroup, Monoid) via Sum Double
+
+-- | Every tile is 1 meter
+type Meters = Tiles
+
+
 
 --------------------------------------------------------------------------------
 

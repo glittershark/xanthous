@@ -32,6 +32,7 @@ import           Xanthous.Data
                  , position
                  , Position
                  , (|*|)
+                 , Tiles(..)
                  )
 import           Xanthous.Data.App (ResourceName, Panel(..), AppEvent(..))
 import qualified Xanthous.Data.EntityMap as EntityMap
@@ -127,7 +128,7 @@ handleCommand (Move dir) = do
   collisionAt newPos >>= \case
     Nothing -> do
       characterPosition .= newPos
-      stepGameBy =<< uses (character . speed) (|*| 1)
+      stepGameBy =<< uses (character . speed) (|*| Tiles 1)
       describeEntitiesAt newPos
     Just Combat -> attackAt newPos
     Just Stop -> pure ()

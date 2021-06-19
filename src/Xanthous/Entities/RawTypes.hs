@@ -51,11 +51,12 @@ import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
 --------------------------------------------------------------------------------
 import Xanthous.Messages (Message(..))
-import Xanthous.Data (TicksPerTile, Hitpoints)
+import Xanthous.Data (TicksPerTile, Hitpoints, Per, Grams, Cubic, Meters)
 import Xanthous.Data.EntityChar
 import Xanthous.Util.QuickCheck
 import Xanthous.Generators.Speech (Language, gormlak, english)
 import Xanthous.Orphans ()
+import Data.Interval (Interval, lowerBound', upperBound')
 --------------------------------------------------------------------------------
 
 -- | Identifiers for languages that creatures can speak.
@@ -153,16 +154,32 @@ data ItemType = ItemType
   , _description     :: !Text
   , _longDescription :: !Text
   , _char            :: !EntityChar
+  , _density         :: !(Interval (Grams `Per` Cubic Meters))
+  , _volume          :: !(Interval (Cubic Meters))
   , _edible          :: !(Maybe EdibleItem)
   , _wieldable       :: !(Maybe WieldableItem)
   }
-  deriving stock (Show, Eq, Ord, Generic)
+  deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Arbitrary via GenericArbitrary ItemType
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        ItemType
 makeFieldsNoPrefix ''ItemType
+
+instance Ord ItemType where
+  compare x y
+    = compareOf name x y
+    <> compareOf description x y
+    <> compareOf longDescription x y
+    <> compareOf char x y
+    <> compareOf (density . to extractInterval) x y
+    <> compareOf (volume . to extractInterval) x y
+    <> compareOf edible x y
+    <> compareOf wieldable x y
+    where
+      compareOf l = comparing (view l)
+      extractInterval = lowerBound' &&& upperBound'
 
 -- | Can this item be eaten?
 isEdible :: ItemType -> Bool
