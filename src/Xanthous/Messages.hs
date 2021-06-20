@@ -24,7 +24,6 @@ import           Data.Aeson.Generic.DerivingVia
 import           Data.FileEmbed
 import           Data.List.NonEmpty
 import           Test.QuickCheck hiding (choose)
-import           Test.QuickCheck.Arbitrary.Generic
 import           Test.QuickCheck.Instances.UnorderedContainers ()
 import           Text.Mustache
 import qualified Data.Yaml as Yaml
@@ -41,7 +40,10 @@ data Message = Single Template | Choice (NonEmpty Template)
            Message
 
 instance Arbitrary Message where
-  arbitrary = genericArbitrary
+  arbitrary =
+    frequency [ (10, Single <$> arbitrary)
+              , (1, Choice <$> arbitrary)
+              ]
   shrink = genericShrink
 
 resolve :: MonadRandom m => Message -> m Template

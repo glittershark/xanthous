@@ -34,4 +34,10 @@ test = testGroup "Xanthous.Util"
     [ testCase "_1 += 1"
       $ execState (modifyKL _1 $ pure . succ) (1 :: Int, 2 :: Int) @?= (2, 2)
     ]
+  , testGroup "removeFirst"
+    [ testCase "example" $
+      removeFirst @[Int] (> 5) [1..10] @?= [1, 2, 3, 4, 5, 7, 8, 9, 10]
+    , testProperty "the result is the right length" $ \(xs :: [Int]) p ->
+        length (removeFirst p xs) `elem` [length xs, length xs - 1]
+    ]
   ]

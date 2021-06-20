@@ -19,6 +19,11 @@ module Xanthous.Entities.Character
   , backpack
   , wielded
   , items
+  , InventoryPosition(..)
+  , describeInventoryPosition
+  , inventoryPosition
+  , itemsWithPosition
+  , removeItemFromPosition
     -- *** Wielded items
   , Wielded(..)
   , hands
@@ -61,6 +66,8 @@ import           Test.QuickCheck.Instances.Vector ()
 import           Test.QuickCheck.Arbitrary.Generic
 import           Test.QuickCheck.Gen (chooseUpTo)
 import           Test.QuickCheck.Checkers (EqProp)
+import           Control.Monad.State.Lazy (execState)
+import           Control.Monad.Trans.State.Lazy (execStateT)
 --------------------------------------------------------------------------------
 import           Xanthous.Util.QuickCheck
 import           Xanthous.Game.State
@@ -71,10 +78,8 @@ import           Xanthous.Data
                  )
 import           Xanthous.Entities.RawTypes (WieldableItem, wieldable)
 import qualified Xanthous.Entities.RawTypes as Raw
-import           Xanthous.Util (EqEqProp(EqEqProp), modifyKL)
-import Control.Monad.State.Lazy (execState)
-import Control.Monad.Trans.State.Lazy (execStateT)
-import Xanthous.Monad (say_)
+import           Xanthous.Util (EqEqProp(EqEqProp), modifyKL, removeFirst)
+import           Xanthous.Monad (say_)
 --------------------------------------------------------------------------------
 
 data WieldedItem = WieldedItem
@@ -124,19 +129,22 @@ data Wielded
        via WithOptions '[ 'SumEnc 'ObjWithSingleField ]
            Wielded
 
+nothingWielded :: Wielded
+nothingWielded = Hands Nothing Nothing
+
 hands :: Prism' Wielded (Maybe WieldedItem, Maybe WieldedItem)
 hands = prism' (uncurry Hands) $ \case
   Hands l r -> Just (l, r)
   _ -> Nothing
 
-leftHand :: Traversal' Wielded WieldedItem
-leftHand = hands . _1 . _Just
+leftHand :: Traversal' Wielded (Maybe WieldedItem)
+leftHand = hands . _1
 
 inLeftHand :: WieldedItem -> Wielded
 inLeftHand wi = Hands (Just wi) Nothing
 
-rightHand :: Traversal' Wielded WieldedItem
-rightHand = hands . _2 . _Just
+rightHand :: Traversal' Wielded (Maybe WieldedItem)
+rightHand = hands . _2
 
 inRightHand :: WieldedItem -> Wielded
 inRightHand wi = Hands Nothing (Just wi)
@@ -216,6 +224,59 @@ instance Semigroup Inventory where
 
 instance Monoid Inventory where
   mempty = Inventory mempty $ Hands Nothing Nothing
+
+-- | Representation for where in the inventory an item might be
+data InventoryPosition
+  = Backpack
+  | LeftHand
+  | RightHand
+  | BothHands
+  deriving stock (Eq, Show, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary InventoryPosition
+
+-- | Return a human-readable description of the given 'InventoryPosition'
+describeInventoryPosition :: InventoryPosition -> Text
+describeInventoryPosition Backpack  = "In backpack"
+describeInventoryPosition LeftHand  = "Wielded, in left hand"
+describeInventoryPosition RightHand = "Wielded, in right hand"
+describeInventoryPosition BothHands = "Wielded, in both hands"
+
+-- | Given a position in the inventory, return a traversal on the inventory over
+-- all the items in that position
+inventoryPosition :: InventoryPosition -> Traversal' Inventory Item
+inventoryPosition Backpack = backpack . traversed
+inventoryPosition LeftHand = wielded . leftHand . _Just . wieldedItem
+inventoryPosition RightHand = wielded . leftHand . _Just . wieldedItem
+inventoryPosition BothHands = wielded . doubleHanded . wieldedItem
+
+-- | A fold over all the items in the inventory accompanied by their position in
+-- the inventory
+--
+-- Invariant: This will return items in the same order as 'items'
+itemsWithPosition :: Fold Inventory (InventoryPosition, Item)
+itemsWithPosition = folding $ (<>) <$> backpackItems <*> handItems
+  where
+    backpackItems = toListOf $ backpack . folded . to (Backpack ,)
+    handItems inventory = case inventory ^. wielded of
+       DoubleHanded i -> pure (BothHands, i ^. wieldedItem)
+       Hands l r -> (l ^.. folded . wieldedItem . to (LeftHand ,))
+                 <> (r ^.. folded . wieldedItem . to (RightHand ,))
+
+-- | Remove the first item equal to 'Item' from the given position in the
+-- inventory
+removeItemFromPosition :: InventoryPosition -> Item -> Inventory -> Inventory
+removeItemFromPosition Backpack item inv
+  = inv & backpack %~ removeFirst (== item)
+removeItemFromPosition LeftHand item inv
+  = inv & wielded . leftHand %~ filter ((/= item) . view wieldedItem)
+removeItemFromPosition RightHand item inv
+  = inv & wielded . rightHand %~ filter ((/= item) . view wieldedItem)
+removeItemFromPosition BothHands item inv
+  | has (wielded . doubleHanded . wieldedItem . filtered (== item)) inv
+  = inv & wielded .~ nothingWielded
+  | otherwise
+  = inv
 
 --------------------------------------------------------------------------------
 

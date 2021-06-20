@@ -26,6 +26,7 @@ module Xanthous.Util
   , takeWhileInclusive
   , smallestNotIn
   , removeVectorIndex
+  , removeFirst
   , maximum1
   , minimum1
 
@@ -49,6 +50,7 @@ import qualified Data.Vector as V
 import           Data.Semigroup (Max(..), Min(..))
 import           Data.Semigroup.Foldable
 import           Control.Monad.State.Class
+import           Control.Monad.State (evalState)
 --------------------------------------------------------------------------------
 
 newtype EqEqProp a = EqEqProp a
@@ -228,6 +230,16 @@ removeVectorIndex :: Int -> Vector a -> Vector a
 removeVectorIndex idx vect =
   let (before, after) = V.splitAt idx vect
   in before <> fromMaybe Empty (tailMay after)
+
+-- | Remove the first element in a sequence that matches a given predicate
+removeFirst :: IsSequence seq => (Element seq -> Bool) -> seq -> seq
+removeFirst p
+  = flip evalState False
+  . filterM (\x -> do
+                found <- get
+                let matches = p x
+                when matches $ put True
+                pure $ found || not matches)
 
 maximum1 :: (Ord a, Foldable1 f) => f a -> a
 maximum1 = getMax . foldMap1 Max

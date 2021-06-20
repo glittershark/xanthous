@@ -276,8 +276,9 @@ handleCommand ShowInventory = showPanel InventoryPanel >> continue
 handleCommand DescribeInventory = do
   selectItemFromInventory_ ["inventory", "describe", "select"] Cancellable id
     (say_ ["inventory", "describe", "nothing"])
-    $ \(MenuResult item) ->
-        showPanel . ItemDescriptionPanel $ Item.fullDescription item
+    $ \(MenuResult (invPos, item)) -> showPanel . ItemDescriptionPanel
+        $ Item.fullDescription item
+        <> "\n\n" <> describeInventoryPosition invPos
   continue
 
 
@@ -425,20 +426,23 @@ selectItemFromInventory
                       --   recoverable fashion. Prism vs iso so we can discard
                       --   items.
   -> AppM ()            -- ^ Action to take if there are no items matching
-  -> (PromptResult ('Menu item) -> AppM ())
+  -> (PromptResult ('Menu (InventoryPosition, item)) -> AppM ())
   -> AppM ()
 selectItemFromInventory msgPath msgParams cancellable extraInfo onEmpty cb = do
   uses (character . inventory)
-       (V.mapMaybe (preview extraInfo) . toVectorOf items)
+       (V.mapMaybe (_2 $ preview extraInfo) . toVectorOf itemsWithPosition)
     >>= \case
       Empty -> onEmpty
       items' -> menu msgPath msgParams cancellable (itemMenu items') cb
   where
     itemMenu = mkMenuItems . map itemMenuItem
-    itemMenuItem extraInfoItem =
+    itemMenuItem (invPos, extraInfoItem) =
       let item = extraInfo # extraInfoItem
       in ( entityMenuChar item
-         , MenuOption (description item) extraInfoItem)
+         , MenuOption
+           (description item <> " (" <> describeInventoryPosition invPos <> ")")
+           (invPos, extraInfoItem)
+         )
 
 -- | Prompt with an item to select out of the inventory and call callback with
 -- it
@@ -450,7 +454,7 @@ selectItemFromInventory_
                       --   recoverable fashion. Prism vs iso so we can discard
                       --   items.
   -> AppM ()            -- ^ Action to take if there are no items matching
-  -> (PromptResult ('Menu item) -> AppM ())
+  -> (PromptResult ('Menu (InventoryPosition, item)) -> AppM ())
   -> AppM ()
 selectItemFromInventory_ msgPath = selectItemFromInventory msgPath ()
 
@@ -470,8 +474,9 @@ takeItemFromInventory
   -> AppM ()
 takeItemFromInventory msgPath msgParams cancellable extraInfo onEmpty cb =
   selectItemFromInventory msgPath msgParams cancellable extraInfo onEmpty
-    $ \(MenuResult item) -> do
-      character . inventory . backpack %= filter (/= (item ^. re extraInfo))
+    $ \(MenuResult (invPos, item)) -> do
+      character . inventory
+        %= removeItemFromPosition invPos (item ^. re extraInfo)
       cb $ MenuResult item
 
 takeItemFromInventory_

@@ -84,9 +84,9 @@ instance Arbitrary Pos where
   shrink (unPos -> x) = mkPos <$> [x..1]
 
 instance Arbitrary Node where
-  arbitrary = sized node
+  arbitrary = scale (`div` 10) $ sized node
     where
-      node n | n > 0 = oneof $ leaves ++ branches (n `div` 2)
+      node n | n > 0 = oneof $ leaves ++ branches (n `div` 4)
       node _ = oneof leaves
       branches n =
         [ Section <$> arbitrary <*> subnodes n
@@ -110,7 +110,7 @@ concatTextBlocks (TextBlock txt₁ : TextBlock txt₂ : xs)
 concatTextBlocks (x : xs) = x : concatTextBlocks xs
 
 instance Arbitrary Template where
-  arbitrary = do
+  arbitrary = scale (`div` 8) $ do
     template <- concatTextBlocks <$> arbitrary
     -- templateName <- arbitrary
     -- rest <- arbitrary

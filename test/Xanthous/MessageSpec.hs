@@ -38,7 +38,7 @@ test = testGroup "Xanthous.Messages"
           let
             Right tpl = compileMustacheText "foo" "bar"
             msg = Single tpl
-            mm = Nested $ [("foo", Direct msg)]
+            mm = Nested [("foo", Direct msg)]
           in mm ^? ix ["foo"] @?= Just msg
         ]
     , testGroup "lookupMessage"
@@ -49,5 +49,11 @@ test = testGroup "Xanthous.Messages"
 
   , testGroup "Messages"
     [ testCase "are all valid" $ messages `deepseq` pure ()
+    ]
+
+  , testGroup "Template"
+    [ testGroup "eq"
+      [ testProperty "reflexive" $ \(tpl :: Template) -> tpl == tpl
+      ]
     ]
   ]
