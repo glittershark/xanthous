@@ -28,7 +28,8 @@ import           Brick.Widgets.Edit (Editor, editorText, getEditContents)
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
-import           Xanthous.Util (smallestNotIn)
+--------------------------------------------------------------------------------
+import           Xanthous.Util (smallestNotIn, AlphaChar (..))
 import           Xanthous.Data (Direction, Position)
 import           Xanthous.Data.App (ResourceName)
 import qualified Xanthous.Data.App as Resource
@@ -175,7 +176,7 @@ mkMenuItems :: (MonoFoldable f, Element f ~ (Char, MenuOption a))
             -> Map Char (MenuOption a)
 mkMenuItems = flip foldl' mempty $ \items (chr, option) ->
   let chr' = if has (ix chr) items
-             then smallestNotIn $ keys items
+             then getAlphaChar . smallestNotIn . map AlphaChar $ keys items
              else chr
   in items & at chr' ?~ option
 

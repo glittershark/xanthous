@@ -40,4 +40,7 @@ test = testGroup "Xanthous.Util"
     , testProperty "the result is the right length" $ \(xs :: [Int]) p ->
         length (removeFirst p xs) `elem` [length xs, length xs - 1]
     ]
+  , testGroup "AlphaChar"
+    [ testCase "succ 'z'" $ succ (AlphaChar 'z') @?= AlphaChar 'A'
+    ]
   ]

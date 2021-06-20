@@ -38,6 +38,9 @@ module Xanthous.Util
 
     -- * Type-level programming utils
   , KnownBool(..)
+
+    -- *
+  , AlphaChar(..)
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (foldr)
@@ -299,3 +302,34 @@ modifyK k = get >>= k >>= put
 -- @@
 modifyKL :: MonadState s m => LensLike m s s a b -> (a -> m b) -> m ()
 modifyKL l k = get >>= traverseOf l k >>= put
+
+--------------------------------------------------------------------------------
+
+-- | A newtype wrapper around 'Char' whose 'Enum' and 'Bounded' instances only
+-- include the characters @[a-zA-Z]@
+--
+-- >>> succ (AlphaChar 'z')
+-- 'A'
+newtype AlphaChar = AlphaChar { getAlphaChar :: Char }
+  deriving stock Show
+  deriving (Eq, Ord) via Char
+
+instance Enum AlphaChar where
+  toEnum n
+    | between 0 25 n
+    = AlphaChar . toEnum $ n + fromEnum 'a'
+    | between 26 51 n
+    = AlphaChar . toEnum $ n - 26 + fromEnum 'A'
+    | otherwise
+    = error $ "Tag " <> show n <> " out of range [0, 51] for enum AlphaChar"
+  fromEnum (AlphaChar chr)
+    | between 'a' 'z' chr
+    = fromEnum chr - fromEnum 'a'
+    | between 'A' 'Z' chr
+    = fromEnum chr - fromEnum 'A'
+    | otherwise
+    = error $ "Invalid value for alpha char: " <> show chr
+
+instance Bounded AlphaChar where
+  minBound = AlphaChar 'a'
+  maxBound = AlphaChar 'Z'
