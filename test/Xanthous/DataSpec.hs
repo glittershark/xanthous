@@ -99,8 +99,11 @@ test = testGroup "Xanthous.Data"
   , testGroup "units"
     [ testGroup "unit suffixes"
       [ testCase "density"
-        $ tshow (10000 :: Grams `Per` Cubic Meters)
-          @?= "10000.0 g/m³"
+        $ tshow (10000 :: Grams `Per` Cubic Meters) @?= "10000.0 g/m³"
+      , testCase "volume"
+        $ tshow (5 :: Cubic Meters) @?= "5.0 m³"
+      , testCase "area"
+        $ tshow (5 :: Square Meters) @?= "5.0 m²"
       ]
     ]
   ]

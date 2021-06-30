@@ -557,7 +557,6 @@ newtype Square a = Square a
            , Scalar
            )
        via a
-  deriving Show via ShowUnitSuffix (Square a) a
 deriving via (a :: Type)
   instance ( Distribution d a
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
@@ -567,6 +566,9 @@ deriving via (a :: Type)
 instance Unit a => Unit (Square a) where
   unitSuffix = unitSuffix @a <> "²"
 
+instance Show a => Show (Square a) where
+  show (Square n) = show n <> "²"
+
 newtype Cubic a = Cubic a
   deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -574,7 +576,6 @@ newtype Cubic a = Cubic a
            , Scalar
            )
        via a
-  deriving Show via ShowUnitSuffix (Cubic a) a
 deriving via (a :: Type)
   instance ( Distribution d a
            , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
@@ -583,6 +584,9 @@ deriving via (a :: Type)
 
 instance Unit a => Unit (Cubic a) where
   unitSuffix = unitSuffix @a <> "³"
+
+instance Show a => Show (Cubic a) where
+  show (Cubic n) = show n <> "³"
 
 
 --------------------------------------------------------------------------------
