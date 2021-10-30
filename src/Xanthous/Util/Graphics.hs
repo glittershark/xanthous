@@ -126,7 +126,7 @@ line pa@(V2 xa ya) pb@(V2 xb yb)
     ystep                = if y₁ < y₂ then 1 else -1
     go (xTemp, yTemp, err)
       | xTemp > x₂ = Nothing
-      | otherwise  = Just ((V2 xTemp yTemp), (xTemp + 1, newY, newError))
+      | otherwise  = Just (V2 xTemp yTemp, (xTemp + 1, newY, newError))
       where
         tempError        = err + δy
         (newY, newError) = if (2 * tempError) >= δx
@@ -138,7 +138,6 @@ line pa@(V2 xa ya) pb@(V2 xb yb)
 straightLine :: (Num i, Ord i) => V2 i -> V2 i -> [V2 i]
 straightLine pa@(V2 xa _) pb@(V2 _ yb) = line pa midpoint ++ line midpoint pb
   where midpoint = V2 xa yb
-
 
 delaunay
   :: (Ord n, Fractional n)

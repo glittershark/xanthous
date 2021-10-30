@@ -23,7 +23,7 @@ import           Linear.Metric
 import qualified Options.Applicative as Opt
 --------------------------------------------------------------------------------
 import           Xanthous.Random
-import           Xanthous.Data hiding (x, y, _x, _y, edges)
+import           Xanthous.Data hiding (x, y, _x, _y, edges, distance)
 import           Xanthous.Generators.Level.Util
 import           Xanthous.Util.Graphics (delaunay, straightLine)
 import           Xanthous.Util.Graph (mstSubGraph)

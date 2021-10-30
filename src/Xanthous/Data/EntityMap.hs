@@ -20,6 +20,7 @@ module Xanthous.Data.EntityMap
   , positions
   , lookup
   , lookupWithPosition
+  , positionOf
   -- , positionedEntities
   , neighbors
   , Deduplicate(..)
@@ -37,7 +38,7 @@ import Xanthous.Data
   , Positioned(..)
   , positioned
   , Neighbors(..)
-  , neighborPositions
+  , neighborPositions, position
   )
 import Xanthous.Data.VectorBag
 import Xanthous.Orphans ()
@@ -267,6 +268,10 @@ lookup eid = fmap (view positioned) . lookupWithPosition eid
 
 neighbors :: (Ord a, Show a) => Position -> EntityMap a -> Neighbors (VectorBag a)
 neighbors pos em = (\p -> view (atPosition p) em) <$> neighborPositions pos
+
+-- | Traversal to the position of the entity with the given ID
+positionOf :: EntityID -> Traversal' (EntityMap a) Position
+positionOf eid = ix eid . position
 
 --------------------------------------------------------------------------------
 makeWrapped ''Deduplicate

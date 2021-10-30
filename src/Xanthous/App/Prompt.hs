@@ -9,6 +9,7 @@ module Xanthous.App.Prompt
   , confirm
   , menu
   , menu_
+  , firePrompt_
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
@@ -17,15 +18,19 @@ import           Brick (BrickEvent(..), Next)
 import           Brick.Widgets.Edit (handleEditorEvent)
 import           Data.Aeson (ToJSON, object)
 import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
-import           GHC.TypeLits (ErrorMessage(..))
 --------------------------------------------------------------------------------
 import           Xanthous.App.Common
-import           Xanthous.Data (move)
+import           Xanthous.Data (move, Tiles, Position, positioned, _Position)
+import qualified Xanthous.Data as Data
 import           Xanthous.Command (directionFromChar)
 import           Xanthous.Data.App (ResourceName, AppEvent)
 import           Xanthous.Game.Prompt
 import           Xanthous.Game.State
 import qualified Xanthous.Messages as Messages
+import qualified Xanthous.Data.EntityMap as EntityMap
+import           Xanthous.Entities.Creature (creatureType)
+import           Xanthous.Entities.RawTypes (hostile)
+import qualified Linear.Metric as Metric
 --------------------------------------------------------------------------------
 
 handlePromptEvent
@@ -77,6 +82,17 @@ handlePromptEvent
 handlePromptEvent _ (Prompt _ SPointOnMap _ _ _) _ = continue
 
 handlePromptEvent
+  msg
+  (Prompt c SFire (FirePromptState pos) pri@(origin, range) cb)
+  (VtyEvent (EvKey (KChar (directionFromChar -> Just dir)) []))
+  = do
+  let pos' = move dir pos
+      prompt' = Prompt c SFire (FirePromptState pos') pri cb
+  when (Data.distance origin pos' <= range) $
+    promptState .= WaitingPrompt msg prompt'
+  continue
+
+handlePromptEvent
   _
   (Prompt Cancellable _ _ _ _)
   (VtyEvent (EvKey (KChar 'q') []))
@@ -86,19 +102,15 @@ handlePromptEvent _ _ _ = continue
 clearPrompt :: AppM ()
 clearPrompt = promptState .= NoPrompt
 
-class NotMenu (pt :: PromptType)
-instance NotMenu 'StringPrompt
-instance NotMenu 'Confirm
-instance NotMenu 'DirectionPrompt
-instance NotMenu 'PointOnMap
-instance NotMenu 'Continue
-instance TypeError ('Text "Cannot use `prompt` or `prompt_` for menu prompts"
-                    ':$$: 'Text "Use `menu` or `menu_` instead")
-         => NotMenu ('Menu a)
+type PromptParams :: PromptType -> Type
+type family PromptParams pt where
+  PromptParams ('Menu a) = Map Char (MenuOption a) -- Menu items
+  PromptParams 'Fire     = Tiles -- Range
+  PromptParams _         = ()
 
 prompt
   :: forall (pt :: PromptType) (params :: Type).
-    (ToJSON params, SingPromptType pt, NotMenu pt)
+    (ToJSON params, SingPromptType pt, PromptParams pt ~ ())
   => [Text]                     -- ^ Message key
   -> params                     -- ^ Message params
   -> PromptCancellable
@@ -107,20 +119,19 @@ prompt
 prompt msgPath params cancellable cb = do
   let pt = singPromptType @pt
   msg <- Messages.message msgPath params
-  p <- case pt of
+  mp :: Maybe (Prompt AppM) <- case pt of
     SPointOnMap -> do
       charPos <- use characterPosition
-      pure $ mkPointOnMapPrompt cancellable charPos cb
-    SStringPrompt -> pure $ mkPrompt cancellable pt cb
-    SConfirm -> pure $ mkPrompt cancellable pt cb
-    SDirectionPrompt -> pure $ mkPrompt cancellable pt cb
-    SContinue -> pure $ mkPrompt cancellable pt cb
-    SMenu -> error "unreachable"
-  promptState .= WaitingPrompt msg p
+      pure . Just $ mkPointOnMapPrompt cancellable charPos cb
+    SStringPrompt -> pure . Just $ mkPrompt cancellable pt cb
+    SConfirm -> pure . Just $ mkPrompt cancellable pt cb
+    SDirectionPrompt -> pure . Just $ mkPrompt cancellable pt cb
+    SContinue -> pure . Just $ mkPrompt cancellable pt cb
+  for_ mp $ \p -> promptState .= WaitingPrompt msg p
 
 prompt_
   :: forall (pt :: PromptType).
-    (SingPromptType pt, NotMenu pt)
+    (SingPromptType pt, PromptParams pt ~ ())
   => [Text] -- ^ Message key
   -> PromptCancellable
   -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
@@ -159,3 +170,36 @@ menu_ :: forall (a :: Type).
       -> (PromptResult ('Menu a) -> AppM ()) -- ^ Menu promise handler
       -> AppM ()
 menu_ msgPath = menu msgPath $ object []
+
+firePrompt_
+  :: [Text]                        -- ^ Message key
+  -> PromptCancellable
+  -> Tiles                         -- ^ Range
+  -> (PromptResult 'Fire -> AppM ()) -- ^ Promise handler
+  -> AppM ()
+firePrompt_ msgPath cancellable range cb = do
+  msg <- Messages.message msgPath $ object []
+  initialPos <- maybe (use characterPosition) pure =<< nearestEnemyPosition
+  let p = mkFirePrompt cancellable initialPos range cb
+  promptState .= WaitingPrompt msg p
+
+-- | Returns the position of the nearest visible hostile creature, if any
+nearestEnemyPosition :: AppM (Maybe Position)
+nearestEnemyPosition = do
+  charPos <- use characterPosition
+  em <- use entities
+  ps <- characterVisiblePositions
+  let candidates = toList ps >>= \p ->
+        let ents = EntityMap.atPositionWithIDs p em
+        in ents
+           ^.. folded
+           . _2
+           . positioned
+           . _SomeEntity
+           . creatureType
+           . filtered (view hostile)
+           . to (const (distance charPos p, p))
+  pure . headMay . fmap snd $ sortOn fst candidates
+  where
+    distance :: Position -> Position -> Double
+    distance = Metric.distance `on` (fmap fromIntegral . view _Position)

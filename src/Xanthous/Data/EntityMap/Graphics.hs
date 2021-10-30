@@ -2,6 +2,7 @@
 module Xanthous.Data.EntityMap.Graphics
   ( visiblePositions
   , visibleEntities
+  , lineOfSight
   , linesOfSight
   , canSee
   ) where
@@ -27,27 +28,34 @@ visiblePositions
 visiblePositions pos radius
   = setFromList . positions . visibleEntities pos radius
 
+-- | Returns a list of entities on the *line of sight* from the first position
+-- to the second position
+lineOfSight
+  :: forall e. Entity e
+  => Position -- ^ Origin
+  -> Position -- ^ Destination
+  -> EntityMap e
+  -> [(Position, Vector (EntityID, e))]
+lineOfSight (view _Position -> origin) (view _Position -> destination) em =
+  takeWhileInclusive (none (view blocksVision . entityAttributes . snd) . snd)
+    $ getPositionedAt <$> line origin destination
+  where
+    getPositionedAt :: V2 Int -> (Position, Vector (EntityID, e))
+    getPositionedAt (review _Position -> p) =
+      (p, over _2 (view positioned) <$> atPositionWithIDs p em)
+
 -- | Returns a list of individual lines of sight, each of which is a list of
 -- entities at positions on that line of sight
 linesOfSight
   :: forall e. Entity e
-  => Position
-  -> Word
+  => Position    -- ^ Centerpoint
+  -> Word        -- ^ Radius
   -> EntityMap e
   -> [[(Position, Vector (EntityID, e))]]
-linesOfSight (view _Position -> pos) visionRadius em
-  = entitiesOnLines
-  <&> takeWhileInclusive
-      (none (view blocksVision . entityAttributes . snd) . snd)
+linesOfSight pos visionRadius em =
+  radius <&> \edge -> lineOfSight pos (_Position # edge) em
   where
-    radius = circle pos $ fromIntegral visionRadius
-    lines = line pos <$> radius
-    entitiesOnLines :: [[(Position, Vector (EntityID, e))]]
-    entitiesOnLines = lines <&> map getPositionedAt
-    getPositionedAt :: V2 Int -> (Position, Vector (EntityID, e))
-    getPositionedAt p =
-      let ppos = _Position # p
-      in (ppos, over _2 (view positioned) <$> atPositionWithIDs ppos em)
+    radius = circle (pos ^. _Position) $ fromIntegral visionRadius
 
 -- | Given a point and a radius of vision, returns a list of all entities that
 -- are *visible* (eg, not blocked by an entity that obscures vision) from that

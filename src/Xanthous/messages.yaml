@@ -115,6 +115,28 @@ wield:
   # TODO: use actual hands
   wielded : You wield the {{wieldedItem.itemType.name}} in your right hand.
 
+fire:
+  nothing:
+    - You don't currently have anything you can throw
+    - You don't have anything to throw
+  zeroRange:
+    - That item is too heavy to throw!
+    - That's too heavy to throw
+    - You're not strong enough to throw that any meaningful distance
+  menu: What would you like to throw?
+  target: Choose a target
+  atRange:
+    - It's too heavy for you to throw any further than this
+  fired:
+    noTarget:
+      - You throw the {{item.itemType.name}} at the ground
+    noDamage:
+      - You throw the {{item.itemType.name}} at the {{creature.creatureType.name}}. It doesn't seem to care.
+      - You throw the {{item.itemType.name}} at the {{creature.creatureType.name}}. It doesn't seem to do anything.
+      - You throw the {{item.itemType.name}} at the {{creature.creatureType.name}}. It doesn't seem to hurt it.
+    someDamage:
+      - You throw the {{item.itemType.name}} at the {{creature.creatureType.name}}. It hits it on the head!.
+
 drop:
   nothing: You aren't carrying anything
   menu: What would you like to drop?

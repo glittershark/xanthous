@@ -1,8 +1,7 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE StandaloneDeriving   #-}
+{-# LANGUAGE GADTs                #-}
 --------------------------------------------------------------------------------
 module Xanthous.Game.Prompt
   ( PromptType(..)
@@ -11,6 +10,7 @@ module Xanthous.Game.Prompt
   , PromptCancellable(..)
   , PromptResult(..)
   , PromptState(..)
+  , promptStatePosition
   , MenuOption(..)
   , mkMenuItems
   , PromptInput
@@ -18,19 +18,19 @@ module Xanthous.Game.Prompt
   , mkPrompt
   , mkMenu
   , mkPointOnMapPrompt
+  , mkFirePrompt
   , isCancellable
   , submitPrompt
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
+import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           Brick.Widgets.Edit (Editor, editorText, getEditContents)
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 import           Xanthous.Util (smallestNotIn, AlphaChar (..))
-import           Xanthous.Data (Direction, Position)
+import           Xanthous.Data (Direction, Position, Tiles)
 import           Xanthous.Data.App (ResourceName)
 import qualified Xanthous.Data.App as Resource
 --------------------------------------------------------------------------------
@@ -41,6 +41,9 @@ data PromptType where
   Menu            :: Type -> PromptType
   DirectionPrompt :: PromptType
   PointOnMap      :: PromptType
+  -- | Throw an item or fire a projectile weapon. Prompt is to select the
+  -- direction
+  Fire            :: PromptType
   Continue        :: PromptType
   deriving stock (Generic)
 
@@ -51,14 +54,16 @@ instance Show PromptType where
   show DirectionPrompt = "DirectionPrompt"
   show PointOnMap = "PointOnMap"
   show Continue = "Continue"
+  show Fire = "Fire"
 
 data SPromptType :: PromptType -> Type where
-  SStringPrompt    ::      SPromptType 'StringPrompt
-  SConfirm         ::      SPromptType 'Confirm
-  SMenu            ::      SPromptType ('Menu a)
-  SDirectionPrompt ::      SPromptType 'DirectionPrompt
-  SPointOnMap      ::      SPromptType 'PointOnMap
-  SContinue        ::      SPromptType 'Continue
+  SStringPrompt    :: SPromptType 'StringPrompt
+  SConfirm         :: SPromptType 'Confirm
+  SMenu            :: SPromptType ('Menu a)
+  SDirectionPrompt :: SPromptType 'DirectionPrompt
+  SPointOnMap      :: SPromptType 'PointOnMap
+  SContinue        :: SPromptType 'Continue
+  SFire            :: SPromptType 'Fire
 
 instance NFData (SPromptType pt) where
   rnf SStringPrompt = ()
@@ -67,6 +72,7 @@ instance NFData (SPromptType pt) where
   rnf SDirectionPrompt = ()
   rnf SPointOnMap = ()
   rnf SContinue = ()
+  rnf SFire = ()
 
 class SingPromptType pt where singPromptType :: SPromptType pt
 instance SingPromptType 'StringPrompt where singPromptType = SStringPrompt
@@ -74,6 +80,7 @@ instance SingPromptType 'Confirm where singPromptType = SConfirm
 instance SingPromptType 'DirectionPrompt where singPromptType = SDirectionPrompt
 instance SingPromptType 'PointOnMap where singPromptType = SPointOnMap
 instance SingPromptType 'Continue where singPromptType = SContinue
+instance SingPromptType 'Fire where singPromptType = SFire
 
 instance Show (SPromptType pt) where
   show SStringPrompt    = "SStringPrompt"
@@ -82,6 +89,7 @@ instance Show (SPromptType pt) where
   show SDirectionPrompt = "SDirectionPrompt"
   show SPointOnMap      = "SPointOnMap"
   show SContinue        = "SContinue"
+  show SFire            = "SFire"
 
 data PromptCancellable
   = Cancellable
@@ -98,6 +106,7 @@ data PromptResult (pt :: PromptType) where
   MenuResult       :: forall a. a    -> PromptResult ('Menu a)
   DirectionResult  :: Direction -> PromptResult 'DirectionPrompt
   PointOnMapResult :: Position  -> PromptResult 'PointOnMap
+  FireResult       :: Position  -> PromptResult 'Fire
   ContinueResult   ::             PromptResult 'Continue
 
 instance Arbitrary (PromptResult 'StringPrompt) where
@@ -118,6 +127,9 @@ instance Arbitrary (PromptResult 'PointOnMap) where
 instance Arbitrary (PromptResult 'Continue) where
   arbitrary = pure ContinueResult
 
+instance Arbitrary (PromptResult 'Fire) where
+  arbitrary = FireResult <$> arbitrary
+
 --------------------------------------------------------------------------------
 
 data PromptState pt where
@@ -128,6 +140,7 @@ data PromptState pt where
   ConfirmPromptState    ::            PromptState 'Confirm
   MenuPromptState       :: forall a.       PromptState ('Menu a)
   PointOnMapPromptState :: Position -> PromptState 'PointOnMap
+  FirePromptState       :: Position -> PromptState 'Fire
 
 instance NFData (PromptState pt) where
   rnf sps@(StringPromptState ed) = sps `deepseq` ed `deepseq` ()
@@ -136,6 +149,7 @@ instance NFData (PromptState pt) where
   rnf ConfirmPromptState = ()
   rnf MenuPromptState = ()
   rnf pomps@(PointOnMapPromptState pos) = pomps `deepseq` pos `deepseq` ()
+  rnf fps@(FirePromptState pos) = fps `deepseq` pos `deepseq` ()
 
 instance Arbitrary (PromptState 'StringPrompt) where
   arbitrary = StringPromptState <$> arbitrary
@@ -149,6 +163,9 @@ instance Arbitrary (PromptState 'Continue) where
 instance Arbitrary (PromptState ('Menu a)) where
   arbitrary = pure MenuPromptState
 
+instance Arbitrary (PromptState 'Fire) where
+  arbitrary = FirePromptState <$> arbitrary
+
 instance CoArbitrary (PromptState 'StringPrompt) where
   coarbitrary (StringPromptState ed) = coarbitrary ed
 
@@ -161,7 +178,21 @@ instance CoArbitrary (PromptState 'Continue) where
 instance CoArbitrary (PromptState ('Menu a)) where
   coarbitrary MenuPromptState = coarbitrary ()
 
+instance CoArbitrary (PromptState 'Fire) where
+  coarbitrary (FirePromptState pos) = coarbitrary pos
+
 deriving stock instance Show (PromptState pt)
+
+-- | Traversal over the position for the prompt types with positions in their
+-- prompt state (currently 'Fire' and 'PointOnMap')
+promptStatePosition :: forall pt. Traversal' (PromptState pt) Position
+promptStatePosition _ ps@(StringPromptState _) = pure ps
+promptStatePosition _ DirectionPromptState = pure DirectionPromptState
+promptStatePosition _ ContinuePromptState = pure ContinuePromptState
+promptStatePosition _ ConfirmPromptState = pure ConfirmPromptState
+promptStatePosition _ MenuPromptState = pure MenuPromptState
+promptStatePosition f (PointOnMapPromptState p) = PointOnMapPromptState <$> f p
+promptStatePosition f (FirePromptState p) = FirePromptState <$> f p
 
 data MenuOption a = MenuOption Text a
   deriving stock (Eq, Generic, Functor)
@@ -184,8 +215,9 @@ instance Show (MenuOption a) where
   show (MenuOption m _) = show m
 
 type family PromptInput (pt :: PromptType) :: Type where
-  PromptInput ('Menu a) = Map Char (MenuOption a)
+  PromptInput ('Menu a)   = Map Char (MenuOption a)
   PromptInput 'PointOnMap = Position -- Character pos
+  PromptInput 'Fire       = (Position, Tiles) -- Nearest enemy, range
   PromptInput _ = ()
 
 data Prompt (m :: Type -> Type) where
@@ -239,6 +271,8 @@ instance CoArbitrary (m ()) => CoArbitrary (Prompt m) where
     variant @Int 5 . coarbitrary (c, pri, cb)
   coarbitrary (Prompt c SContinue ps pri cb) =
     variant @Int 6 . coarbitrary (c, ps, pri, cb)
+  coarbitrary (Prompt c SFire ps pri cb) =
+    variant @Int 7 . coarbitrary (c, ps, pri, cb)
 
 -- instance Function (Prompt m) where
 --   function = functionMap toTuple _fromTuple
@@ -246,7 +280,12 @@ instance CoArbitrary (m ()) => CoArbitrary (Prompt m) where
 --       toTuple (Prompt c pt ps pri cb) = (c, pt, ps, pri, cb)
 
 
-mkPrompt :: (PromptInput pt ~ ()) => PromptCancellable -> SPromptType pt -> (PromptResult pt -> m ()) -> Prompt m
+mkPrompt
+  :: (PromptInput pt ~ ())
+  => PromptCancellable       -- ^ Is the prompt cancellable or not?
+  -> SPromptType pt          -- ^ The type of the prompt
+  -> (PromptResult pt -> m ()) -- ^ Function to call when the prompt is complete
+  -> Prompt m
 mkPrompt c pt@SStringPrompt cb =
   let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
   in Prompt c pt ps () cb
@@ -269,6 +308,14 @@ mkPointOnMapPrompt
   -> Prompt m
 mkPointOnMapPrompt c pos = Prompt c SPointOnMap (PointOnMapPromptState pos) pos
 
+mkFirePrompt
+  :: PromptCancellable
+  -> Position -- ^ Initial position
+  -> Tiles    -- ^ Range
+  -> (PromptResult 'Fire -> m ())
+  -> Prompt m
+mkFirePrompt c pos range = Prompt c SFire (FirePromptState pos) (pos, range)
+
 isCancellable :: Prompt m -> Bool
 isCancellable (Prompt Cancellable _ _ _ _)   = True
 isCancellable (Prompt Uncancellable _ _ _ _) = False
@@ -288,3 +335,5 @@ submitPrompt (Prompt _ pt ps _ cb) =
       cb $ PointOnMapResult pos
     (SConfirm, ConfirmPromptState) ->
       cb $ ConfirmResult True
+    (SFire, FirePromptState pos) ->
+      cb $ FireResult pos

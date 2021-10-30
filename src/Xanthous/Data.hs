@@ -8,10 +8,9 @@
 {-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE QuantifiedConstraints  #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
 --------------------------------------------------------------------------------
--- | Common data types for Xanthous
---------------------------------------------------------------------------------
-{-# LANGUAGE AllowAmbiguousTypes #-}
+-- | Common data types for Xanthous ------------------------------------------------------------------------------
 module Xanthous.Data
   ( Opposite(..)
 
@@ -34,6 +33,7 @@ module Xanthous.Data
   , diffPositions
   , stepTowards
   , isUnit
+  , distance
 
     -- * Boxes
   , Box(..)
@@ -47,20 +47,29 @@ module Xanthous.Data
   , boxEdge
   , module Linear.V2
 
-    -- *
+    -- * Unit math
+  , Scalar(..)
   , Per(..)
   , invertRate
   , invertedRate
+  , (|+|)
   , (|*|)
+  , (|/|)
+  , (:+:)
+  , (:*:)
+  , (:/:)
+  , (:**:)(..)
   , Ticks(..)
   , Tiles(..)
   , TicksPerTile
   , TilesPerTick
   , timesTiles
   , Square(..)
+  , squared
   , Cubic(..)
   , Grams
   , Meters
+  , Uno(..)
   , Unit(..)
   , UnitSymbol(..)
 
@@ -125,6 +134,7 @@ import           Xanthous.Util (EqEqProp(..), EqProp, between)
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Util.Graphics
+import qualified Linear.Metric as Metric
 --------------------------------------------------------------------------------
 
 -- | opposite ∘ opposite ≡ id
@@ -246,7 +256,7 @@ loc = iso hither yon
 _Position :: Iso' (Position' a) (V2 a)
 _Position = iso hither yon
   where
-    hither (Position px py) = (V2 px py)
+    hither (Position px py) = V2 px py
     yon (V2 lx ly) = Position lx ly
 
 positionFromPair :: (Num a, Integral i, Integral j) => (i, j) -> Position' a
@@ -531,11 +541,28 @@ invertRate (Rate p) = Rate $ 1 / p
 invertedRate :: Iso (a `Per` b) (b' `Per` a') (b `Per` a) (a' `Per` b')
 invertedRate = iso invertRate invertRate
 
+type (:+:) :: Type -> Type -> Type
+type family (:+:) a b where
+  a :+: a       = a
+  a :+: (Uno b) = a
+
+infixl 6 |+|
+class AddUnit a b where
+  (|+|) :: a -> b -> a :+: b
+
+instance Scalar a => AddUnit a a where
+  x' |+| y' = fromScalar $ scalar x' + scalar y'
+
+instance (Scalar a, Scalar b) => AddUnit a (Uno b) where
+  x' |+| y' = fromScalar $ scalar x' + scalar y'
+
 type (:*:) :: Type -> Type -> Type
 type family (:*:) a b where
-  (a `Per` b) :*: b = a
-  (Square a) :*: a = Cubic a
-  a :*: a = Square a
+  (a `Per` b) :*: b     = a
+  (Square a)  :*: a     = Cubic a
+  a           :*: a     = Square a
+  a           :*: Uno b = a
+  a           :*: b     = a :**: b
 
 infixl 7 |*|
 class MulUnit a b where
@@ -549,6 +576,58 @@ instance forall a. (Scalar a, a :*: a ~ Square a) => MulUnit a a where
 
 instance forall a. (Scalar a) => MulUnit (Square a) a where
   x' |*| y' = Cubic @a . fromScalar $ scalar x' * scalar y'
+
+instance {-# INCOHERENT #-} forall a b.
+  (Scalar a, Scalar b, Scalar (a :*: Uno b))
+    => MulUnit a (Uno b) where
+  x' |*| y' = fromScalar $ scalar x' * scalar y'
+
+type (:/:) :: Type -> Type -> Type
+type family (:/:) a b where
+  (Square a) :/: a          = a
+  (Cubic a)  :/: a          = Square a
+  (Cubic a)  :/: (Square a) = a
+  (a :**: b) :/: b          = a
+  (a :**: b) :/: a          = b
+  a          :/: Uno b      = a
+  a          :/: b          = a `Per` b
+
+infixl 7 |/|
+class DivUnit a b where
+  (|/|) :: a -> b -> a :/: b
+
+instance Scalar a => DivUnit (Square a) a where
+  (Square a) |/| b = fromScalar $ scalar a / scalar b
+
+instance Scalar a => DivUnit (Cubic a) a where
+  (Cubic a) |/| b = fromScalar $ scalar a / scalar b
+
+instance (Scalar a, Cubic a :/: Square a ~ a)
+       => DivUnit (Cubic a) (Square a) where
+  (Cubic a) |/| (Square b) = fromScalar $ scalar a / scalar b
+
+instance (Scalar a, Scalar b) => DivUnit (a :**: b) b where
+  (Times a) |/| b = fromScalar $ scalar a / scalar b
+
+instance (Scalar a, Scalar b) => DivUnit (a :**: b) a where
+  (Times a) |/| b = fromScalar $ scalar a / scalar b
+
+instance {-# INCOHERENT #-} forall a b.
+  (Scalar a, Scalar b, Scalar (a :/: Uno b))
+    => DivUnit a (Uno b) where
+  x' |/| y' = fromScalar $ scalar x' / scalar y'
+
+-- | Dimensionless quantitites (mass per unit mass, radians, etc)
+--
+-- see <https://en.wikipedia.org/wiki/Parts-per_notation#Uno>
+newtype Uno a = Uno a
+  deriving stock (Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving ( Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON
+           , Scalar, Show
+           )
+       via a
+  deriving Unit via UnitSymbol "" (Uno a)
 
 newtype Square a = Square a
   deriving stock (Eq, Generic)
@@ -569,6 +648,9 @@ instance Unit a => Unit (Square a) where
 instance Show a => Show (Square a) where
   show (Square n) = show n <> "²"
 
+squared :: (Scalar a, a :*: a ~ Square a) => a -> Square a
+squared v = v |*| v
+
 newtype Cubic a = Cubic a
   deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -588,6 +670,21 @@ instance Unit a => Unit (Cubic a) where
 instance Show a => Show (Cubic a) where
   show (Cubic n) = show n <> "³"
 
+newtype (:**:) a b = Times Double
+  deriving stock (Eq, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving (Arbitrary, Num, Ord, Enum, Real, Fractional, ToJSON, FromJSON)
+       via Double
+  deriving (Semigroup, Monoid) via Sum Double
+  deriving Show via ShowUnitSuffix (a :**: b) Double
+deriving via Double
+  instance ( Distribution d Double
+           , forall xx yy. Coercible xx yy => Coercible (d xx) (d yy)
+           )
+  => Distribution d (a :**: b)
+
+instance (Unit a, Unit b) => Unit (a :**: b) where
+  unitSuffix = unitSuffix @a <> " " <> unitSuffix @b
 
 --------------------------------------------------------------------------------
 
@@ -626,12 +723,23 @@ type TilesPerTick = Tiles `Per` Ticks
 timesTiles :: TicksPerTile -> Tiles -> Ticks
 timesTiles = (|*|)
 
+-- | Calculate the (cartesian) distance between two 'Position's, floored and
+-- represented as a number of 'Tile's
+--
+-- Note that this is imprecise, and may be different than the length of a
+-- bresenham's line between the points
+distance :: Position -> Position -> Tiles
+distance
+  = (fromScalar .) . (Metric.distance `on` (fmap fromIntegral . view _Position))
+
 --------------------------------------------------------------------------------
 
 newtype Hitpoints = Hitpoints Word
   deriving stock (Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
-  deriving (Arbitrary, Num, Ord, Bounded, Enum, Integral, Real, ToJSON, FromJSON)
+  deriving ( Arbitrary, Num, Ord, Bounded, Enum, Integral, Real, Scalar
+           , ToJSON, FromJSON
+           )
        via Word
   deriving (Semigroup, Monoid) via Sum Word
   deriving Unit via UnitSymbol "hp" Hitpoints

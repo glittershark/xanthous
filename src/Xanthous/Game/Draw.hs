@@ -4,10 +4,13 @@ module Xanthous.Game.Draw
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
+--------------------------------------------------------------------------------
 import           Brick hiding (loc, on)
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit
+import           Control.Monad.State.Lazy (evalState)
+import           Control.Monad.State.Class ( get, MonadState, gets )
 --------------------------------------------------------------------------------
 import           Xanthous.Data
 import           Xanthous.Data.App (ResourceName, Panel(..))
@@ -23,13 +26,11 @@ import           Xanthous.Game
                  )
 import           Xanthous.Game.Prompt
 import           Xanthous.Orphans ()
-import Control.Monad.State.Lazy (evalState)
-import Control.Monad.State.Class ( get, MonadState, gets )
 --------------------------------------------------------------------------------
 
 cursorPosition :: GameState -> Widget ResourceName -> Widget ResourceName
 cursorPosition game
-  | WaitingPrompt _ (Prompt _ SPointOnMap (PointOnMapPromptState pos) _ _)
+  | WaitingPrompt _ (Prompt _ _ (preview promptStatePosition -> Just pos) _ _)
     <- game ^. promptState
   = showCursor Resource.Prompt (pos ^. loc)
   | otherwise
@@ -45,7 +46,6 @@ drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
     (SStringPrompt, StringPromptState edit, _) ->
       txtWrap msg <+> txt " " <+> renderEditor (txt . fold) True edit
     (SDirectionPrompt, DirectionPromptState, _) -> txtWrap msg
-    (SContinue, _, _) -> txtWrap msg
     (SMenu, _, menuItems) ->
       txtWrap msg
       <=> foldl' (<=>) emptyWidget (map drawMenuItem $ itoList menuItems)

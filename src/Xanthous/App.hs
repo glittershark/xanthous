@@ -34,7 +34,7 @@ import           Xanthous.Data
                  , position
                  , Position
                  , (|*|)
-                 , Tiles(..)
+                 , Tiles(..), Hitpoints, fromScalar
                  )
 import           Xanthous.Data.App (ResourceName, Panel(..), AppEvent(..))
 import qualified Xanthous.Data.EntityMap as EntityMap
@@ -45,15 +45,18 @@ import           Xanthous.Game
 import           Xanthous.Game.State
 import           Xanthous.Game.Env
 import           Xanthous.Game.Draw (drawGame)
-import           Xanthous.Game.Prompt
+import           Xanthous.Game.Prompt hiding (Fire)
 import qualified Xanthous.Messages as Messages
 import           Xanthous.Random
 import           Xanthous.Util (removeVectorIndex)
 import           Xanthous.Util.Inflection (toSentence)
+import           Xanthous.Physics (throwDistance, bluntThrowDamage)
+import           Xanthous.Data.EntityMap.Graphics (lineOfSight)
+import           Xanthous.Data.EntityMap (EntityID)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character hiding (pickUpItem)
-import           Xanthous.Entities.Item (Item)
+import           Xanthous.Entities.Item (Item, weight)
 import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Creature (Creature)
 import qualified Xanthous.Entities.Creature as Creature
@@ -292,6 +295,43 @@ handleCommand Wield = do
       say ["wield", "wielded"] item
   continue
 
+handleCommand Fire = do
+  selectItemFromInventory_ ["fire", "menu"] Cancellable id
+    (say_ ["fire", "nothing"])
+    $ \(MenuResult (invPos, item)) ->
+      let wt = weight item
+          dist = throwDistance wt
+          dam = bluntThrowDamage wt
+      in if dist < fromScalar 1
+         then say_ ["fire", "zeroRange"]
+         else firePrompt_ ["fire", "target"] Cancellable dist $
+          \(FireResult targetPos) -> do
+              charPos <- use characterPosition
+              mTarget <- uses entities $ firstEnemy . lineOfSight charPos targetPos
+              case mTarget of
+                Just target -> do
+                  creature' <- damageCreature target dam
+                  unless (Creature.isDead creature') $
+                    let msgPath = ["fire", "fired"] <> [if dam == 0
+                                                        then "noDamage"
+                                                        else "someDamage"]
+                    in say msgPath $ object [ "item" A..= item
+                                            , "creature" A..= creature'
+                                            ]
+                Nothing ->
+                  say ["fire", "fired", "noTarget"] $ object [ "item" A..= item ]
+              character . inventory %= removeItemFromPosition invPos item
+              entities . EntityMap.atPosition targetPos %= (SomeEntity item <|)
+              stepGame -- TODO(grfn): should this be based on distance?
+  continue
+  where
+    firstEnemy
+      :: [(Position, Vector (EntityID, SomeEntity))]
+      -> Maybe (EntityID, Creature)
+    firstEnemy los =
+      let enemies = los >>= \(_, es) -> toList $ headMay es
+      in enemies ^? folded . below _SomeEntity
+
 handleCommand Save = do
   -- TODO default save locations / config file?
   prompt_ @'StringPrompt ["save", "location"] Cancellable
@@ -364,22 +404,14 @@ attackAt pos =
       menu_ ["combat", "menu"] Cancellable (entityMenu_ creatures)
       $ \(MenuResult creature) -> attackCreature creature
  where
-  attackCreature (creatureID, creature) = do
+  attackCreature creature = do
     charDamage <- uses character characterDamage
-    let creature' = Creature.damage charDamage creature
-        msgParams = object ["creature" A..= creature']
-    if Creature.isDead creature'
-      then do
-        say ["combat", "killed"] msgParams
-        entities . at creatureID .= Nothing
-      else do
-        msg <- uses character getAttackMessage
-        message msg msgParams
-        entities . ix creatureID . positioned .= SomeEntity creature'
-
+    creature' <- damageCreature creature charDamage
+    msg <- uses character getAttackMessage
+    unless (Creature.isDead creature')
+      . message msg $ object ["creature" A..= creature']
     whenM (uses character $ isNothing . weapon) handleFists
-
-    stepGame -- TODO
+    stepGame
   weapon chr = chr ^? inventory . wielded . wieldedItems . wieldableItem
   getAttackMessage chr =
     case weapon chr of
@@ -398,6 +430,18 @@ attackAt pos =
                         else "fistSelfDamage" ]
       character %= Character.damage damageAmount
       character . body . knuckles %= damageKnuckles
+
+damageCreature :: (EntityID, Creature) -> Hitpoints -> AppM Creature
+damageCreature (creatureID, creature) dam = do
+  let creature' = Creature.damage dam creature
+      msgParams = object ["creature" A..= creature']
+  if Creature.isDead creature'
+    then do
+      say ["combat", "killed"] msgParams
+      entities . at creatureID .= Nothing
+    else entities . ix creatureID . positioned .= SomeEntity creature'
+  pure creature'
+
 
 entityMenu_
   :: (Comonad w, Entity entity)
