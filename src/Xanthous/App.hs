@@ -342,7 +342,10 @@ handleCommand (StartAutoMove dir) = do
   runAutocommand $ AutoMove dir
   continue
 
-handleCommand Rest = runAutocommand AutoRest >> continue
+handleCommand Rest = do
+  say_ ["autocommands", "resting"]
+  runAutocommand AutoRest
+  continue
 
 --
 
