@@ -353,7 +353,13 @@ handleCommand GoUp = do
   hasStairs <- uses entitiesAtCharacter $ elem (SomeEntity UpStaircase)
   if hasStairs
   then uses levels prevLevel >>= \case
-    Just levs' -> levels .= levs'
+    Just levs' -> do
+      cEID <- use characterEntityID
+      pCharacter <- entities . at cEID <<.= Nothing
+      levels .= levs'
+      charPos <- use characterPosition
+      entities . at cEID .= pCharacter
+      characterPosition .= charPos
     Nothing ->
       -- TODO in nethack, this leaves the game. Maybe something similar here?
       say_ ["cant", "goUp"]
