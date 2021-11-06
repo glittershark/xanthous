@@ -4,7 +4,7 @@ cradle:
       component: 'lib:xanthous'
     - path: './test'
       component: 'test:test'
-    - path: './src'
+    - path: './app'
       component: 'exe:xanthous'
     - path: './bench'
       component: 'bench:benchmark'
