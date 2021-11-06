@@ -566,7 +566,7 @@ showPanel panel = do
 --------------------------------------------------------------------------------
 
 genLevel
-  :: Int -- ^ level number
+  :: Word -- ^ Level number, starting at 0
   -> AppM Level
 genLevel _num = do
   let dims = Dimensions 80 80

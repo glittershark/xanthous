@@ -33,13 +33,13 @@ test = testGroup "Xanthous.Data.Levels"
           === pos levels + 1
       , testProperty "maintains the invariant" $ \(levels :: Levels Int) genned ->
           let levels' = runIdentity . nextLevel (Identity genned) $ levels
-          in between 0 (length levels') $ pos levels'
+          in between 0 (toEnum $ length levels') $ pos levels'
       , testProperty "extract is total" $ \(levels :: Levels Int) genned ->
           let levels' = runIdentity . nextLevel (Identity genned) $ levels
           in total $ extract levels'
       , testProperty "uses the generated level as the next level"
         $ \(levels :: Levels Int) genned ->
-          let levels' = seek (length levels - 1) levels
+          let levels' = seek (toEnum $ length levels - 1) levels
               levels'' = runIdentity . nextLevel (Identity genned) $ levels'
           in counterexample (show levels'')
              $ extract levels'' === genned
@@ -52,7 +52,7 @@ test = testGroup "Xanthous.Data.Levels"
       , testProperty "maintains the invariant" $ \(levels :: Levels Int) ->
           case prevLevel levels of
             Nothing -> property Discard
-            Just levels' -> property $ between 0 (length levels') $ pos levels'
+            Just levels' -> property $ between 0 (toEnum $ length levels') $ pos levels'
       , testProperty "extract is total" $ \(levels :: Levels Int) ->
           case prevLevel levels of
             Nothing -> property Discard

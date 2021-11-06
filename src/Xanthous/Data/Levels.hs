@@ -5,6 +5,7 @@
 module Xanthous.Data.Levels
   ( Levels
   , allLevels
+  , numLevels
   , nextLevel
   , prevLevel
   , mkLevels1
@@ -46,12 +47,15 @@ import           Test.QuickCheck
 newtype Levels a = Levels { levelZipper :: Zipper Seq a }
     deriving stock (Generic)
     deriving (Functor, Comonad, Foldable) via (Zipper Seq)
-    deriving (ComonadStore Int) via (Zipper Seq)
 
 type instance Element (Levels a) = a
 instance MonoFoldable (Levels a)
 instance MonoFunctor (Levels a)
 instance MonoTraversable (Levels a)
+
+instance ComonadStore Word Levels where
+  pos = toEnum . pos . levelZipper
+  peek i = peek (fromEnum i) . levelZipper
 
 instance Traversable Levels where
   traverse f (Levels z) = Levels <$> traverse f z
@@ -59,7 +63,7 @@ instance Traversable Levels where
 instance Foldable1 Levels
 
 instance Traversable1 Levels where
-  traverse1 f (Levels z) = seek (pos z) . partialMkLevels <$> go (unzipper z)
+  traverse1 f levs@(Levels z) = seek (pos levs) . partialMkLevels <$> go (unzipper z)
     where
       go Empty = error "empty seq, unreachable"
       go (x :<| xs) = (<|) <$> f x <.> go xs
@@ -70,6 +74,12 @@ instance Semigroup (Levels a) where
     = seek (pos levs₂)
     . partialMkLevels
     $ allLevels levs₁ <> allLevels levs₂
+
+-- | The number of levels stored in 'Levels'
+--
+-- Equivalent to 'Data.Foldable.length', but likely faster
+numLevels :: Levels a -> Word
+numLevels = toEnum . size . levelZipper
 
 -- | Make Levels from a Seq. Throws an error if the seq is not empty
 partialMkLevels :: Seq a -> Levels a
@@ -98,7 +108,7 @@ nextLevel
   -> Levels level
   -> m (Levels level)
 nextLevel genLevel levs
-  | pos levs + 1 < size (levelZipper levs)
+  | succ (pos levs) < numLevels levs
   = pure $ seeks succ levs
   | otherwise
   = genLevel <&> \level ->
@@ -115,7 +125,7 @@ prevLevel levs | pos levs == 0 = Nothing
 -- various operations
 data AltLevels a = AltLevels
   { _levels :: NonEmpty a
-  , _currentLevel :: Int -- ^ invariant: is within the bounds of _levels
+  , _currentLevel :: Word -- ^ invariant: is within the bounds of _levels
   }
   deriving stock (Show, Eq, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -150,11 +160,11 @@ instance FromJSON a => FromJSON (Levels a) where
 instance Arbitrary a => Arbitrary (AltLevels a) where
   arbitrary = do
     _levels <- arbitrary
-    _currentLevel <- choose (0, length _levels - 1)
+    _currentLevel <- choose (0, pred . toEnum . length $ _levels)
     pure AltLevels {..}
   shrink als = do
     _levels <- shrink $ als ^. levels
-    _currentLevel <- filter (between 0 $ length _levels - 1)
+    _currentLevel <- filter (between 0 $ pred . toEnum . length $ _levels)
                     $ shrink $ als ^. currentLevel
     pure AltLevels {..}
 
