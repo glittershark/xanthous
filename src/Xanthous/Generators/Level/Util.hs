@@ -52,13 +52,18 @@ initializeEmpty :: RandomGen g => Dimensions -> CellM g s (MCells s)
 initializeEmpty dims =
   lift $ newArray (0, V2 (dims ^. width) (dims ^. height)) False
 
+-- | Returns the number of neighbors of the given point in the given array that
+-- are True.
+--
+-- Behavior if point is out-of-bounds for the array is undefined, but will not
+-- error
 numAliveNeighborsM
   :: forall a i m
   . (MArray a Bool m, Ix i, Integral i)
   => a (V2 i) Bool
   -> V2 i
   -> m Word
-numAliveNeighborsM cells (V2 x y) = do
+numAliveNeighborsM cells pt@(V2 x y) = do
   cellBounds <- getBounds cells
   getSum <$> foldlMapM'
     (fmap (Sum . fromIntegral . fromEnum) . boundedGet cellBounds)
@@ -66,24 +71,32 @@ numAliveNeighborsM cells (V2 x y) = do
 
   where
     boundedGet :: (V2 i, V2 i) -> (Int, Int) -> m Bool
+    boundedGet bnds _
+      | not (inRange bnds pt)
+      = pure True
     boundedGet (V2 minX minY, V2 maxX maxY) (i, j)
-      | x <= minX
-        || y <= minY
-        || x >= maxX
-        || y >= maxY
+      | (x <= minX && i < 0)
+      || (y <= minY && j < 0)
+      || (x >= maxX && i > 0)
+      || (y >= maxY && j > 0)
       = pure True
       | otherwise =
         let nx = fromIntegral $ fromIntegral x + i
             ny = fromIntegral $ fromIntegral y + j
         in readArray cells $ V2 nx ny
 
+-- | Returns the number of neighbors of the given point in the given array that
+-- are True.
+--
+-- Behavior if point is out-of-bounds for the array is undefined, but will not
+-- error
 numAliveNeighbors
   :: forall a i
   . (IArray a Bool, Ix i, Integral i)
   => a (V2 i) Bool
   -> V2 i
   -> Word
-numAliveNeighbors cells (V2 x y) =
+numAliveNeighbors cells pt@(V2 x y) =
   let cellBounds = bounds cells
   in getSum $ foldMap
       (Sum . fromIntegral . fromEnum . boundedGet cellBounds)
@@ -91,11 +104,14 @@ numAliveNeighbors cells (V2 x y) =
 
   where
     boundedGet :: (V2 i, V2 i) -> (Int, Int) -> Bool
+    boundedGet bnds _
+      | not (inRange bnds pt)
+      = True
     boundedGet (V2 minX minY, V2 maxX maxY) (i, j)
-      | x <= minX
-        || y <= minY
-        || x >= maxX
-        || y >= maxY
+      | (x <= minX && i < 0)
+      || (y <= minY && j < 0)
+      || (x >= maxX && i > 0)
+      || (y >= maxY && j > 0)
       = True
       | otherwise =
         let nx = fromIntegral $ fromIntegral x + i

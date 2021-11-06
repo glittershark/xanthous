@@ -6,7 +6,7 @@ import Test.Prelude
 import System.Random (mkStdGen)
 import Control.Monad.Random (runRandT)
 import Data.Array.ST (STUArray, runSTUArray, thaw)
-import Data.Array.IArray (bounds)
+import Data.Array.IArray (bounds, array)
 import Data.Array.MArray (newArray, readArray, writeArray)
 import Data.Array (Array, range, listArray, Ix)
 import Control.Monad.ST (ST, runST)
@@ -15,6 +15,7 @@ import Linear.V2
 --------------------------------------------------------------------------------
 import Xanthous.Util
 import Xanthous.Data (width, height)
+--------------------------------------------------------------------------------
 import Xanthous.Generators.Level.Util
 --------------------------------------------------------------------------------
 
@@ -57,6 +58,30 @@ test = testGroup "Xanthous.Generators.Util"
             numAliveNeighborsM mArr loc
           res = runST act
         in counterexample (show res) $ between 0 8 res
+    , testCase "on the outer x edge" $
+      let act :: forall s. ST s Word
+          act = do
+            cells <- thaw @_ @_ @_ @(STUArray s) $ array @Array @Bool @(V2 Word)
+              (V2 0 0, V2 2 2)
+              [ (V2 0 0, True),  (V2 1 0, True),  (V2 2 0, True)
+              , (V2 0 1, False), (V2 1 1, False), (V2 2 1, True)
+              , (V2 0 2, True),  (V2 1 2, True),  (V2 2 2, True)
+              ]
+            numAliveNeighborsM cells (V2 0 1)
+          res = runST act
+      in res @?= 7
+    , testCase "on the outer y edge" $
+      let act :: forall s. ST s Word
+          act = do
+            cells <- thaw @_ @_ @_ @(STUArray s) $ array @Array @Bool @(V2 Word)
+              (V2 0 0, V2 2 2)
+              [ (V2 0 0, True),  (V2 1 0, True),  (V2 2 0, True)
+              , (V2 0 1, False), (V2 1 1, False), (V2 2 1, True)
+              , (V2 0 2, True),  (V2 1 2, True),  (V2 2 2, True)
+              ]
+            numAliveNeighborsM cells (V2 1 0)
+          res = runST act
+      in res @?= 6
     ]
   , testGroup "numAliveNeighbors"
     [ testProperty "is equivalient to runST . numAliveNeighborsM . thaw" $
@@ -68,6 +93,24 @@ test = testGroup "Xanthous.Generators.Util"
             numAliveNeighborsM mArr loc
           res = runST act
         in numAliveNeighbors arr loc === res
+    , testCase "on the outer x edge" $
+      let cells =
+            array @Array @Bool @(V2 Word)
+            (V2 0 0, V2 2 2)
+            [ (V2 0 0, True),  (V2 1 0, True),  (V2 2 0, True)
+            , (V2 0 1, False), (V2 1 1, False), (V2 2 1, True)
+            , (V2 0 2, True),  (V2 1 2, True),  (V2 2 2, True)
+            ]
+      in numAliveNeighbors cells (V2 0 1) @?= 7
+    , testCase "on the outer y edge" $
+      let cells =
+            array @Array @Bool @(V2 Word)
+            (V2 0 0, V2 2 2)
+            [ (V2 0 0, True),  (V2 1 0, True),  (V2 2 0, True)
+            , (V2 0 1, False), (V2 1 1, False), (V2 2 1, True)
+            , (V2 0 2, True),  (V2 1 2, True),  (V2 2 2, True)
+            ]
+      in numAliveNeighbors cells (V2 1 0) @?= 6
     ]
   , testGroup "cloneMArray"
       [ testCase "clones the array" $ runST $
