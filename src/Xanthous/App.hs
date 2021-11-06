@@ -568,12 +568,14 @@ showPanel panel = do
 genLevel
   :: Word -- ^ Level number, starting at 0
   -> AppM Level
-genLevel _num = do
+genLevel num = do
   let dims = Dimensions 80 80
   generator <- choose $ CaveAutomata :| [Dungeon]
-  level <- case generator of
-    CaveAutomata -> generateLevel SCaveAutomata CaveAutomata.defaultParams dims
-    Dungeon -> generateLevel SDungeon Dungeon.defaultParams dims
+  let
+    doGen = case generator of
+      CaveAutomata -> generateLevel SCaveAutomata CaveAutomata.defaultParams
+      Dungeon -> generateLevel SDungeon Dungeon.defaultParams
+  level <- doGen dims num
   pure $!! level
 
 levelToGameLevel :: Level -> GameLevel

@@ -85,7 +85,7 @@ parseGeneratorInput = Opt.subparser
     generatorCommand sgen name desc parseParams =
       Opt.command name
         (Opt.info
-          (GeneratorInput <$> pure sgen <*> parseParams)
+          (GeneratorInput sgen <$> parseParams)
           (Opt.progDesc desc)
         )
 
@@ -132,8 +132,9 @@ generateLevel
   => SGenerator gen
   -> Params gen
   -> Dimensions
+  -> Word -- ^ Level number, starting at 0
   -> m Level
-generateLevel gen ps dims = do
+generateLevel gen ps dims num = do
   rand <- mkStdGen <$> getRandom
   let cells = generate gen ps dims rand
       _levelWalls = cellsToWalls cells
@@ -146,7 +147,10 @@ generateLevel gen ps dims = do
   let upStaircase = _EntityMap # [(_levelCharacterPosition, UpStaircase)]
   downStaircase <- placeDownStaircase cells
   let _levelStaircases = upStaircase <> downStaircase
-  _levelTutorialMessage <- tutorialMessage cells _levelCharacterPosition
+  _levelTutorialMessage <-
+    if num == 0
+    then tutorialMessage cells _levelCharacterPosition
+    else pure mempty
   pure Level {..}
 
 levelToEntityMap :: Level -> EntityMap SomeEntity
