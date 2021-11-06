@@ -65,6 +65,7 @@ initialStateFromSeed seed =
       _debugState = DebugState
         { _allRevealed = False
         }
+      _savefile = Nothing
       _autocommand = NoAutocommand
       _memo = emptyMemoState
   in GameState {..}

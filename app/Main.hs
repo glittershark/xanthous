@@ -113,9 +113,9 @@ newGame rparams = do
 
 loadGame :: FilePath -> IO ()
 loadGame saveFile = do
-  gameState <- maybe (die "Invalid save file!") pure
-              =<< Game.loadGame . fromStrict <$> readFile @IO saveFile
-  gameState `deepseq` runGame LoadGame gameState
+  gameState <- maybe (die "Invalid save file!") pure . Game.loadGame  . fromStrict
+              =<< readFile @IO saveFile
+  gameState `deepseq` runGame (LoadGame saveFile) gameState
 
 runGame :: RunType -> Game.GameState -> IO ()
 runGame rt gameState = do

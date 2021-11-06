@@ -5,6 +5,8 @@ module Xanthous.App.Prompt
   , clearPrompt
   , prompt
   , prompt_
+  , stringPromptWithDefault
+  , stringPromptWithDefault_
   , confirm_
   , confirm
   , menu
@@ -123,7 +125,7 @@ prompt msgPath params cancellable cb = do
     SPointOnMap -> do
       charPos <- use characterPosition
       pure . Just $ mkPointOnMapPrompt cancellable charPos cb
-    SStringPrompt -> pure . Just $ mkPrompt cancellable pt cb
+    SStringPrompt -> pure . Just $ mkStringPrompt cancellable cb
     SConfirm -> pure . Just $ mkPrompt cancellable pt cb
     SDirectionPrompt -> pure . Just $ mkPrompt cancellable pt cb
     SContinue -> pure . Just $ mkPrompt cancellable pt cb
@@ -137,6 +139,27 @@ prompt_
   -> (PromptResult pt -> AppM ()) -- ^ Prompt promise handler
   -> AppM ()
 prompt_ msg = prompt msg $ object []
+
+stringPromptWithDefault
+  :: forall (params :: Type). (ToJSON params)
+  => [Text]                                -- ^ Message key
+  -> params                                -- ^ Message params
+  -> PromptCancellable
+  -> Text                                  -- ^ Prompt default
+  -> (PromptResult 'StringPrompt -> AppM ()) -- ^ Prompt promise handler
+  -> AppM ()
+stringPromptWithDefault msgPath params cancellable def cb = do
+  msg <- Messages.message msgPath params
+  let p = mkStringPromptWithDefault cancellable def cb
+  promptState .= WaitingPrompt msg p
+
+stringPromptWithDefault_
+  :: [Text]                                -- ^ Message key
+  -> PromptCancellable
+  -> Text                                  -- ^ Prompt default
+  -> (PromptResult 'StringPrompt -> AppM ()) -- ^ Prompt promise handler
+  -> AppM ()
+stringPromptWithDefault_ msg = stringPromptWithDefault msg $ object []
 
 confirm
   :: ToJSON params

@@ -43,6 +43,7 @@ instance Arbitrary GameState where
     _debugState <- arbitrary
     let _autocommand = NoAutocommand
     _memo <- arbitrary
+    _savefile <- arbitrary
     pure $ GameState {..}
 
 

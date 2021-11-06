@@ -16,6 +16,8 @@ module Xanthous.Game.Prompt
   , PromptInput
   , Prompt(..)
   , mkPrompt
+  , mkStringPrompt
+  , mkStringPromptWithDefault
   , mkMenu
   , mkPointOnMapPrompt
   , mkFirePrompt
@@ -215,9 +217,10 @@ instance Show (MenuOption a) where
   show (MenuOption m _) = show m
 
 type family PromptInput (pt :: PromptType) :: Type where
-  PromptInput ('Menu a)   = Map Char (MenuOption a)
-  PromptInput 'PointOnMap = Position -- Character pos
-  PromptInput 'Fire       = (Position, Tiles) -- Nearest enemy, range
+  PromptInput ('Menu a)     = Map Char (MenuOption a)
+  PromptInput 'PointOnMap   = Position -- Character pos
+  PromptInput 'Fire         = (Position, Tiles) -- Nearest enemy, range
+  PromptInput 'StringPrompt = Maybe Text -- Default value
   PromptInput _ = ()
 
 data Prompt (m :: Type -> Type) where
@@ -286,12 +289,26 @@ mkPrompt
   -> SPromptType pt          -- ^ The type of the prompt
   -> (PromptResult pt -> m ()) -- ^ Function to call when the prompt is complete
   -> Prompt m
-mkPrompt c pt@SStringPrompt cb =
-  let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
-  in Prompt c pt ps () cb
 mkPrompt c pt@SDirectionPrompt cb = Prompt c pt DirectionPromptState () cb
 mkPrompt c pt@SContinue cb = Prompt c pt ContinuePromptState () cb
 mkPrompt c pt@SConfirm cb = Prompt c pt ConfirmPromptState () cb
+
+mkStringPrompt
+  :: PromptCancellable                  -- ^ Is the prompt cancellable or not?
+  -> (PromptResult 'StringPrompt -> m ()) -- ^ Function to call when the prompt is complete
+  -> Prompt m
+mkStringPrompt c =
+  let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
+  in Prompt c SStringPrompt ps Nothing
+
+mkStringPromptWithDefault
+  :: PromptCancellable                  -- ^ Is the prompt cancellable or not?
+  -> Text                               -- ^ Default value for the prompt
+  -> (PromptResult 'StringPrompt -> m ()) -- ^ Function to call when the prompt is complete
+  -> Prompt m
+mkStringPromptWithDefault c def =
+  let ps = StringPromptState $ editorText Resource.Prompt (Just 1) ""
+  in Prompt c SStringPrompt ps (Just def)
 
 mkMenu
   :: forall a m.
@@ -321,19 +338,22 @@ isCancellable (Prompt Cancellable _ _ _ _)   = True
 isCancellable (Prompt Uncancellable _ _ _ _) = False
 
 submitPrompt :: Applicative m => Prompt m -> m ()
-submitPrompt (Prompt _ pt ps _ cb) =
-  case (pt, ps) of
-    (SStringPrompt, StringPromptState edit) ->
-      cb . StringResult . mconcat . getEditContents $ edit
-    (SDirectionPrompt, DirectionPromptState) ->
+submitPrompt (Prompt _ pt ps pri cb) =
+  case (pt, ps, pri) of
+    (SStringPrompt, StringPromptState edit, mDef) ->
+      let inputVal = mconcat . getEditContents $ edit
+          val | null inputVal, Just def <- mDef = def
+              | otherwise = inputVal
+      in cb $ StringResult val
+    (SDirectionPrompt, DirectionPromptState, _) ->
       pure () -- Don't use submit with a direction prompt
-    (SContinue, ContinuePromptState) ->
+    (SContinue, ContinuePromptState, _) ->
       cb ContinueResult
-    (SMenu, MenuPromptState) ->
+    (SMenu, MenuPromptState, _) ->
       pure () -- Don't use submit with a menu prompt
-    (SPointOnMap, PointOnMapPromptState pos) ->
+    (SPointOnMap, PointOnMapPromptState pos, _) ->
       cb $ PointOnMapResult pos
-    (SConfirm, ConfirmPromptState) ->
+    (SConfirm, ConfirmPromptState, _) ->
       cb $ ConfirmResult True
-    (SFire, FirePromptState pos) ->
+    (SFire, FirePromptState pos, _) ->
       cb $ FireResult pos

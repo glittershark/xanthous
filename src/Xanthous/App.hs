@@ -73,7 +73,7 @@ import qualified Xanthous.Generators.Level.Dungeon as Dungeon
 
 type App = Brick.App GameState AppEvent ResourceName
 
-data RunType = NewGame | LoadGame
+data RunType = NewGame | LoadGame FilePath
   deriving stock (Eq)
 
 makeApp :: GameEnv -> RunType -> IO App
@@ -83,7 +83,7 @@ makeApp env rt = pure $ Brick.App
   , appHandleEvent = \game event -> runAppM (handleEvent event) env game
   , appStartEvent = case rt of
       NewGame -> runAppM (startEvent >> get) env
-      LoadGame -> pure
+      LoadGame save -> pure . (savefile ?~ save)
   , appAttrMap = const $ attrMap defAttr []
   }
 
@@ -334,15 +334,24 @@ handleCommand Fire = do
 
 handleCommand Save = do
   -- TODO default save locations / config file?
-  prompt_ @'StringPrompt ["save", "location"] Cancellable
-    $ \(StringResult filename) -> do
-       exists <- liftIO . doesFileExist $ unpack filename
-       if exists
-       then confirm ["save", "overwrite"] (object ["filename" A..= filename])
-            $ doSave filename
-       else doSave filename
+  use savefile >>= \case
+    Just filepath ->
+      stringPromptWithDefault_
+        ["save", "location"]
+        Cancellable
+        (pack filepath)
+        promptCallback
+    Nothing -> prompt_ @'StringPrompt ["save", "location"] Cancellable promptCallback
   continue
   where
+    promptCallback :: PromptResult 'StringPrompt -> AppM ()
+    promptCallback (StringResult filename) = do
+      sf <- use savefile
+      exists <- liftIO . doesFileExist $ unpack filename
+      if exists && sf /= Just (unpack filename)
+      then confirm ["save", "overwrite"] (object ["filename" A..= filename])
+          $ doSave filename
+      else doSave filename
     doSave filename = do
       src <- gets saveGame
       lift . liftIO $ do

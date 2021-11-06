@@ -16,6 +16,7 @@ module Xanthous.Game.State
   , promptState
   , characterEntityID
   , autocommand
+  , savefile
   , memo
   , GamePromptState(..)
 
@@ -511,6 +512,9 @@ data GameState = GameState
   , _promptState       :: !(GamePromptState AppM)
   , _debugState        :: !DebugState
   , _autocommand       :: !AutocommandState
+
+  -- | The path to the savefile that was loaded for this game, if any
+  , _savefile          :: !(Maybe FilePath)
 
   , _memo              :: MemoState
   }
