@@ -6,7 +6,6 @@
 let
   inherit (depot.users.grfn) xanthous;
   xanthous-server = xanthous.server;
-
 in pkgs.dockerTools.buildLayeredImage {
   name = "xanthous-server";
   tag = "latest";
@@ -17,5 +16,4 @@ in pkgs.dockerTools.buildLayeredImage {
       "--xanthous-binary-path" "${xanthous}/bin/xanthous"
     ];
   };
-  ci = false;
 }
