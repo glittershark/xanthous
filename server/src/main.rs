@@ -174,6 +174,12 @@ impl server::Handler for Handler {
         self.finished_auth(Auth::Accept)
     }
 
+    fn auth_password(mut self, username: &str, _password: &str) -> Self::FutureAuth {
+        info!(%username, "Accepted new connection");
+        self.username = Some(username.to_owned());
+        self.finished_auth(Auth::Accept)
+    }
+
     fn auth_publickey(
         mut self,
         username: &str,
