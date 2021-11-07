@@ -1,5 +1,4 @@
 use std::net::SocketAddr;
-
 use std::pin::Pin;
 use std::process::Command;
 use std::sync::Arc;
@@ -9,6 +8,7 @@ use color_eyre::eyre::Result;
 use eyre::{bail, eyre};
 use futures::future::{ready, Ready};
 use futures::Future;
+use metrics_exporter_prometheus::PrometheusBuilder;
 use nix::pty::Winsize;
 use pty::ChildHandle;
 use thrussh::ChannelId;
@@ -19,12 +19,17 @@ use thrussh::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::select;
+use tokio::time::Instant;
 use tracing::{debug, error, info, info_span, trace, warn, Instrument};
 use tracing_subscriber::EnvFilter;
 
 use crate::pty::WaitPid;
 
+mod metrics;
 mod pty;
+
+use crate::metrics::reported::*;
+use crate::metrics::{decrement_gauge, histogram, increment_counter, increment_gauge};
 
 /// SSH-compatible server for playing Xanthous
 #[derive(Parser, Debug)]
@@ -32,6 +37,10 @@ struct Opts {
     /// Address to bind to
     #[clap(long, short = 'a', default_value = "0.0.0.0:22")]
     address: String,
+
+    /// Address to listen to for metrics
+    #[clap(long, default_value = "0.0.0.0:9000")]
+    metrics_address: SocketAddr,
 
     /// Format to use when emitting log events
     #[clap(
@@ -132,6 +141,7 @@ impl Handler {
 
         let child = pty::spawn(cmd, Some(winsize), None).await?;
         info!(pid = %child.pid, "Spawned child");
+        increment_gauge!(RUNNING_PROCESSES, 1.0);
         self.child = Some(child.handle().await?);
         tokio::spawn(
             async move {
@@ -143,6 +153,7 @@ impl Handler {
                     span.in_scope(|| error!(%error, "Error running child"));
                     let _ = handle.close(channel_id).await;
                 }
+                decrement_gauge!(RUNNING_PROCESSES, 1.0);
             }
             .in_current_span(),
         );
@@ -285,12 +296,19 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
     let opts = Box::leak::<'static>(Box::new(Opts::parse()));
     opts.init_logging()?;
+    PrometheusBuilder::new()
+        .listen_address(opts.metrics_address)
+        .install()?;
+    metrics::register();
+
     let config = Arc::new(opts.ssh_server_config()?);
     info!(address = %opts.address, "Listening for new SSH connections");
     let listener = TcpListener::bind(&opts.address).await?;
 
     loop {
         let (stream, address) = listener.accept().await?;
+        increment_counter!(CONNECTIONS_ACCEPTED);
+        increment_gauge!(ACTIVE_CONNECTIONS, 1.0);
         let config = config.clone();
         let handler = Handler {
             xanthous_binary_path: &opts.xanthous_binary_path,
@@ -300,12 +318,17 @@ async fn main() -> Result<()> {
         };
         tokio::spawn(async move {
             let span = info_span!("client", address = %handler.address);
+            let start = Instant::now();
             if let Err(error) = server::run_stream(config, stream, handler)
                 .instrument(span.clone())
                 .await
             {
                 span.in_scope(|| error!(%error));
             }
+            let duration = start.elapsed();
+            span.in_scope(|| info!(duration_ms = %duration.as_millis(), "Client disconnected"));
+            histogram!(CONNECTION_DURATION, duration);
+            decrement_gauge!(ACTIVE_CONNECTIONS, 1.0);
         });
     }
 }
