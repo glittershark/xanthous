@@ -9,6 +9,7 @@ generic:
   continue: Press enter to continue...
 
 save:
+  disabled: "Sorry, saving is currently disabled"
   location: "Enter filename to save to: "
   overwrite: "A file named {{filename}} already exists. Would you like to overwrite it? "
 

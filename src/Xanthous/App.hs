@@ -332,31 +332,34 @@ handleCommand Fire = do
       let enemies = los >>= \(_, es) -> toList $ headMay es
       in enemies ^? folded . below _SomeEntity
 
-handleCommand Save = do
-  -- TODO default save locations / config file?
-  use savefile >>= \case
-    Just filepath ->
-      stringPromptWithDefault_
-        ["save", "location"]
-        Cancellable
-        (pack filepath)
-        promptCallback
-    Nothing -> prompt_ @'StringPrompt ["save", "location"] Cancellable promptCallback
-  continue
-  where
-    promptCallback :: PromptResult 'StringPrompt -> AppM ()
-    promptCallback (StringResult filename) = do
-      sf <- use savefile
-      exists <- liftIO . doesFileExist $ unpack filename
-      if exists && sf /= Just (unpack filename)
-      then confirm ["save", "overwrite"] (object ["filename" A..= filename])
-          $ doSave filename
-      else doSave filename
-    doSave filename = do
-      src <- gets saveGame
-      lift . liftIO $ do
-        writeFile (unpack filename) $ toStrict src
-        exitSuccess
+handleCommand Save =
+  view (config . disableSaving) >>= \case
+    True -> say_ ["save", "disabled"] >> continue
+    False -> do
+      -- TODO default save locations / config file?
+      use savefile >>= \case
+        Just filepath ->
+          stringPromptWithDefault_
+            ["save", "location"]
+            Cancellable
+            (pack filepath)
+            promptCallback
+        Nothing -> prompt_ @'StringPrompt ["save", "location"] Cancellable promptCallback
+      continue
+      where
+        promptCallback :: PromptResult 'StringPrompt -> AppM ()
+        promptCallback (StringResult filename) = do
+          sf <- use savefile
+          exists <- liftIO . doesFileExist $ unpack filename
+          if exists && sf /= Just (unpack filename)
+          then confirm ["save", "overwrite"] (object ["filename" A..= filename])
+              $ doSave filename
+          else doSave filename
+        doSave filename = do
+          src <- gets saveGame
+          lift . liftIO $ do
+            writeFile (unpack filename) $ toStrict src
+            exitSuccess
 
 handleCommand GoUp = do
   hasStairs <- uses entitiesAtCharacter $ elem (SomeEntity UpStaircase)

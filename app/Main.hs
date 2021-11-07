@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+--------------------------------------------------------------------------------
 module Main ( main ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (finally)
@@ -12,6 +14,7 @@ import           System.Exit (die)
 --------------------------------------------------------------------------------
 import qualified Xanthous.Game as Game
 import           Xanthous.Game.Env (GameEnv(..))
+import qualified Xanthous.Game.Env as Game
 import           Xanthous.App
 import           Xanthous.Generators.Level
                  ( GeneratorInput
@@ -26,9 +29,17 @@ import           Xanthous.Data (Dimensions, Dimensions'(Dimensions))
 import           Data.Array.IArray ( amap )
 --------------------------------------------------------------------------------
 
+parseGameConfig :: Opt.Parser Game.Config
+parseGameConfig = Game.Config
+  <$> Opt.switch
+      ( Opt.long "disable-saving"
+      <> Opt.help "Disallow saving games"
+      )
+
 data RunParams = RunParams
   { seed :: Maybe Int
   , characterName :: Maybe Text
+  , gameConfig :: Game.Config
   }
   deriving stock (Show, Eq)
 
@@ -46,6 +57,7 @@ parseRunParams = RunParams
         <> "will be prompted for at runtime"
         )
       ))
+  <*> parseGameConfig
 
 data Command
   = Run RunParams
@@ -104,7 +116,7 @@ newGame rparams = do
   let initialState = Game.initialStateFromSeed gameSeed &~ do
         for_ (characterName rparams) $ \cn ->
           Game.character . Character.characterName ?= cn
-  runGame NewGame initialState `finally` do
+  runGame NewGame (gameConfig rparams) initialState `finally` do
     thanks
     when (isNothing $ seed rparams)
       . putStrLn
@@ -115,19 +127,19 @@ loadGame :: FilePath -> IO ()
 loadGame saveFile = do
   gameState <- maybe (die "Invalid save file!") pure . Game.loadGame  . fromStrict
               =<< readFile @IO saveFile
-  gameState `deepseq` runGame (LoadGame saveFile) gameState
+  gameState `deepseq` runGame (LoadGame saveFile) Game.defaultConfig gameState
 
-runGame :: RunType -> Game.GameState -> IO ()
-runGame rt gameState = do
-  eventChan <- Brick.BChan.newBChan 10
-  let gameEnv = GameEnv eventChan
+runGame :: RunType -> Game.Config -> Game.GameState -> IO ()
+runGame rt _config gameState = do
+  _eventChan <- Brick.BChan.newBChan 10
+  let gameEnv = GameEnv {..}
   app <- makeApp gameEnv rt
   let buildVty = Vty.mkVty Vty.defaultConfig
   initialVty <- buildVty
   _game' <- customMain
     initialVty
     buildVty
-    (Just eventChan)
+    (Just _eventChan)
     app
     gameState
   pure ()
