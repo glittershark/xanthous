@@ -128,6 +128,7 @@ impl Handler {
         if let Some(username) = &self.username {
             cmd.args(["--name", username]);
         }
+        cmd.arg("--disable-saving");
 
         let child = pty::spawn(cmd, Some(winsize), None).await?;
         info!(pid = %child.pid, "Spawned child");
