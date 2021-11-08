@@ -26,7 +26,7 @@ import qualified Xanthous.UtilSpec
 --------------------------------------------------------------------------------
 
 main :: IO ()
-main = defaultMain test
+main = defaultMainWithRerun test
 
 test :: TestTree
 test = testGroup "Xanthous"

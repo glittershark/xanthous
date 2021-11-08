@@ -140,6 +140,7 @@ tests:
     - tasty
     - tasty-hunit
     - tasty-quickcheck
+    - tasty-rerun
     - lens-properties
 
 benchmarks:

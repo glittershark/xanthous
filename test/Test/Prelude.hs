@@ -5,6 +5,7 @@ module Test.Prelude
   , module Test.Tasty
   , module Test.Tasty.HUnit
   , module Test.Tasty.QuickCheck
+  , module Test.Tasty.Ingredients.Rerun
   , module Test.QuickCheck.Classes
   , testBatch
   , jsonRoundTrip
@@ -15,6 +16,7 @@ import           Xanthous.Prelude hiding (assert, elements)
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 import           Test.Tasty.HUnit
+import           Test.Tasty.Ingredients.Rerun
 import           Test.QuickCheck.Classes
 import           Test.QuickCheck.Checkers (TestBatch, EqProp ((=-=)))
 import           Test.QuickCheck.Instances.ByteString ()

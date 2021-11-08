@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2db6cb1320baa23f71c24dff106bf682fb21e38c602d57e7e99297ae6abdc772
+-- hash: 96c5446afd429c3e2166158e317c18a69be9bad8ce76de85f69abda4f9aa162c
 
 name:           xanthous
 version:        0.1.0.0
@@ -405,6 +405,7 @@ test-suite test
     , tasty
     , tasty-hunit
     , tasty-quickcheck
+    , tasty-rerun
     , text
     , text-zipper
     , tomland
