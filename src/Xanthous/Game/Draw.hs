@@ -44,10 +44,8 @@ drawPromptState NoPrompt = emptyWidget
 drawPromptState (WaitingPrompt msg (Prompt _ pt ps pri _)) =
   case (pt, ps, pri) of
     (SStringPrompt, StringPromptState edit, mDef) ->
-      txtWrap msg
-      <+> txt " "
-      <+> txt (maybe "" (\def -> "(default: " <> def <> ")") mDef)
-      <+> txt " "
+      txt msg
+      <+> txt (maybe "" (\def -> "(default: " <> def <> ") ") mDef)
       <+> renderEditor (txt . fold) True edit
     (SDirectionPrompt, DirectionPromptState, _) -> txtWrap msg
     (SMenu, _, menuItems) ->
