@@ -1,11 +1,12 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::process::Command;
 use std::sync::Arc;
 
 use clap::Parser;
 use color_eyre::eyre::Result;
-use eyre::{bail, eyre};
+use eyre::{bail, Context};
 use futures::future::{ready, Ready};
 use futures::Future;
 use metrics_exporter_prometheus::PrometheusBuilder;
@@ -16,6 +17,9 @@ use thrussh::{
     server::{self, Auth, Session},
     CryptoVec,
 };
+use thrussh_keys::decode_openssh;
+use thrussh_keys::key::KeyPair;
+use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::select;
@@ -55,17 +59,31 @@ struct Opts {
     #[clap(long, env = "XANTHOUS_BINARY_PATH")]
     xanthous_binary_path: String,
 
+    /// Path to a file containing the ed25519 secret key for the server
+    #[clap(long, env = "SECRET_KEY_FILE")]
+    secret_key_file: PathBuf,
+
     /// Level to log at
     #[clap(long, env = "LOG_LEVEL", default_value = "info")]
     log_level: String,
 }
 
 impl Opts {
-    fn ssh_server_config(&self) -> Result<server::Config> {
+    async fn read_secret_key(&self) -> Result<KeyPair> {
+        let mut file = File::open(&self.secret_key_file)
+            .await
+            .context("Reading secret key file")?;
+        let mut secret_key = Vec::with_capacity(464);
+        file.read_to_end(&mut secret_key).await?;
+        Ok(decode_openssh(&secret_key, None)?)
+    }
+
+    async fn ssh_server_config(&self) -> Result<server::Config> {
+        let key_pair = self.read_secret_key().await?;
+
         Ok(server::Config {
             server_id: "SSH-2.0-xanthous".to_owned(),
-            keys: vec![thrussh_keys::key::KeyPair::generate_ed25519()
-                .ok_or_else(|| eyre!("Could not generate ed25519 key"))?],
+            keys: vec![key_pair],
             ..Default::default()
         })
     }
@@ -301,7 +319,7 @@ async fn main() -> Result<()> {
         .install()?;
     metrics::register();
 
-    let config = Arc::new(opts.ssh_server_config()?);
+    let config = Arc::new(opts.ssh_server_config().await?);
     info!(address = %opts.address, "Listening for new SSH connections");
     let listener = TcpListener::bind(&opts.address).await?;
 

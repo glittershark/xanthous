@@ -24,6 +24,11 @@ in {
         default = depot.users.grfn.xanthous.server.docker;
         description = "OCI image file to run";
       };
+
+      ed25519SecretKeyFile = mkOption {
+        type = with types; uniq string;
+        description = "Path to the ed25519 secret key for the server";
+      };
     };
   };
 
@@ -36,6 +41,7 @@ in {
         "${toString cfg.port}:22"
         "${toString cfg.metricsPort}:9000"
       ];
+      environment.SECRET_KEY_FILE = "/etc/secrets/xanthous-server-secret-key";
     };
   };
 }
