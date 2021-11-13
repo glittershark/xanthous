@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::process::Command;
+use std::str;
 use std::sync::Arc;
 
 use clap::Parser;
@@ -17,7 +18,7 @@ use thrussh::{
     server::{self, Auth, Session},
     CryptoVec,
 };
-use thrussh_keys::decode_openssh;
+use thrussh_keys::decode_secret_key;
 use thrussh_keys::key::KeyPair;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -75,7 +76,7 @@ impl Opts {
             .context("Reading secret key file")?;
         let mut secret_key = Vec::with_capacity(464);
         file.read_to_end(&mut secret_key).await?;
-        Ok(decode_openssh(&secret_key, None)?)
+        Ok(decode_secret_key(str::from_utf8(&secret_key)?, None)?)
     }
 
     async fn ssh_server_config(&self) -> Result<server::Config> {
@@ -348,5 +349,40 @@ async fn main() -> Result<()> {
             histogram!(CONNECTION_DURATION, duration);
             decrement_gauge!(ACTIVE_CONNECTIONS, 1.0);
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::NamedTempFile;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn read_secret_key() {
+        use std::io::Write;
+
+        let mut file = NamedTempFile::new().unwrap();
+        file.write_all(
+            b"
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACAYz80xcK7jYxZMAl6apIHKRtB0Z2U78gG39c1QaIhgMwAAAJB9vxK9fb8S
+vQAAAAtzc2gtZWQyNTUxOQAAACAYz80xcK7jYxZMAl6apIHKRtB0Z2U78gG39c1QaIhgMw
+AAAEDNZ0d3lLNBGU6Im4JOpr490TOjm+cB7kMVXjVg3iCowBjPzTFwruNjFkwCXpqkgcpG
+0HRnZTvyAbf1zVBoiGAzAAAACHRlc3Qta2V5AQIDBAU=
+-----END OPENSSH PRIVATE KEY-----
+",
+        )
+        .unwrap();
+
+        let opts: Opts = Opts::parse_from(&[
+            "xanthous-server".as_ref(),
+            "--xanthous-binary-path".as_ref(),
+            "/bin/xanthous".as_ref(),
+            "--secret-key-file".as_ref(),
+            file.path().as_os_str(),
+        ]);
+        opts.read_secret_key().await.unwrap();
     }
 }

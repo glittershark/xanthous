@@ -24,3 +24,6 @@ base64ct = "<1.2"
 [dependencies.tokio]
 version = "1.13"
 features = ["rt", "rt-multi-thread", "macros", "net", "process", "fs", "signal"]
+
+[dev-dependencies]
+tempfile = "3.2.0"
