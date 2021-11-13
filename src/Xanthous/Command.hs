@@ -59,6 +59,11 @@ commandFromKey (KChar '<') [] = Just GoUp
 commandFromKey (KChar '>') [] = Just GoDown
 commandFromKey (KChar 'R') [] = Just Rest
 
+commandFromKey KUp [] = Just $ Move Up
+commandFromKey KDown [] = Just $ Move Down
+commandFromKey KLeft [] = Just $ Move Left
+commandFromKey KRight [] = Just $ Move Right
+
 -- DEBUG COMMANDS --
 commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll
 
