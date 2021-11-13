@@ -141,7 +141,7 @@ generateLevel gen ps dims num = do
   village <- generateVillage cells gen
   let _levelExtra = village
   _levelItems <- randomItems cells
-  _levelCreatures <- randomCreatures cells
+  _levelCreatures <- randomCreatures num cells
   _levelDoors <- randomDoors cells
   _levelCharacterPosition <- chooseCharacterPosition cells
   let upStaircase = _EntityMap # [(_levelCharacterPosition, UpStaircase)]

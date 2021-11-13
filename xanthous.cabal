@@ -302,6 +302,7 @@ test-suite test
       Xanthous.DataSpec
       Xanthous.Entities.CharacterSpec
       Xanthous.Entities.RawsSpec
+      Xanthous.Entities.RawTypesSpec
       Xanthous.Game.PromptSpec
       Xanthous.Game.StateSpec
       Xanthous.GameSpec

@@ -39,7 +39,7 @@ chooseCharacterPosition :: MonadRandom m => Cells -> m Position
 chooseCharacterPosition = randomPosition
 
 randomItems :: MonadRandom m => Cells -> m (EntityMap Item)
-randomItems = randomEntities Item.newWithType (0.0004, 0.001)
+randomItems = randomEntities (fmap Identity . Item.newWithType) (0.0004, 0.001)
 
 placeDownStaircase :: MonadRandom m => Cells -> m (EntityMap Staircase)
 placeDownStaircase cells = do
@@ -76,8 +76,13 @@ randomDoors cells = do
     teeish (fmap not -> (Neighbors tl t tr l r _ b _ )) =
       and [tl, t, tr, b] && (and . fmap not) [l, r]
 
-randomCreatures :: MonadRandom m => Cells -> m (EntityMap Creature)
-randomCreatures = randomEntities Creature.newWithType (0.0007, 0.002)
+randomCreatures
+  :: MonadRandom m
+  => Word -- ^ Level number, starting at 0
+  -> Cells
+  -> m (EntityMap Creature)
+randomCreatures levelNumber
+  = randomEntities (Creature.newOnLevelWithType levelNumber) (0.0007, 0.002)
 
 tutorialMessage :: MonadRandom m
   => Cells
@@ -99,8 +104,8 @@ tutorialMessage cells characterPosition = do
             (circle (pos ^. _Position) dist)
 
 randomEntities
-  :: forall entity raw m. (MonadRandom m, RawType raw)
-  => (raw -> m entity)
+  :: forall entity raw m t. (MonadRandom m, RawType raw, Functor t, Foldable t)
+  => (raw -> m (t entity))
   -> (Float, Float)
   -> Cells
   -> m (EntityMap entity)
@@ -114,9 +119,9 @@ randomEntities newWithType sizeRange cells =
       entities <- for [0..numEntities] $ const $ do
         pos <- randomPosition cells
         raw <- choose raws
-        entity <- newWithType raw
-        pure (pos, entity)
-      pure $ _EntityMap # entities
+        entities <- newWithType raw
+        pure $ (pos, ) <$> entities
+      pure $ _EntityMap # (entities >>= toList)
 
 randomPosition :: MonadRandom m => Cells -> m Position
 randomPosition = fmap positionFromV2 . choose . impureNonNull . cellCandidates

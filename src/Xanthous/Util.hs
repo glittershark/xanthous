@@ -80,6 +80,14 @@ foldlMapM' f xs = foldr f' pure xs mempty
     let !b = mappend bl br
     k b
 
+-- | Returns whether the third argument is in the range given by the first two
+-- arguments, inclusive
+--
+-- >>> between (0 :: Int) 2 2
+-- True
+--
+-- >>> between (0 :: Int) 2 3
+-- False
 between
   :: Ord a
   => a -- ^ lower bound

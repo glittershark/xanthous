@@ -10,6 +10,9 @@ module Xanthous.Entities.RawTypes
     -- * Creatures
   , CreatureType(..)
   , hostile
+    -- ** Generation parameters
+  , CreatureGenerateParams(..)
+  , canGenerate
     -- ** Language
   , LanguageName(..)
   , getLanguage
@@ -36,10 +39,13 @@ module Xanthous.Entities.RawTypes
   , HasEatMessage(..)
   , HasEdible(..)
   , HasFriendly(..)
+  , HasGenerateParams(..)
   , HasHitpointsHealed(..)
   , HasLanguage(..)
   , HasLongDescription(..)
   , HasMaxHitpoints(..)
+  , HasMaxLevel(..)
+  , HasMinLevel(..)
   , HasName(..)
   , HasSayVerb(..)
   , HasSpeed(..)
@@ -51,6 +57,7 @@ import Xanthous.Prelude
 import Test.QuickCheck
 import Data.Aeson.Generic.DerivingVia
 import Data.Aeson (ToJSON, FromJSON)
+import Data.Interval (Interval, lowerBound', upperBound')
 --------------------------------------------------------------------------------
 import Xanthous.Messages (Message(..))
 import Xanthous.Data (TicksPerTile, Hitpoints, Per, Grams, Cubic, Meters)
@@ -58,7 +65,7 @@ import Xanthous.Data.EntityChar
 import Xanthous.Util.QuickCheck
 import Xanthous.Generators.Speech (Language, gormlak, english)
 import Xanthous.Orphans ()
-import Data.Interval (Interval, lowerBound', upperBound')
+import Xanthous.Util (EqProp, EqEqProp(..))
 --------------------------------------------------------------------------------
 
 -- | Identifiers for languages that creatures can speak.
@@ -97,18 +104,59 @@ data Attack = Attack
                        Attack
 makeFieldsNoPrefix ''Attack
 
+data CreatureGenerateParams = CreatureGenerateParams
+  { -- | Minimum dungeon level at which to generate this creature
+    _minLevel :: !(Maybe Word)
+    -- | Maximum dungeon level at which to generate this creature
+  , _maxLevel :: !(Maybe Word)
+  }
+  deriving stock (Eq, Show, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary CreatureGenerateParams
+  deriving EqProp via EqEqProp CreatureGenerateParams
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1] ]
+                       CreatureGenerateParams
+makeFieldsNoPrefix ''CreatureGenerateParams
+
+-- | Can a creature with these generate params be generated on this level?
+canGenerate
+  :: Word -- ^ Level number
+  -> CreatureGenerateParams
+  -> Bool
+canGenerate levelNumber gps = aboveLowerBound && belowUpperBound
+  where
+    aboveLowerBound = withinBound (>=) (gps ^. minLevel) levelNumber
+    belowUpperBound = withinBound (<=) (gps ^. maxLevel) levelNumber
+    withinBound cmp bound val = maybe True (cmp val) bound
+
+instance Semigroup CreatureGenerateParams where
+  (CreatureGenerateParams minl₁ maxl₁) <> (CreatureGenerateParams minl₂ maxl₂)
+    = CreatureGenerateParams (addWith min minl₁ minl₂) (addWith max maxl₁ maxl₂)
+    where
+      addWith _ Nothing Nothing  = Nothing
+      addWith _ Nothing (Just x)  = Just x
+      addWith _ (Just x) Nothing  = Just x
+      addWith f (Just x) (Just y) = Just (f x y)
+
+instance Monoid CreatureGenerateParams where
+  mempty = CreatureGenerateParams Nothing Nothing
+
+
 data CreatureType = CreatureType
-  { _name         :: !Text
-  , _description  :: !Text
-  , _char         :: !EntityChar
-  , _maxHitpoints :: !Hitpoints
-  , _friendly     :: !Bool
-  , _speed        :: !TicksPerTile
-  , _language     :: !(Maybe LanguageName)
+  { _name           :: !Text
+  , _description    :: !Text
+  , _char           :: !EntityChar
+  , _maxHitpoints   :: !Hitpoints
+  , _friendly       :: !Bool
+  , _speed          :: !TicksPerTile
+  , _language       :: !(Maybe LanguageName)
   , -- | The verb, in present tense, for when the creature says something
-    _sayVerb      :: !(Maybe Text)
+    _sayVerb        :: !(Maybe Text)
   , -- | The creature's natural attacks
-    _attacks       :: !(NonNull (Vector Attack))
+    _attacks        :: !(NonNull (Vector Attack))
+    -- | Parameters for generating the creature in levels
+  , _generateParams :: !(Maybe CreatureGenerateParams)
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)

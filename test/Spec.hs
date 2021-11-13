@@ -10,6 +10,7 @@ import qualified Xanthous.Data.MemoSpec
 import qualified Xanthous.Data.NestedMapSpec
 import qualified Xanthous.DataSpec
 import qualified Xanthous.Entities.RawsSpec
+import qualified Xanthous.Entities.RawTypesSpec
 import qualified Xanthous.Entities.CharacterSpec
 import qualified Xanthous.GameSpec
 import qualified Xanthous.Game.StateSpec
@@ -39,6 +40,7 @@ test = testGroup "Xanthous"
   , Xanthous.DataSpec.test
   , Xanthous.Entities.RawsSpec.test
   , Xanthous.Entities.CharacterSpec.test
+  , Xanthous.Entities.RawTypesSpec.test
   , Xanthous.GameSpec.test
   , Xanthous.Game.StateSpec.test
   , Xanthous.Game.PromptSpec.test
