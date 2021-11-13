@@ -9,6 +9,7 @@ let
     path = ./.;
     filter = path: type:
       !(type == "directory" && builtins.baseNameOf path == "server")
+      && !(type == "directory" && builtins.baseNameOf path == "docs")
       && (ignore path type
           || builtins.baseNameOf path == "package.yaml");
   };
