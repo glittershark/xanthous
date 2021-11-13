@@ -41,7 +41,8 @@ in {
         "${toString cfg.port}:22"
         "${toString cfg.metricsPort}:9000"
       ];
-      environment.SECRET_KEY_FILE = "/etc/secrets/xanthous-server-secret-key";
+      environment.SECRET_KEY_FILE = "/secret-key";
+      volumes = [ "/etc/secrets/xanthous-server-secret-key:/secret-key" ];
     };
   };
 }
