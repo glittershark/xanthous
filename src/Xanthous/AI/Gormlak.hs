@@ -87,6 +87,7 @@ stepGormlak ticks pe@(Positioned pos creature) = do
         else pure pe
 
   dest <- maybe (selectDestination pos creature) pure
+         . mfilter (\(Destination p _) -> p /= pos)
          $ creature ^. field @"_hippocampus" . destination
   let progress' =
         dest ^. destinationProgress
