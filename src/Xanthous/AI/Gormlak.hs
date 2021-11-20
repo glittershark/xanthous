@@ -88,21 +88,21 @@ stepGormlak ticks pe@(Positioned pos creature) = do
 
   dest <- maybe (selectDestination pos creature) pure
          . mfilter (\(Destination p _) -> p /= pos)
-         $ creature ^. field @"_hippocampus" . destination
+         $ creature ^. hippocampus . destination
   let progress' =
         dest ^. destinationProgress
-        + creatureType ^. Raw.speed . invertedRate |*| ticks
+        + creature ^. creatureType . Raw.speed . invertedRate |*| ticks
   if progress' < 1
     then pure
          $ pe'
-         & positioned . field @"_hippocampus" . destination
+         & positioned . hippocampus . destination
          ?~ (dest & destinationProgress .~ progress')
     else do
       let newPos = dest ^. destinationPosition
           remainingSpeed = progress' - 1
       newDest <- selectDestination newPos creature
                 <&> destinationProgress +~ remainingSpeed
-      let pe'' = pe' & positioned . field @"_hippocampus" . destination ?~ newDest
+      let pe'' = pe' & positioned . hippocampus . destination ?~ newDest
       collisionAt newPos >>= \case
         Nothing -> pure $ pe'' & position .~ newPos
         Just Stop -> pure pe''
@@ -111,10 +111,9 @@ stepGormlak ticks pe@(Positioned pos creature) = do
           when (any (entityIs @Character) ents) attackCharacter
           pure pe'
   where
-    creatureType = creature ^. field @"_creatureType"
     vision = visionRadius creature
     attackCharacter = do
-      attack <- choose $ creatureType ^. attacks
+      attack <- choose $ creature ^. creatureType . attacks
       attackDescription <- Messages.render (attack ^. Raw.description)
                           $ object []
       say ["combat", "creatureAttack"]
@@ -123,13 +122,13 @@ stepGormlak ticks pe@(Positioned pos creature) = do
                  ]
       character %= Character.damage (attack ^. Raw.damage)
 
-    yellAtCharacter = for_ (creature ^. field @"_creatureType" . language)
+    yellAtCharacter = for_ (creature ^. creatureType . language)
       $ \lang -> do
           utterance <- fmap (<> "!") . word $ getLanguage lang
           creatureSaysText pe utterance
 
     creatureGreeted :: Lens' entity Bool
-    creatureGreeted = field @"_hippocampus" . greetedCharacter
+    creatureGreeted = hippocampus . greetedCharacter
 
 
 -- | A creature sends some text
@@ -165,6 +164,12 @@ instance (IsCreature entity) => Brain (GormlakBrain entity) where
     . stepGormlak ticks
     . fmap _unGormlakBrain
   entityCanMove = const True
+
+hippocampus :: HasField "_hippocampus" s t a b => Lens s t a b
+hippocampus = field @"_hippocampus"
+
+creatureType :: HasField "_creatureType" s t a b => Lens s t a b
+creatureType = field @"_creatureType"
 
 --------------------------------------------------------------------------------
 
