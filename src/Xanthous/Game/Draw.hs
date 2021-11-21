@@ -17,6 +17,7 @@ import           Xanthous.Data.App (ResourceName, Panel(..))
 import qualified Xanthous.Data.App as Resource
 import qualified Xanthous.Data.EntityMap as EntityMap
 import           Xanthous.Game.State
+import           Xanthous.Entities.Common (Wielded(..), wielded, backpack)
 import           Xanthous.Entities.Character
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Game

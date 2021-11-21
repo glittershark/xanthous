@@ -9,6 +9,7 @@ import qualified Xanthous.Data.LevelsSpec
 import qualified Xanthous.Data.MemoSpec
 import qualified Xanthous.Data.NestedMapSpec
 import qualified Xanthous.DataSpec
+import qualified Xanthous.Entities.CommonSpec
 import qualified Xanthous.Entities.RawsSpec
 import qualified Xanthous.Entities.RawTypesSpec
 import qualified Xanthous.Entities.CharacterSpec
@@ -38,6 +39,7 @@ test = testGroup "Xanthous"
   , Xanthous.Data.MemoSpec.test
   , Xanthous.Data.NestedMapSpec.test
   , Xanthous.DataSpec.test
+  , Xanthous.Entities.CommonSpec.test
   , Xanthous.Entities.RawsSpec.test
   , Xanthous.Entities.CharacterSpec.test
   , Xanthous.Entities.RawTypesSpec.test

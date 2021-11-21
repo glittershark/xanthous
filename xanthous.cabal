@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.5.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 96c5446afd429c3e2166158e317c18a69be9bad8ce76de85f69abda4f9aa162c
+-- hash: 8cae8550487b6092c18c82a0dc29bf22980d416771c66f6fca3e151875c66495
 
 name:           xanthous
 version:        0.1.0.0
@@ -47,6 +47,7 @@ library
       Xanthous.Data.NestedMap
       Xanthous.Data.VectorBag
       Xanthous.Entities.Character
+      Xanthous.Entities.Common
       Xanthous.Entities.Creature
       Xanthous.Entities.Creature.Hippocampus
       Xanthous.Entities.Draw.Util
@@ -301,6 +302,7 @@ test-suite test
       Xanthous.Data.NestedMapSpec
       Xanthous.DataSpec
       Xanthous.Entities.CharacterSpec
+      Xanthous.Entities.CommonSpec
       Xanthous.Entities.RawsSpec
       Xanthous.Entities.RawTypesSpec
       Xanthous.Game.PromptSpec

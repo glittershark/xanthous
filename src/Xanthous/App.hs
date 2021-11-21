@@ -54,6 +54,12 @@ import           Xanthous.Physics (throwDistance, bluntThrowDamage)
 import           Xanthous.Data.EntityMap.Graphics (lineOfSight)
 import           Xanthous.Data.EntityMap (EntityID)
 --------------------------------------------------------------------------------
+import           Xanthous.Entities.Common
+                 ( InventoryPosition, describeInventoryPosition, backpack
+                 , wieldableItem, wieldedItems, wielded, itemsWithPosition
+                 , removeItemFromPosition, asWieldedItem, inRightHand
+                 , wieldedItem
+                 )
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character hiding (pickUpItem)
 import           Xanthous.Entities.Item (Item, weight)
