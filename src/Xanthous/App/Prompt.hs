@@ -30,7 +30,7 @@ import           Xanthous.Game.Prompt
 import           Xanthous.Game.State
 import qualified Xanthous.Messages as Messages
 import qualified Xanthous.Data.EntityMap as EntityMap
-import           Xanthous.Entities.Creature (creatureType)
+import           Xanthous.Entities.Creature (creatureType, Creature)
 import           Xanthous.Entities.RawTypes (hostile)
 import qualified Linear.Metric as Metric
 --------------------------------------------------------------------------------
@@ -218,7 +218,7 @@ nearestEnemyPosition = do
            ^.. folded
            . _2
            . positioned
-           . _SomeEntity
+           . _SomeEntity @Creature
            . creatureType
            . filtered (view hostile)
            . to (const (distance charPos p, p))

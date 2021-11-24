@@ -4,9 +4,10 @@ module Xanthous.Game.StateSpec (main, test) where
 import           Test.Prelude
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
-import           Xanthous.Entities.Raws (raws, entityFromRaw)
-import Control.Monad.Random (evalRandT)
-import System.Random (getStdGen)
+import           Xanthous.Entities.Raws (raws)
+import           Xanthous.Generators.Level.LevelContents (entityFromRaw)
+import           Control.Monad.Random (evalRandT)
+import           System.Random (getStdGen)
 --------------------------------------------------------------------------------
 
 main :: IO ()

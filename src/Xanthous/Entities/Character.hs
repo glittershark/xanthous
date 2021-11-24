@@ -6,7 +6,7 @@ module Xanthous.Entities.Character
   ( -- * Character datatype
     Character(..)
   , characterName
-  , inventory
+  , HasInventory(..)
   , characterDamage
   , characterHitpoints'
   , characterHitpoints
@@ -163,7 +163,7 @@ data Character = Character
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
            Character
-makeLenses ''Character
+makeFieldsNoPrefix ''Character
 
 characterHitpoints :: Character -> Hitpoints
 characterHitpoints = views characterHitpoints' floor

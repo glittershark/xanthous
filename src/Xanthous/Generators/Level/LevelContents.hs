@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 --------------------------------------------------------------------------------
 module Xanthous.Generators.Level.LevelContents
   ( chooseCharacterPosition
@@ -6,6 +7,7 @@ module Xanthous.Generators.Level.LevelContents
   , randomDoors
   , placeDownStaircase
   , tutorialMessage
+  , entityFromRaw
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (any, toList)
@@ -17,14 +19,15 @@ import           Data.Foldable (any, toList)
 import           Linear.V2
 --------------------------------------------------------------------------------
 import           Xanthous.Generators.Level.Util
-import           Xanthous.Random
+import           Xanthous.Random hiding (chance)
+import qualified Xanthous.Random as Random
 import           Xanthous.Data
                  ( positionFromV2,  Position, _Position
                  , rotations, arrayNeighbors, Neighbors(..)
                  , neighborPositions
                  )
 import           Xanthous.Data.EntityMap (EntityMap, _EntityMap)
-import           Xanthous.Entities.Raws (rawsWithType, RawType)
+import           Xanthous.Entities.Raws (rawsWithType, RawType, raw)
 import qualified Xanthous.Entities.Item as Item
 import           Xanthous.Entities.Item (Item)
 import qualified Xanthous.Entities.Creature as Creature
@@ -33,6 +36,10 @@ import           Xanthous.Entities.Environment
                  (GroundMessage(..), Door(..), unlockedDoor, Staircase(..))
 import           Xanthous.Messages (message_)
 import           Xanthous.Util.Graphics (circle)
+import           Xanthous.Entities.RawTypes
+import           Xanthous.Entities.Creature.Hippocampus (initialHippocampus)
+import           Xanthous.Entities.Common (inRightHand, asWieldedItem, wielded)
+import           Xanthous.Game.State (SomeEntity(SomeEntity))
 --------------------------------------------------------------------------------
 
 chooseCharacterPosition :: MonadRandom m => Cells -> m Position
@@ -82,7 +89,40 @@ randomCreatures
   -> Cells
   -> m (EntityMap Creature)
 randomCreatures levelNumber
-  = randomEntities (Creature.newOnLevelWithType levelNumber) (0.0007, 0.002)
+  = randomEntities maybeNewCreature (0.0007, 0.002)
+  where
+    maybeNewCreature cType
+      | maybe True (canGenerate levelNumber) $ cType ^. generateParams
+      = Just <$> newCreatureWithType cType
+      | otherwise
+      = pure Nothing
+
+newCreatureWithType :: MonadRandom m => CreatureType -> m Creature
+newCreatureWithType _creatureType = do
+  let _hitpoints = _creatureType ^. maxHitpoints
+      _hippocampus = initialHippocampus
+
+  equipped <- fmap join
+            . traverse genEquipped
+            $ _creatureType
+            ^.. generateParams . _Just . equippedItem . _Just
+  let _inventory = maybe id (\ei -> wielded .~ inRightHand ei) (headMay equipped) mempty
+  pure Creature.Creature {..}
+  where
+    genEquipped cei = do
+      doGen <- Random.chance $ cei ^. chance
+      let entName = cei ^. entityName
+          itemType =
+            fromMaybe (error $ "raw \"" <> unpack entName <> "\" not of type Item")
+            . preview _Item
+            . fromMaybe (error $ "Could not find raw: " <> unpack entName)
+            $ raw entName
+      item <- Item.newWithType itemType
+      if doGen
+        then pure [fromMaybe (error $ "raw \"" <> unpack entName <> "\" not wieldable")
+                  $ preview asWieldedItem item]
+        else pure []
+
 
 tutorialMessage :: MonadRandom m
   => Cells
@@ -118,8 +158,8 @@ randomEntities newWithType sizeRange cells =
         floor . (* fromIntegral len) <$> getRandomR sizeRange
       entities <- for [0..numEntities] $ const $ do
         pos <- randomPosition cells
-        raw <- choose raws
-        entities <- newWithType raw
+        r <- choose raws
+        entities <- newWithType r
         pure $ (pos, ) <$> entities
       pure $ _EntityMap # (entities >>= toList)
 
@@ -136,3 +176,7 @@ cellCandidates
   . regions
   -- cells ends up with true = wall, we want true = can put an item here
   . amap not
+
+entityFromRaw :: MonadRandom m => EntityRaw -> m SomeEntity
+entityFromRaw (Creature ct) = SomeEntity <$> newCreatureWithType ct
+entityFromRaw (Item it) = SomeEntity <$> Item.newWithType it

@@ -8,6 +8,7 @@
 module Xanthous.Entities.Common
   ( -- * Inventory
     Inventory(..)
+  , HasInventory(..)
   , backpack
   , wielded
   , items
@@ -191,6 +192,10 @@ instance Semigroup Inventory where
 instance Monoid Inventory where
   mempty = Inventory mempty $ Hands Nothing Nothing
 
+class HasInventory s a | s -> a where
+  inventory :: Lens' s a
+  {-# MINIMAL inventory #-}
+
 -- | Representation for where in the inventory an item might be
 data InventoryPosition
   = Backpack
@@ -224,7 +229,7 @@ itemsWithPosition :: Fold Inventory (InventoryPosition, Item)
 itemsWithPosition = folding $ (<>) <$> backpackItems <*> handItems
   where
     backpackItems = toListOf $ backpack . folded . to (Backpack ,)
-    handItems inventory = case inventory ^. wielded of
+    handItems inv = case inv ^. wielded of
        DoubleHanded i -> pure (BothHands, i ^. wieldedItem)
        Hands l r -> (l ^.. folded . wieldedItem . to (LeftHand ,))
                  <> (r ^.. folded . wieldedItem . to (RightHand ,))

@@ -30,22 +30,24 @@ module Xanthous.Entities.RawTypes
   , isWieldable
 
     -- * Lens classes
-  , HasAttacks(..)
   , HasAttackMessage(..)
+  , HasAttacks(..)
+  , HasChance(..)
   , HasChar(..)
   , HasDamage(..)
   , HasDensity(..)
   , HasDescription(..)
   , HasEatMessage(..)
   , HasEdible(..)
+  , HasEntityName(..)
+  , HasEquippedItem(..)
   , HasFriendly(..)
   , HasGenerateParams(..)
   , HasHitpointsHealed(..)
   , HasLanguage(..)
+  , HasLevelRange(..)
   , HasLongDescription(..)
   , HasMaxHitpoints(..)
-  , HasMaxLevel(..)
-  , HasMinLevel(..)
   , HasName(..)
   , HasSayVerb(..)
   , HasSpeed(..)
@@ -53,19 +55,20 @@ module Xanthous.Entities.RawTypes
   , HasWieldable(..)
   ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude
-import Test.QuickCheck
-import Data.Aeson.Generic.DerivingVia
-import Data.Aeson (ToJSON, FromJSON)
-import Data.Interval (Interval, lowerBound', upperBound')
+import           Xanthous.Prelude
+import           Test.QuickCheck
+import           Data.Aeson.Generic.DerivingVia
+import           Data.Aeson (ToJSON, FromJSON)
+import           Data.Interval (Interval, lowerBound', upperBound')
+import qualified Data.Interval as Interval
 --------------------------------------------------------------------------------
-import Xanthous.Messages (Message(..))
-import Xanthous.Data (TicksPerTile, Hitpoints, Per, Grams, Cubic, Meters)
-import Xanthous.Data.EntityChar
-import Xanthous.Util.QuickCheck
-import Xanthous.Generators.Speech (Language, gormlak, english)
-import Xanthous.Orphans ()
-import Xanthous.Util (EqProp, EqEqProp(..))
+import           Xanthous.Messages (Message(..))
+import           Xanthous.Data (TicksPerTile, Hitpoints, Per, Grams, Cubic, Meters)
+import           Xanthous.Data.EntityChar
+import           Xanthous.Util.QuickCheck
+import           Xanthous.Generators.Speech (Language, gormlak, english)
+import           Xanthous.Orphans ()
+import           Xanthous.Util (EqProp, EqEqProp(..))
 --------------------------------------------------------------------------------
 
 -- | Identifiers for languages that creatures can speak.
@@ -104,13 +107,33 @@ data Attack = Attack
                        Attack
 makeFieldsNoPrefix ''Attack
 
-data CreatureGenerateParams = CreatureGenerateParams
-  { -- | Minimum dungeon level at which to generate this creature
-    _minLevel :: !(Maybe Word)
-    -- | Maximum dungeon level at which to generate this creature
-  , _maxLevel :: !(Maybe Word)
+-- | Description for generating an item equipped to a creature
+data CreatureEquippedItem = CreatureEquippedItem
+  { -- | Name of the entity type to generate
+    _entityName :: !Text
+    -- | Chance of generating the item when generating the creature
+    --
+    -- A chance of 1.0 will always generate the item
+  , _chance :: !Double
   }
-  deriving stock (Eq, Show, Ord, Generic)
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary CreatureEquippedItem
+  deriving (ToJSON, FromJSON)
+       via WithOptions '[ FieldLabelModifier '[Drop 1]
+                        , OmitNothingFields 'True
+                        ]
+                       CreatureEquippedItem
+makeFieldsNoPrefix ''CreatureEquippedItem
+
+
+data CreatureGenerateParams = CreatureGenerateParams
+  { -- | Range of dungeon levels at which to generate this creature
+    _levelRange :: !(Interval Word)
+    -- | Item equipped to the creature
+  , _equippedItem :: !(Maybe CreatureEquippedItem)
+  }
+  deriving stock (Eq, Show, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Arbitrary via GenericArbitrary CreatureGenerateParams
   deriving EqProp via EqEqProp CreatureGenerateParams
@@ -119,29 +142,18 @@ data CreatureGenerateParams = CreatureGenerateParams
                        CreatureGenerateParams
 makeFieldsNoPrefix ''CreatureGenerateParams
 
+instance Ord CreatureGenerateParams where
+  compare
+    = (compare `on` lowerBound' . _levelRange)
+    <> (compare `on` upperBound' . _levelRange)
+    <> (compare `on` _equippedItem)
+
 -- | Can a creature with these generate params be generated on this level?
 canGenerate
   :: Word -- ^ Level number
   -> CreatureGenerateParams
   -> Bool
-canGenerate levelNumber gps = aboveLowerBound && belowUpperBound
-  where
-    aboveLowerBound = withinBound (>=) (gps ^. minLevel) levelNumber
-    belowUpperBound = withinBound (<=) (gps ^. maxLevel) levelNumber
-    withinBound cmp bound val = maybe True (cmp val) bound
-
-instance Semigroup CreatureGenerateParams where
-  (CreatureGenerateParams minl₁ maxl₁) <> (CreatureGenerateParams minl₂ maxl₂)
-    = CreatureGenerateParams (addWith min minl₁ minl₂) (addWith max maxl₁ maxl₂)
-    where
-      addWith _ Nothing Nothing  = Nothing
-      addWith _ Nothing (Just x)  = Just x
-      addWith _ (Just x) Nothing  = Just x
-      addWith f (Just x) (Just y) = Just (f x y)
-
-instance Monoid CreatureGenerateParams where
-  mempty = CreatureGenerateParams Nothing Nothing
-
+canGenerate levelNumber gps = Interval.member levelNumber $ gps ^. levelRange
 
 data CreatureType = CreatureType
   { _name           :: !Text

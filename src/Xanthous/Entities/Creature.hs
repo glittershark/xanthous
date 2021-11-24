@@ -8,10 +8,9 @@ module Xanthous.Entities.Creature
   , creatureType
   , hitpoints
   , hippocampus
+  , inventory
 
     -- ** Creature functions
-  , newWithType
-  , newOnLevelWithType
   , damage
   , isDead
   , visionRadius
@@ -33,7 +32,6 @@ import           Xanthous.Prelude
 import           Test.QuickCheck
 import           Data.Aeson.Generic.DerivingVia
 import           Data.Aeson (ToJSON, FromJSON)
-import           Control.Monad.Random (MonadRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.AI.Gormlak
 import           Xanthous.Entities.RawTypes hiding
@@ -44,12 +42,14 @@ import           Xanthous.Data
 import           Xanthous.Data.Entities
 import           Xanthous.Entities.Creature.Hippocampus
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
+import           Xanthous.Entities.Common (Inventory)
 --------------------------------------------------------------------------------
 
 data Creature = Creature
   { _creatureType   :: !CreatureType
   , _hitpoints      :: !Hitpoints
   , _hippocampus    :: !Hippocampus
+  , _inventory      :: !Inventory
   }
   deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
@@ -58,7 +58,7 @@ data Creature = Creature
   deriving (ToJSON, FromJSON)
        via WithOptions '[ FieldLabelModifier '[Drop 1] ]
                        Creature
-makeLenses ''Creature
+makeFieldsNoPrefix ''Creature
 
 instance HasVisionRadius Creature where
   visionRadius = const 50 -- TODO
@@ -75,24 +75,6 @@ instance Entity Creature where
   entityCollision = const $ Just Combat
 
 --------------------------------------------------------------------------------
-
-newOnLevelWithType
-  :: MonadRandom m
-  => Word -- ^ Level number, starting at 0
-  -> CreatureType
-  -> m (Maybe Creature)
-newOnLevelWithType levelNumber cType
-  | maybe True (canGenerate levelNumber) $ cType ^. generateParams
-  = Just <$> newWithType cType
-  | otherwise
-  = pure Nothing
-
-
-newWithType :: MonadRandom m => CreatureType -> m Creature
-newWithType _creatureType =
-  let _hitpoints = _creatureType ^. maxHitpoints
-      _hippocampus = initialHippocampus
-  in pure Creature {..}
 
 damage :: Hitpoints -> Creature -> Creature
 damage amount = hitpoints %~ \hp ->

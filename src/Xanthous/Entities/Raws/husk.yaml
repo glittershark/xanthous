@@ -20,4 +20,7 @@ Creature:
   - description: kicks you
     damage: 2
   generateParams:
-    minLevel: 1
+    levelRange: [1, PosInf]
+    equippedItem:
+      entityName: broken-dagger
+      chance: 0.9
