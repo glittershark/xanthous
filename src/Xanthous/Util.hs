@@ -34,7 +34,7 @@ module Xanthous.Util
   , times, times_, endoTimes
 
     -- * State utilities
-  , modifyK, modifyKL
+  , modifyK, modifyKL, useListOf
 
     -- * Type-level programming utils
   , KnownBool(..)
@@ -310,6 +310,14 @@ modifyK k = get >>= k >>= put
 -- @@
 modifyKL :: MonadState s m => LensLike m s s a b -> (a -> m b) -> m ()
 modifyKL l k = get >>= traverseOf l k >>= put
+
+-- | Use a list of all the targets of a 'Fold' in the current state
+--
+-- @@
+-- evalState (useListOf folded) === toList
+-- @@
+useListOf :: MonadState s m => Getting (Endo [a]) s a -> m [a]
+useListOf = gets . toListOf
 
 --------------------------------------------------------------------------------
 

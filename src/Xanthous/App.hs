@@ -48,17 +48,18 @@ import           Xanthous.Game.Draw (drawGame)
 import           Xanthous.Game.Prompt hiding (Fire)
 import qualified Xanthous.Messages as Messages
 import           Xanthous.Random
-import           Xanthous.Util (removeVectorIndex)
+import           Xanthous.Util (removeVectorIndex, useListOf)
 import           Xanthous.Util.Inflection (toSentence)
 import           Xanthous.Physics (throwDistance, bluntThrowDamage)
 import           Xanthous.Data.EntityMap.Graphics (lineOfSight)
 import           Xanthous.Data.EntityMap (EntityID)
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 import           Xanthous.Entities.Common
                  ( InventoryPosition, describeInventoryPosition, backpack
                  , wieldableItem, wieldedItems, wielded, itemsWithPosition
                  , removeItemFromPosition, asWieldedItem, inRightHand
-                 , wieldedItem
+                 , wieldedItem, items
                  )
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character hiding (pickUpItem)
@@ -462,7 +463,18 @@ damageCreature (creatureID, creature) dam = do
   if Creature.isDead creature'
     then do
       say ["combat", "killed"] msgParams
+      floorItems <- useListOf
+                   $ entities
+                   . ix creatureID
+                   . positioned
+                   . _SomeEntity @Creature
+                   . inventory
+                   . items
+      mCreaturePos <- preuse $ entities . ix creatureID . position
       entities . at creatureID .= Nothing
+      for_ mCreaturePos $ \creaturePos ->
+        entities . EntityMap.atPosition creaturePos
+          %= (<> fromList (SomeEntity <$> floorItems))
     else entities . ix creatureID . positioned .= SomeEntity creature'
   pure creature'
 

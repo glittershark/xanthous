@@ -42,7 +42,7 @@ import           Xanthous.Data
 import           Xanthous.Data.Entities
 import           Xanthous.Entities.Creature.Hippocampus
 import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
-import           Xanthous.Entities.Common (Inventory)
+import           Xanthous.Entities.Common (Inventory, HasInventory(..))
 --------------------------------------------------------------------------------
 
 data Creature = Creature
