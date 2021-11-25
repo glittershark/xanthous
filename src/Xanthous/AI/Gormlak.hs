@@ -26,8 +26,10 @@ import qualified Xanthous.Entities.Character as Character
 import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Entities.RawTypes
                  ( CreatureType, HasLanguage(language), getLanguage
-                 , HasAttacks (attacks)
+                 , HasAttacks (attacks), creatureAttackMessage
                  )
+import           Xanthous.Entities.Common
+                 ( wielded, Inventory, wieldedItems, WieldedItem (WieldedItem) )
 import           Xanthous.Game.State
 import           Xanthous.Game.Lenses
                  ( entitiesCollision, collisionAt
@@ -36,7 +38,7 @@ import           Xanthous.Game.Lenses
                  )
 import           Xanthous.Data.EntityMap.Graphics (linesOfSight, canSee)
 import           Xanthous.Random
-import           Xanthous.Monad (say)
+import           Xanthous.Monad (say, message)
 import           Xanthous.Generators.Speech (word)
 import qualified Linear.Metric as Metric
 import qualified Xanthous.Messages as Messages
@@ -50,6 +52,7 @@ type IsCreature entity =
   ( HasVisionRadius entity
   , HasField "_hippocampus" entity entity Hippocampus Hippocampus
   , HasField "_creatureType" entity entity CreatureType CreatureType
+  , HasField "_inventory" entity entity Inventory Inventory
   , A.ToJSON entity
   )
 
@@ -113,14 +116,26 @@ stepGormlak ticks pe@(Positioned pos creature) = do
   where
     vision = visionRadius creature
     attackCharacter = do
-      attack <- choose $ creature ^. creatureType . attacks
-      attackDescription <- Messages.render (attack ^. Raw.description)
-                          $ object []
-      say ["combat", "creatureAttack"]
-        $ object [ "creature" A..= creature
-                 , "attackDescription" A..= attackDescription
-                 ]
-      character %= Character.damage (attack ^. Raw.damage)
+      dmg <- case creature ^? inventory . wielded . wieldedItems of
+        Just (WieldedItem item wi) -> do
+          let msg = fromMaybe
+                    (Messages.lookup ["combat", "creatureAttack", "genericWeapon"])
+                    $ wi ^. creatureAttackMessage
+          message msg $ object [ "creature" A..= creature
+                               , "item" A..= item
+                               ]
+          pure $ wi ^. Raw.damage
+        Nothing -> do
+          attack <- choose $ creature ^. creatureType . attacks
+          attackDescription <- Messages.render (attack ^. Raw.description)
+                              $ object []
+          say ["combat", "creatureAttack", "natural"]
+              $ object [ "creature" A..= creature
+                       , "attackDescription" A..= attackDescription
+                       ]
+          pure $ attack ^. Raw.damage
+
+      character %= Character.damage dmg
 
     yellAtCharacter = for_ (creature ^. creatureType . language)
       $ \lang -> do
@@ -170,6 +185,9 @@ hippocampus = field @"_hippocampus"
 
 creatureType :: HasField "_creatureType" s t a b => Lens s t a b
 creatureType = field @"_creatureType"
+
+inventory :: HasField "_inventory" s t a b => Lens s t a b
+inventory = field @"_inventory"
 
 --------------------------------------------------------------------------------
 

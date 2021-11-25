@@ -34,6 +34,7 @@ module Xanthous.Entities.RawTypes
   , HasAttacks(..)
   , HasChance(..)
   , HasChar(..)
+  , HasCreatureAttackMessage(..)
   , HasDamage(..)
   , HasDensity(..)
   , HasDescription(..)
@@ -200,6 +201,17 @@ makeFieldsNoPrefix ''EdibleItem
 data WieldableItem = WieldableItem
   { _damage :: !Hitpoints
   , _attackMessage :: !(Maybe Message)
+    -- | Message to use when a creature is using this item to attack the
+    -- character.
+    --
+    -- Grammatically, should be of the form "The creature slashes you with its
+    -- dagger".
+    --
+    -- = Parameters
+    --
+    -- [@creature@ (type: 'Creature')] The creature doing the attacking
+    -- [@item@ (type: 'Item')] The item itself
+  , _creatureAttackMessage :: !(Maybe Message)
   }
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)

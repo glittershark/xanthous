@@ -80,7 +80,9 @@ combat:
     generic:
       - You hit the {{creature.creatureType.name}}.
       - You attack the {{creature.creatureType.name}}.
-  creatureAttack: The {{creature.creatureType.name}} {{attackDescription}}
+  creatureAttack:
+    natural: The {{creature.creatureType.name}} {{attackDescription}}.
+    genericWeapon: The {{creature.creatureType.name}} attacks you with its {{item.itemType.name}}.
   killed:
     - You kill the {{creature.creatureType.name}}!
     - You've killed the {{creature.creatureType.name}}!
