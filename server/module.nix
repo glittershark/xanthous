@@ -2,7 +2,8 @@
 
 let
   cfg = config.services.xanthous-server;
-in {
+in
+{
   options = with lib; {
     services.xanthous-server = {
       enable = mkEnableOption "xanthous server";

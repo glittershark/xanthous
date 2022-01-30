@@ -1,5 +1,4 @@
-args@{
-  depot ? import ../../../.. {}
+args@{ depot ? import ../../../.. { }
 , pkgs ? depot.third_party.nixpkgs
 , ...
 }:
