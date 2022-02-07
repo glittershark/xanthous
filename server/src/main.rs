@@ -13,11 +13,8 @@ use futures::Future;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use nix::pty::Winsize;
 use pty::ChildHandle;
-use thrussh::ChannelId;
-use thrussh::{
-    server::{self, Auth, Session},
-    CryptoVec,
-};
+use thrussh::server::{self, Auth, Session};
+use thrussh::{ChannelId, CryptoVec};
 use thrussh_keys::decode_secret_key;
 use thrussh_keys::key::KeyPair;
 use tokio::fs::File;

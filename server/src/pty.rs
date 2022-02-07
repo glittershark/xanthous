@@ -6,8 +6,7 @@ use std::task::{Context, Poll};
 
 use eyre::{bail, Result};
 use futures::Future;
-use nix::pty::forkpty;
-use nix::pty::Winsize;
+use nix::pty::{forkpty, Winsize};
 use nix::sys::termios::Termios;
 use nix::sys::wait::{waitpid, WaitPidFlag, WaitStatus};
 use nix::unistd::{ForkResult, Pid};
