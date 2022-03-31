@@ -45,7 +45,7 @@ emptyMemoState :: MemoState
 emptyMemoState = MemoState { _characterVisiblePositions = UnMemoized }
 {-# INLINE emptyMemoState #-}
 
-clear :: Lens' MemoState (Memoized k v) -> MemoState -> MemoState
+clear :: ASetter' MemoState (Memoized key val) -> MemoState -> MemoState
 clear = flip set UnMemoized
 {-# INLINE clear #-}
 

@@ -133,7 +133,6 @@ instance FunctorWithIndex EntityID EntityMap
 instance FoldableWithIndex EntityID EntityMap
 
 instance TraversableWithIndex EntityID EntityMap where
-  itraversed = byID . itraversed . rmap sequenceA . distrib
   itraverse = itraverseOf itraversed
 
 type instance Element (EntityMap a) = a

@@ -11,7 +11,8 @@ module Xanthous.Orphans
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (elements, (.=))
 --------------------------------------------------------------------------------
-import           Data.Aeson
+import           Data.Aeson hiding (Key)
+import qualified Data.Aeson.KeyMap as KM
 import           Data.Aeson.Types (typeMismatch)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Graphics.Vty.Attributes
@@ -461,7 +462,7 @@ instance forall a. (FromJSON a, Ord a) => FromJSON (Interval a) where
         upper <- parseBound $ arr ^?! ix 1
         pure $ interval lower upper
       parseBound = withObject "Bound" $ \obj -> do
-        when (length obj /= 1) $ fail "Expected an object with a single key"
+        when (KM.size obj /= 1) $ fail "Expected an object with a single key"
         let [(k, v)] = obj ^@.. ifolded
         boundary <- case k of
           "Excluded" -> pure Open

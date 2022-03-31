@@ -100,7 +100,6 @@ import qualified Graphics.Vty.Attributes as Vty
 import qualified Graphics.Vty.Image as Vty
 --------------------------------------------------------------------------------
 import           Xanthous.Util (KnownBool(..))
-import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Data
 import           Xanthous.Data.App
 import           Xanthous.Data.Levels

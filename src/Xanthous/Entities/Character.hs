@@ -45,7 +45,6 @@ import           Test.QuickCheck.Checkers (EqProp)
 import           Control.Monad.State.Lazy (execState)
 import           Control.Monad.Trans.State.Lazy (execStateT)
 --------------------------------------------------------------------------------
-import           Xanthous.Util.QuickCheck
 import           Xanthous.Game.State
 import           Xanthous.Entities.Item
 import           Xanthous.Entities.Common

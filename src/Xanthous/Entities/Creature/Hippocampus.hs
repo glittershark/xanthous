@@ -25,7 +25,6 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
 --------------------------------------------------------------------------------
 import           Xanthous.Data
-import           Xanthous.Util.QuickCheck
 --------------------------------------------------------------------------------
 
 

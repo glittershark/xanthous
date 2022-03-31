@@ -131,7 +131,6 @@ import           Data.Coerce
 import           Data.Proxy (Proxy(Proxy))
 --------------------------------------------------------------------------------
 import           Xanthous.Util (EqEqProp(..), EqProp, between)
-import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 import           Xanthous.Orphans ()
 import           Xanthous.Util.Graphics
 import qualified Linear.Metric as Metric

@@ -4,7 +4,7 @@ let
   pkgs = third_party.nixpkgs;
 in
 
-(pkgs.haskellPackages.extend (pkgs.haskell.lib.packageSourceOverrides {
+(pkgs.haskell.packages.ghc8107.extend (pkgs.haskell.lib.packageSourceOverrides {
   xanthous = third_party.gitignoreSource ./.;
 })).shellFor {
   packages = p: [ p.xanthous ];

@@ -14,7 +14,6 @@ import Test.QuickCheck.Function
 import Test.QuickCheck.Instances.ByteString ()
 import Test.QuickCheck.Arbitrary.Generic
 import Data.Aeson
-import GHC.Generics (Rep)
 --------------------------------------------------------------------------------
 
 newtype FunctionShow a = FunctionShow a
@@ -31,12 +30,3 @@ newtype FunctionJSON a = FunctionJSON a
 
 instance (ToJSON a, FromJSON a) => Function (FunctionJSON a) where
   function = functionJSON
-
---------------------------------------------------------------------------------
-
-newtype GenericArbitrary a = GenericArbitrary a
-  deriving newtype Generic
-
-instance (Generic a, GArbitrary rep, Rep a ~ rep)
-  => Arbitrary (GenericArbitrary a) where
-  arbitrary = genericArbitrary
