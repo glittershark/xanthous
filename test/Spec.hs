@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
 import           Test.Prelude
 --------------------------------------------------------------------------------
+import qualified Xanthous.CommandSpec
 import qualified Xanthous.Data.EntitiesSpec
 import qualified Xanthous.Data.EntityCharSpec
 import qualified Xanthous.Data.EntityMap.GraphicsSpec
@@ -32,7 +33,8 @@ main = defaultMainWithRerun test
 
 test :: TestTree
 test = testGroup "Xanthous"
-  [ Xanthous.Data.EntitiesSpec.test
+  [ Xanthous.CommandSpec.test
+  , Xanthous.Data.EntitiesSpec.test
   , Xanthous.Data.EntityMap.GraphicsSpec.test
   , Xanthous.Data.EntityMapSpec.test
   , Xanthous.Data.LevelsSpec.test

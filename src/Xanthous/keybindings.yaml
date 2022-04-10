@@ -1,0 +1,21 @@
+q: Quit
+.: Wait
+C-p: PreviousMessage
+',': PickUp
+d: Drop
+o: Open
+c: Close
+;: Look
+e: Eat
+S: Save
+r: Read
+i: ShowInventory
+I: DescribeInventory
+w: Wield
+f: Fire
+'<': GoUp
+'>': GoDown
+R: Rest
+
+# Debug commands
+M-r: ToggleRevealAll

@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8cae8550487b6092c18c82a0dc29bf22980d416771c66f6fca3e151875c66495
+-- hash: 107b223a62633bc51425e8f9d5ab489a7a47464953a81ca693efb496c41f1aa3
 
 name:           xanthous
 version:        0.1.0.0
@@ -293,6 +293,7 @@ test-suite test
   main-is: Spec.hs
   other-modules:
       Test.Prelude
+      Xanthous.CommandSpec
       Xanthous.Data.EntitiesSpec
       Xanthous.Data.EntityCharSpec
       Xanthous.Data.EntityMap.GraphicsSpec

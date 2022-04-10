@@ -1,18 +1,36 @@
+{-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
-module Xanthous.Command where
+module Xanthous.Command
+  ( Command(..)
+  , Keybinding(..)
+  , keybindings
+  , commands
+  , commandFromKey
+  , directionFromChar
+  ) where
 --------------------------------------------------------------------------------
-import Xanthous.Prelude hiding (Left, Right, Down)
+import Xanthous.Prelude hiding (Left, Right, Down, try)
 --------------------------------------------------------------------------------
-import Graphics.Vty.Input (Key(..), Modifier(..))
+import           Graphics.Vty.Input (Key(..), Modifier(..))
 import qualified Data.Char as Char
+import           Data.Aeson (FromJSON (parseJSON), FromJSONKey, FromJSONKeyFunction (FromJSONKeyTextParser))
+import qualified Data.Aeson as A
+import           Data.Aeson.Generic.DerivingVia
+import           Text.Megaparsec (Parsec, errorBundlePretty, parse, eof, try)
+import           Text.Megaparsec.Char (string', char', printChar)
+import           Data.FileEmbed (embedFile)
+import qualified Data.Yaml as Yaml
+import           Test.QuickCheck.Arbitrary
+import           Data.Aeson.Types (Parser)
 --------------------------------------------------------------------------------
-import Xanthous.Data (Direction(..))
+import           Xanthous.Data (Direction(..))
+import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 --------------------------------------------------------------------------------
 
 data Command
   = Quit
-  | Move Direction
-  | StartAutoMove Direction
+  | Move !Direction
+  | StartAutoMove !Direction
   | PreviousMessage
   | PickUp
   | Drop
@@ -33,41 +51,70 @@ data Command
 
     -- | TODO replace with `:` commands
   | ToggleRevealAll
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (Hashable, NFData)
+  deriving Arbitrary via GenericArbitrary Command
+  deriving (FromJSON)
+       via WithOptions '[ SumEnc UntaggedVal ]
+           Command
+
+--------------------------------------------------------------------------------
+
+data Keybinding = Keybinding !Key ![Modifier]
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (Hashable, NFData)
+
+parseKeybindingFromText :: Text -> Parser Keybinding
+parseKeybindingFromText
+  = either (fail . errorBundlePretty) pure
+  . parse keybinding "<JSON>"
+  where
+    key :: Parsec Void Text Key
+    key = KUp <$ string' "<up>"
+      <|> KDown <$ string' "<down>"
+      <|> KLeft <$ string' "<left>"
+      <|> KRight <$ string' "<right>"
+      <|> KChar <$> printChar
+
+    modifier :: Parsec Void Text Modifier
+    modifier = modf <* char' '-'
+      where
+        modf = MAlt <$ char' 'a'
+          <|> MMeta <$ char' 'm'
+          <|> MCtrl  <$ char' 'c'
+          <|> MShift  <$ char' 's'
+
+    keybinding :: Parsec Void Text Keybinding
+    keybinding = do
+      mods <- many (try modifier)
+      k <- key
+      eof
+      pure $ Keybinding k mods
+
+instance FromJSON Keybinding where
+  parseJSON = A.withText "Keybinding" parseKeybindingFromText
+
+instance FromJSONKey Keybinding where
+  fromJSONKey = FromJSONKeyTextParser parseKeybindingFromText
+
+rawKeybindings :: ByteString
+rawKeybindings = $(embedFile "src/Xanthous/keybindings.yaml")
+
+keybindings :: HashMap Keybinding Command
+keybindings = either (error . Yaml.prettyPrintParseException) id
+  $ Yaml.decodeEither' rawKeybindings
+
+commands :: HashMap Command Keybinding
+commands = mapFromList . map swap . itoList $ keybindings
 
 commandFromKey :: Key -> [Modifier] -> Maybe Command
-commandFromKey (KChar 'q') [] = Just Quit
-commandFromKey (KChar '.') [] = Just Wait
 commandFromKey (KChar (directionFromChar -> Just dir)) [] = Just $ Move dir
 commandFromKey (KChar c) []
   | Char.isUpper c
   , Just dir <- directionFromChar $ Char.toLower c
   = Just $ StartAutoMove dir
-commandFromKey (KChar 'p') [MCtrl] = Just PreviousMessage
-commandFromKey (KChar ',') [] = Just PickUp
-commandFromKey (KChar 'd') [] = Just Drop
-commandFromKey (KChar 'o') [] = Just Open
-commandFromKey (KChar 'c') [] = Just Close
-commandFromKey (KChar ';') [] = Just Look
-commandFromKey (KChar 'e') [] = Just Eat
-commandFromKey (KChar 'S') [] = Just Save
-commandFromKey (KChar 'r') [] = Just Read
-commandFromKey (KChar 'i') [] = Just ShowInventory
-commandFromKey (KChar 'I') [] = Just DescribeInventory
-commandFromKey (KChar 'w') [] = Just Wield
-commandFromKey (KChar 'f') [] = Just Fire
-commandFromKey (KChar '<') [] = Just GoUp
-commandFromKey (KChar '>') [] = Just GoDown
-commandFromKey (KChar 'R') [] = Just Rest
-
-commandFromKey KUp [] = Just $ Move Up
-commandFromKey KDown [] = Just $ Move Down
-commandFromKey KLeft [] = Just $ Move Left
-commandFromKey KRight [] = Just $ Move Right
-
--- DEBUG COMMANDS --
-commandFromKey (KChar 'r') [MMeta] = Just ToggleRevealAll
-
-commandFromKey _ _ = Nothing
+commandFromKey k mods = keybindings ^. at keybinding
+  where keybinding = Keybinding k mods
 
 --------------------------------------------------------------------------------
 

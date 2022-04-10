@@ -38,6 +38,7 @@ import           Test.QuickCheck.Checkers (EqProp ((=-=)))
 import           Xanthous.Util.JSON
 import           Xanthous.Util.QuickCheck
 import           Xanthous.Util (EqEqProp(EqEqProp))
+import qualified Graphics.Vty.Input.Events
 --------------------------------------------------------------------------------
 
 instance forall s a.
@@ -304,6 +305,11 @@ instance FromJSON Attr where
 deriving stock instance Ord Color
 deriving stock instance Ord a => Ord (MaybeDefault a)
 deriving stock instance Ord Attr
+
+deriving anyclass instance Hashable Graphics.Vty.Input.Events.Key
+deriving anyclass instance NFData Graphics.Vty.Input.Events.Key
+deriving anyclass instance Hashable Graphics.Vty.Input.Events.Modifier
+deriving anyclass instance NFData Graphics.Vty.Input.Events.Modifier
 
 --------------------------------------------------------------------------------
 
