@@ -16,7 +16,9 @@ import Xanthous.Util.QuickCheck
 
 -- | Enum for "panels" displayed in the game's UI.
 data Panel
-  = -- | A panel displaying the character's inventory
+  = -- | A panel providing help with the game's commands
+    HelpPanel
+  | -- | A panel displaying the character's inventory
     InventoryPanel
   | -- | A panel describing an item in the inventory in detail
     --

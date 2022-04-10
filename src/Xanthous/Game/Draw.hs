@@ -27,6 +27,11 @@ import           Xanthous.Game
                  )
 import           Xanthous.Game.Prompt
 import           Xanthous.Orphans ()
+import Brick.Widgets.Center (hCenter)
+import Xanthous.Command (Keybinding (..), keybindings, Command, commandIsHidden)
+import Graphics.Vty.Input.Events (Modifier(..))
+import Graphics.Vty.Input (Key(..))
+import Brick.Widgets.Table
 --------------------------------------------------------------------------------
 
 cursorPosition :: GameState -> Widget ResourceName -> Widget ResourceName
@@ -111,16 +116,84 @@ drawInventoryPanel game
               (txtWrap . ((bullet <| " ") <>) . description)
               backpackItems)
 
+drawHelpPanel :: Widget ResourceName
+drawHelpPanel
+  = txtWrap "To move in a direction or attack, use vi keys (hjklyubn):"
+  <=> txt " "
+  <=> hCenter keyStar
+  <=> txt " "
+  <=> cmds
+  where
+    keyStar
+      =   txt "y k u"
+      <=> txt " \\|/"
+      <=> txt "h-.-l"
+      <=> txt " /|\\"
+      <=> txt "b j n"
+
+    cmds
+      = renderTable
+      . alignRight 0
+      . setDefaultRowAlignment AlignTop
+      . surroundingBorder False
+      . rowBorders False
+      . columnBorders False
+      . table $ help <&> \(key, cmd) -> [ txt $ key <> " : "
+                                       , hLimitPercent 100 $ txtWrap cmd]
+
+    help =
+      extraHelp <>
+      keybindings
+        ^.. ifolded
+          . filtered (not . commandIsHidden)
+          . withIndex
+          . to (bimap displayKeybinding displayCommand)
+    extraHelp
+      = [("Shift-Dir", "Auto-move")]
+
+    displayCommand = tshow @Command
+    displayKeybinding (Keybinding k mods) = foldMap showMod mods <> showKey k
+
+    showMod MCtrl  = "Ctrl-"
+    showMod MShift = "Shift-"
+    showMod MAlt   = "Alt-"
+    showMod MMeta  = "Meta-"
+
+    showKey (KChar c) = pack [c]
+    showKey KEsc = "<Esc>"
+    showKey KBS = "<Backspace>"
+    showKey KEnter = "<Enter>"
+    showKey KLeft = "<Left>"
+    showKey KRight = "<Right>"
+    showKey KUp = "<Up>"
+    showKey KDown = "<Down>"
+    showKey KUpLeft = "<UpLeft>"
+    showKey KUpRight = "<UpRight>"
+    showKey KDownLeft = "<DownLeft>"
+    showKey KDownRight = "<DownRight>"
+    showKey KCenter = "<Center>"
+    showKey (KFun n) = "<F" <> tshow n <> ">"
+    showKey KBackTab = "<BackTab>"
+    showKey KPrtScr = "<PrtScr>"
+    showKey KPause = "<Pause>"
+    showKey KIns = "<Ins>"
+    showKey KHome = "<Home>"
+    showKey KPageUp = "<PageUp>"
+    showKey KDel = "<Del>"
+    showKey KEnd = "<End>"
+    showKey KPageDown = "<PageDown>"
+    showKey KBegin = "<Begin>"
+    showKey KMenu = "<Menu>"
 
 drawPanel :: GameState -> Panel -> Widget ResourceName
 drawPanel game panel
   = border
   . hLimit 35
   . viewport (Resource.Panel panel) Vertical
-  . case panel of
-      InventoryPanel -> drawInventoryPanel
-      ItemDescriptionPanel desc -> const $ txtWrap desc
-  $ game
+  $ case panel of
+      HelpPanel -> drawHelpPanel
+      InventoryPanel -> drawInventoryPanel game
+      ItemDescriptionPanel desc -> txtWrap desc
 
 drawCharacterInfo :: Character -> Widget ResourceName
 drawCharacterInfo ch = txt " " <+> charName <+> charHitpoints

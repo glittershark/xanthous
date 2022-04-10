@@ -1,4 +1,5 @@
 q: Quit
+?: Help
 .: Wait
 C-p: PreviousMessage
 ',': PickUp

@@ -135,6 +135,9 @@ handleNoPromptEvent _ = continue
 
 handleCommand :: Command -> AppM (Next GameState)
 handleCommand Quit = confirm_ ["quit", "confirm"] (liftIO exitSuccess) >> continue
+
+handleCommand Help = showPanel HelpPanel >> continue
+
 handleCommand (Move dir) = do
   newPos <- uses characterPosition $ move dir
   collisionAt newPos >>= \case

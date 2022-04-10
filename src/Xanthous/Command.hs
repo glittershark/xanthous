@@ -1,7 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 --------------------------------------------------------------------------------
 module Xanthous.Command
-  ( Command(..)
+  ( -- * Commands
+    Command(..)
+  , commandIsHidden
+    -- * Keybindings
   , Keybinding(..)
   , keybindings
   , commands
@@ -29,6 +32,7 @@ import           Xanthous.Util.QuickCheck (GenericArbitrary(..))
 
 data Command
   = Quit
+  | Help
   | Move !Direction
   | StartAutoMove !Direction
   | PreviousMessage
@@ -57,6 +61,16 @@ data Command
   deriving (FromJSON)
        via WithOptions '[ SumEnc UntaggedVal ]
            Command
+
+-- | Should the command be hidden from the help menu?
+--
+-- Note that this is true for both debug commands and movement commands, as the
+-- latter is documented non-automatically
+commandIsHidden :: Command -> Bool
+commandIsHidden (Move _) = True
+commandIsHidden (StartAutoMove _) = True
+commandIsHidden ToggleRevealAll = True
+commandIsHidden _ = False
 
 --------------------------------------------------------------------------------
 
