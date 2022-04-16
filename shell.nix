@@ -10,7 +10,7 @@ in
   packages = p: [ p.xanthous ];
   withHoogle = true;
   doBenchmark = true;
-  buildInputs = (with pkgs.haskellPackages; [
+  buildInputs = (with pkgs.haskell.packages.ghc8107; [
     cabal-install
     ghc-prof-flamegraph
     hp2pretty
