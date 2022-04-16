@@ -54,12 +54,12 @@ import           Xanthous.Physics (throwDistance, bluntThrowDamage)
 import           Xanthous.Data.EntityMap.Graphics (lineOfSight)
 import           Xanthous.Data.EntityMap (EntityID)
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 import           Xanthous.Entities.Common
                  ( InventoryPosition, describeInventoryPosition, backpack
                  , wieldableItem, wieldedItems, wielded, itemsWithPosition
-                 , removeItemFromPosition, asWieldedItem, inRightHand
-                 , wieldedItem, items
+                 , removeItemFromPosition, asWieldedItem
+                 , wieldedItem, items, Hand (..), describeHand, wieldInHand
+                 , WieldedItem
                  )
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character hiding (pickUpItem)
@@ -296,14 +296,30 @@ handleCommand DescribeInventory = do
 
 
 handleCommand Wield = do
-  takeItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
-    (say_ ["wield", "nothing"])
-    $ \(MenuResult item) -> do
-      prevItems <- character . inventory . wielded <<.= inRightHand item
+  selectItem $ \(MenuResult (item :: WieldedItem)) -> do
+    selectHand $ \(MenuResult hand) -> do
+      prevItems <- character . inventory . wielded %%= wieldInHand hand item
       character . inventory . backpack
-        <>= fromList (prevItems ^.. wieldedItems . wieldedItem)
-      say ["wield", "wielded"] item
+        <>= fromList (map (view wieldedItem) prevItems)
+      say ["wield", "wielded"] $ object [ "item" A..= item
+                                        , "hand" A..= describeHand hand
+                                        ]
   continue
+  where
+    selectItem =
+      takeItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
+        (say_ ["wield", "nothing"])
+    selectHand
+      = menu_
+      ["wield", "hand"]
+      Cancellable
+      handsMenu
+    handsMenu = mapFromList
+      . map (second $ MenuOption =<< describeHand)
+      $ [ ('l', LeftHand)
+        , ('r', RightHand)
+        , ('b', BothHands)
+        ]
 
 handleCommand Fire = do
   selectItemFromInventory_ ["fire", "menu"] Cancellable id

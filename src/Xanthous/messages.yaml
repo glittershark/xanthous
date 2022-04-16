@@ -115,8 +115,8 @@ wield:
     - You can't wield anything in your backpack
     - You can't wield anything currently in your backpack
   menu: What would you like to wield?
-  # TODO: use actual hands
-  wielded : You wield the {{wieldedItem.itemType.name}} in your right hand.
+  hand: Wield in which hand?
+  wielded: You wield the {{item.wieldedItem.itemType.name}} in {{hand}}
 
 fire:
   nothing:

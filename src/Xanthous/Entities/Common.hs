@@ -20,12 +20,18 @@ module Xanthous.Entities.Common
 
     -- ** Wielded items
   , Wielded(..)
+  , nothingWielded
   , hands
   , leftHand
   , rightHand
   , inLeftHand
   , inRightHand
   , doubleHanded
+  , Hand(..)
+  , itemsInHand
+  , inHand
+  , wieldInHand
+  , describeHand
   , wieldedItems
   , WieldedItem(..)
   , wieldedItem
@@ -95,6 +101,7 @@ data Wielded
        via WithOptions '[ 'SumEnc 'ObjWithSingleField ]
            Wielded
 
+
 nothingWielded :: Wielded
 nothingWielded = Hands Nothing Nothing
 
@@ -123,6 +130,43 @@ doubleHanded = prism' DoubleHanded $ \case
 wieldedItems :: Traversal' Wielded WieldedItem
 wieldedItems k (DoubleHanded wielded) = DoubleHanded <$> k wielded
 wieldedItems k (Hands l r) = Hands <$> _Just k l <*> _Just k r
+
+
+data Hand
+  = LeftHand
+  | RightHand
+  | BothHands
+  deriving stock (Eq, Show, Ord, Generic)
+  deriving anyclass (NFData, CoArbitrary, Function)
+  deriving Arbitrary via GenericArbitrary Hand
+
+itemsInHand :: Hand -> Wielded -> [WieldedItem]
+itemsInHand LeftHand (DoubleHanded wi) = [wi]
+itemsInHand LeftHand (Hands lh _) = toList lh
+itemsInHand RightHand (DoubleHanded wi) = [wi]
+itemsInHand RightHand (Hands _ rh) = toList rh
+itemsInHand BothHands (DoubleHanded wi) = [wi]
+itemsInHand BothHands (Hands lh rh) = toList lh <> toList rh
+
+inHand :: Hand -> WieldedItem -> Wielded
+inHand LeftHand = inLeftHand
+inHand RightHand = inRightHand
+inHand BothHands = review doubleHanded
+
+wieldInHand :: Hand -> WieldedItem -> Wielded -> ([WieldedItem], Wielded)
+wieldInHand hand item w = (itemsInHand hand w, doWield)
+  where
+    doWield = case (hand, w) of
+      (LeftHand, Hands _ r) -> Hands (Just item) r
+      (LeftHand, DoubleHanded _) -> inLeftHand item
+      (RightHand, Hands l _) -> Hands l (Just item)
+      (RightHand, DoubleHanded _) -> inRightHand item
+      (BothHands, _) -> DoubleHanded item
+
+describeHand :: Hand -> Text
+describeHand LeftHand = "your left hand"
+describeHand RightHand = "your right hand"
+describeHand BothHands = "both hands"
 
 data Inventory = Inventory
   { _backpack :: Vector Item
@@ -199,27 +243,23 @@ class HasInventory s a | s -> a where
 -- | Representation for where in the inventory an item might be
 data InventoryPosition
   = Backpack
-  | LeftHand
-  | RightHand
-  | BothHands
+  | InHand Hand
   deriving stock (Eq, Show, Ord, Generic)
   deriving anyclass (NFData, CoArbitrary, Function)
   deriving Arbitrary via GenericArbitrary InventoryPosition
 
 -- | Return a human-readable description of the given 'InventoryPosition'
 describeInventoryPosition :: InventoryPosition -> Text
-describeInventoryPosition Backpack  = "In backpack"
-describeInventoryPosition LeftHand  = "Wielded, in left hand"
-describeInventoryPosition RightHand = "Wielded, in right hand"
-describeInventoryPosition BothHands = "Wielded, in both hands"
+describeInventoryPosition Backpack       = "In backpack"
+describeInventoryPosition (InHand hand)  = "Wielded, in " <> describeHand hand
 
 -- | Given a position in the inventory, return a traversal on the inventory over
 -- all the items in that position
 inventoryPosition :: InventoryPosition -> Traversal' Inventory Item
 inventoryPosition Backpack = backpack . traversed
-inventoryPosition LeftHand = wielded . leftHand . _Just . wieldedItem
-inventoryPosition RightHand = wielded . leftHand . _Just . wieldedItem
-inventoryPosition BothHands = wielded . doubleHanded . wieldedItem
+inventoryPosition (InHand LeftHand) = wielded . leftHand . _Just . wieldedItem
+inventoryPosition (InHand RightHand) = wielded . leftHand . _Just . wieldedItem
+inventoryPosition (InHand BothHands) = wielded . doubleHanded . wieldedItem
 
 -- | A fold over all the items in the inventory accompanied by their position in
 -- the inventory
@@ -230,20 +270,20 @@ itemsWithPosition = folding $ (<>) <$> backpackItems <*> handItems
   where
     backpackItems = toListOf $ backpack . folded . to (Backpack ,)
     handItems inv = case inv ^. wielded of
-       DoubleHanded i -> pure (BothHands, i ^. wieldedItem)
-       Hands l r -> (l ^.. folded . wieldedItem . to (LeftHand ,))
-                 <> (r ^.. folded . wieldedItem . to (RightHand ,))
+       DoubleHanded i -> pure (InHand BothHands, i ^. wieldedItem)
+       Hands l r -> (l ^.. folded . wieldedItem . to (InHand LeftHand ,))
+                 <> (r ^.. folded . wieldedItem . to (InHand RightHand ,))
 
 -- | Remove the first item equal to 'Item' from the given position in the
 -- inventory
 removeItemFromPosition :: InventoryPosition -> Item -> Inventory -> Inventory
 removeItemFromPosition Backpack item inv
   = inv & backpack %~ removeFirst (== item)
-removeItemFromPosition LeftHand item inv
+removeItemFromPosition (InHand LeftHand) item inv
   = inv & wielded . leftHand %~ filter ((/= item) . view wieldedItem)
-removeItemFromPosition RightHand item inv
+removeItemFromPosition (InHand RightHand) item inv
   = inv & wielded . rightHand %~ filter ((/= item) . view wieldedItem)
-removeItemFromPosition BothHands item inv
+removeItemFromPosition (InHand BothHands) item inv
   | has (wielded . doubleHanded . wieldedItem . filtered (== item)) inv
   = inv & wielded .~ nothingWielded
   | otherwise
