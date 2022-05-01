@@ -59,7 +59,7 @@ import           Xanthous.Entities.Common
                  , wieldableItem, wieldedItems, wielded, itemsWithPosition
                  , removeItemFromPosition, asWieldedItem
                  , wieldedItem, items, Hand (..), describeHand, wieldInHand
-                 , WieldedItem
+                 , WieldedItem, Wielded (..)
                  )
 import qualified Xanthous.Entities.Character as Character
 import           Xanthous.Entities.Character hiding (pickUpItem)
@@ -296,8 +296,9 @@ handleCommand DescribeInventory = do
 
 
 handleCommand Wield = do
+  hs <- use $ character . inventory . wielded
   selectItem $ \(MenuResult (item :: WieldedItem)) -> do
-    selectHand $ \(MenuResult hand) -> do
+    selectHand hs $ \(MenuResult hand) -> do
       prevItems <- character . inventory . wielded %%= wieldInHand hand item
       character . inventory . backpack
         <>= fromList (map (view wieldedItem) prevItems)
@@ -309,13 +310,26 @@ handleCommand Wield = do
     selectItem =
       takeItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
         (say_ ["wield", "nothing"])
-    selectHand
-      = menu_
-      ["wield", "hand"]
-      Cancellable
-      handsMenu
-    handsMenu = mapFromList
-      . map (second $ MenuOption =<< describeHand)
+    selectHand hs = menu_ ["wield", "hand"] Cancellable $ handsMenu hs
+    itemsInHand (Hands i _) LeftHand       = toList i
+    itemsInHand (DoubleHanded _) LeftHand  = []
+    itemsInHand (Hands _ i) RightHand      = toList i
+    itemsInHand (DoubleHanded _) RightHand = []
+    itemsInHand (Hands l r) BothHands      = toList l <> toList r
+    itemsInHand (DoubleHanded i) BothHands = [i]
+    describeItems [] = ""
+    describeItems is
+      = " (currently holding "
+      <> (intercalate " and" $ map (view $ wieldedItem . to description) is)
+      <> ")"
+    handsMenu hs = mapFromList
+      . map (second $ \hand ->
+                MenuOption
+                ( describeHand hand
+                <> describeItems (itemsInHand hs hand)
+                )
+                hand
+            )
       $ [ ('l', LeftHand)
         , ('r', RightHand)
         , ('b', BothHands)
