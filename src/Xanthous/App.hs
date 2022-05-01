@@ -297,8 +297,10 @@ handleCommand DescribeInventory = do
 
 handleCommand Wield = do
   hs <- use $ character . inventory . wielded
-  selectItem $ \(MenuResult (item :: WieldedItem)) -> do
+  selectItem $ \(MenuResult (invPos, (item :: WieldedItem))) -> do
     selectHand hs $ \(MenuResult hand) -> do
+      character . inventory
+        %= removeItemFromPosition invPos (asWieldedItem # item)
       prevItems <- character . inventory . wielded %%= wieldInHand hand item
       character . inventory . backpack
         <>= fromList (map (view wieldedItem) prevItems)
@@ -308,7 +310,7 @@ handleCommand Wield = do
   continue
   where
     selectItem =
-      takeItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
+      selectItemFromInventory_ ["wield", "menu"] Cancellable asWieldedItem
         (say_ ["wield", "nothing"])
     selectHand hs = menu_ ["wield", "hand"] Cancellable $ handsMenu hs
     itemsInHand (Hands i _) LeftHand       = toList i
