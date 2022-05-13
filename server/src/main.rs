@@ -95,7 +95,7 @@ impl Opts {
             "full" => s.init(),
             "pretty" => s.pretty().init(),
             "json" => s.json().with_current_span(true).init(),
-            _ => bail!("Invalid log format `{}`"),
+            f => bail!("Invalid log format `{}`", f),
         }
 
         Ok(())
