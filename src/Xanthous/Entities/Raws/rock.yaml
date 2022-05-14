@@ -5,6 +5,6 @@ Item:
   char: .
   wieldable:
     damage: 1
-    attackMessage: you hit the {{creature.creatureType.name}} in the head with your rock.
+    attackMessage: hit the {{creature.creatureType.name}} in the head with your rock
   density: [ 1500000, 2500000 ]
   volume: [ 0.000125, 0.001 ]

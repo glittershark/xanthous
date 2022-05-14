@@ -218,7 +218,9 @@ defaultCharacterDamage = 1
 characterDamage :: Character -> Hitpoints
 characterDamage
   = fromMaybe defaultCharacterDamage
-  . preview (inventory . wielded . wieldedItems . wieldableItem . Raw.damage)
+  . filter (/= 0)
+  . Just
+  . sumOf (inventory . wielded . wieldedItems . wieldableItem . Raw.damage)
 
 -- | Is the character fully healed up to or past their initial hitpoints?
 isFullyHealed :: Character -> Bool

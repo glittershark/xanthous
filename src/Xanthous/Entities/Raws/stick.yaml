@@ -9,9 +9,9 @@ Item:
   wieldable:
     damage: 2
     attackMessage:
-      - You bonk the {{creature.creatureType.name}} over the head with your stick.
-      - You bash the {{creature.creatureType.name}} on the noggin with your stick.
-      - You whack the {{creature.creatureType.name}} with your stick.
+      - bonk the {{creature.creatureType.name}} over the head with your stick
+      - bash the {{creature.creatureType.name}} on the noggin with your stick
+      - whack the {{creature.creatureType.name}} with your stick
     creatureAttackMessage:
       - The {{creature.creatureType.name}} bonks you over the head with its stick.
       - The {{creature.creatureType.name}} bashes you on the noggin with its stick.

@@ -467,19 +467,24 @@ attackAt pos =
   attackCreature creature = do
     charDamage <- uses character characterDamage
     creature' <- damageCreature creature charDamage
-    msg <- uses character getAttackMessage
-    unless (Creature.isDead creature')
-      . message msg $ object ["creature" A..= creature']
+    unless (Creature.isDead creature') $ writeAttackMessage creature'
     whenM (uses character $ isNothing . weapon) handleFists
     stepGame
   weapon chr = chr ^? inventory . wielded . wieldedItems . wieldableItem
-  getAttackMessage chr =
-    case weapon chr of
-      Just wi ->
-        fromMaybe (Messages.lookup ["combat", "hit", "generic"])
-        $ wi ^. attackMessage
-      Nothing ->
-        Messages.lookup ["combat", "hit", "fists"]
+  writeAttackMessage creature = do
+    let params = object ["creature" A..= creature]
+    attackMessages <- uses character getAttackMessages
+    msg <- intercalate " and " <$> for attackMessages (`Messages.render` params)
+    writeMessage $ "You " <> msg
+  getAttackMessages chr =
+    case chr ^.. inventory . wielded . wieldedItems . wieldableItem of
+      [] -> [Messages.lookup ["combat", "hit", "fists"]]
+      is ->
+        is
+        <&> \wi ->
+              fromMaybe (Messages.lookup ["combat", "hit", "generic"])
+              $ wi ^. attackMessage
+
 
   handleFists = do
     damageChance <- use $ character . body . knuckles . to fistDamageChance

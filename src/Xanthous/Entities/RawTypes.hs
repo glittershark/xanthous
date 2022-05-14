@@ -200,6 +200,15 @@ makeFieldsNoPrefix ''EdibleItem
 
 data WieldableItem = WieldableItem
   { _damage :: !Hitpoints
+    -- | Message to use when the character is using this item to attack a
+    --  creature.
+    --
+    -- Grammatically, this should be of the form "slash at the
+    -- {{creature.creatureType.name}} with your dagger"
+    --
+    -- = Parameters
+    --
+    -- [@creature@ (type: 'Creature')] The creature being attacked
   , _attackMessage :: !(Maybe Message)
     -- | Message to use when a creature is using this item to attack the
     -- character.
