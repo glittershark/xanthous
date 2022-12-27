@@ -191,7 +191,7 @@ y = lens (\(Position _ yy) -> yy) (\(Position xx _) yy -> Position xx yy)
 
 type Position = Position' Int
 
-instance Arbitrary a => Arbitrary (Position' a) where
+instance (Arg (Position' a) a, Arbitrary a) => Arbitrary (Position' a) where
   arbitrary = genericArbitrary
   shrink (Position px py) = Position <$> shrink px <*> shrink py
 
@@ -313,7 +313,8 @@ data Direction where
   Here      :: Direction
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (CoArbitrary, Function, NFData, ToJSON, FromJSON, Hashable)
-  deriving Arbitrary via GenericArbitrary Direction
+
+deriving via (GenericArbitrary Direction) instance Arbitrary Direction
 
 instance Opposite Direction where
   opposite Up        = Down
@@ -432,7 +433,8 @@ data Neighbors a = Neighbors
   }
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (NFData, CoArbitrary, Function, MonoFoldable)
-  deriving Arbitrary via GenericArbitrary (Neighbors a)
+
+deriving via (GenericArbitrary (Neighbors a)) instance (Arg (Neighbors a) a, Arbitrary a) => Arbitrary (Neighbors a)
 
 type instance Element (Neighbors a) = a
 
@@ -768,8 +770,11 @@ data Box a = Box
   , _dimensions    :: V2 a
   }
   deriving stock (Show, Eq, Ord, Functor, Generic)
-  deriving Arbitrary via GenericArbitrary (Box a)
 makeFieldsNoPrefix ''Box
+
+-- It seems to be necessary to have an `Arg (V2 a) a` constraint, as a is passed
+-- to V2 internally, in order to make GHC figure out this deriving via correctly.
+deriving via (GenericArbitrary (Box a)) instance (Arg (V2 a) a, Arbitrary a) => Arbitrary (Box a)
 
 bottomRightCorner :: Num a => Box a -> V2 a
 bottomRightCorner box =

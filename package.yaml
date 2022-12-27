@@ -111,6 +111,7 @@ default-extensions:
 
 ghc-options:
 - -Wall
+- -fconstraint-solver-iterations=6 # Xanthous.Data, Xanthous.Command
 
 library:
   source-dirs: src

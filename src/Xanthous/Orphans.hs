@@ -22,6 +22,7 @@ import           Brick.Widgets.Core (getName)
 import           System.Random.Internal (StdGen (..))
 import           System.Random.SplitMix (SMGen ())
 import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary.Generic (Arg ())
 import           "quickcheck-instances" Test.QuickCheck.Instances ()
 import           Text.Megaparsec (errorBundlePretty)
 import           Text.Megaparsec.Pos
@@ -307,9 +308,7 @@ deriving stock instance Ord a => Ord (MaybeDefault a)
 deriving stock instance Ord Attr
 
 deriving anyclass instance Hashable Graphics.Vty.Input.Events.Key
-deriving anyclass instance NFData Graphics.Vty.Input.Events.Key
 deriving anyclass instance Hashable Graphics.Vty.Input.Events.Modifier
-deriving anyclass instance NFData Graphics.Vty.Input.Events.Modifier
 
 --------------------------------------------------------------------------------
 
@@ -374,7 +373,7 @@ deriving newtype instance (Arbitrary s, CoArbitrary (m (a, s)))
 
 --------------------------------------------------------------------------------
 
-deriving via (GenericArbitrary (V2 a)) instance Arbitrary a => Arbitrary (V2 a)
+deriving via (GenericArbitrary (V2 a)) instance (Arg (V2 a) a, Arbitrary a) => Arbitrary (V2 a)
 instance CoArbitrary a => CoArbitrary (V2 a)
 instance Function a => Function (V2 a)
 
