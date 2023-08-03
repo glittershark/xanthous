@@ -191,7 +191,7 @@ y = lens (\(Position _ yy) -> yy) (\(Position xx _) yy -> Position xx yy)
 
 type Position = Position' Int
 
-instance (Arg (Position' a) a, Arbitrary a) => Arbitrary (Position' a) where
+instance (Arbitrary a) => Arbitrary (Position' a) where
   arbitrary = genericArbitrary
   shrink (Position px py) = Position <$> shrink px <*> shrink py
 
@@ -434,7 +434,7 @@ data Neighbors a = Neighbors
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (NFData, CoArbitrary, Function, MonoFoldable)
 
-deriving via (GenericArbitrary (Neighbors a)) instance (Arg (Neighbors a) a, Arbitrary a) => Arbitrary (Neighbors a)
+deriving via (GenericArbitrary (Neighbors a)) instance (Arbitrary a) => Arbitrary (Neighbors a)
 
 type instance Element (Neighbors a) = a
 
@@ -774,7 +774,7 @@ makeFieldsNoPrefix ''Box
 
 -- It seems to be necessary to have an `Arg (V2 a) a` constraint, as a is passed
 -- to V2 internally, in order to make GHC figure out this deriving via correctly.
-deriving via (GenericArbitrary (Box a)) instance (Arg (V2 a) a, Arbitrary a) => Arbitrary (Box a)
+deriving via (GenericArbitrary (Box a)) instance (Arbitrary a) => Arbitrary (Box a)
 
 bottomRightCorner :: Num a => Box a -> V2 a
 bottomRightCorner box =

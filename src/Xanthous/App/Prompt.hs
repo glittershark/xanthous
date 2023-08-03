@@ -55,7 +55,7 @@ handlePromptEvent _ (Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'n') []))
 handlePromptEvent
   msg
   (Prompt c SStringPrompt (StringPromptState edit) pri cb)
-  ev
+  (VtyEvent ev)
   = do
     edit' <- lift $ handleEditorEvent ev edit
     let prompt' = Prompt c SStringPrompt (StringPromptState edit') pri cb
