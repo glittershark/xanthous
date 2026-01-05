@@ -22,7 +22,7 @@ pbkdf2 = "<0.9"
 base64ct = "<1.2"
 
 [dependencies.tokio]
-version = "1.13"
+version = "1.26"
 features = ["rt", "rt-multi-thread", "macros", "net", "process", "fs", "signal"]
 
 [dev-dependencies]
