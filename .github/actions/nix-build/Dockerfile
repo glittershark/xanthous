@@ -1,10 +1,10 @@
-FROM lnl7/nix:2.1.2
+FROM lnl7/nix:2020-09-11
 
 LABEL name="Nix Build for GitHub Actions"
 LABEL version="1.0"
 LABEL repository="http://github.com/glittershark/xanthous"
 LABEL homepage="http://github.com/glittershark/xanthous"
-LABEL maintainer="Griffin Smith <root at gws dot fyi>"
+LABEL maintainer="Aspen Smith <root at gws dot fyi>"
 
 LABEL "com.github.actions.name"="Nix Build"
 LABEL "com.github.actions.description"="Runs 'nix-build'"
