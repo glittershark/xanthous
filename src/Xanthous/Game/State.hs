@@ -84,9 +84,9 @@ import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Typeable
 import           Data.Coerce
 import           System.Random
+import           System.Random.Stateful
 import           Test.QuickCheck
 import           Test.QuickCheck.Arbitrary.Generic
-import           Control.Monad.Random.Class
 import           Control.Monad.State
 import           Control.Monad.Trans.Control (MonadTransControl(..))
 import           Control.Monad.Trans.Compose
@@ -111,6 +111,7 @@ import           Xanthous.Orphans ()
 import           Xanthous.Game.Prompt
 import           Xanthous.Game.Env
 import           Xanthous.Game.Memo (MemoState)
+import Xanthous.Random
 --------------------------------------------------------------------------------
 
 data MessageHistory
@@ -197,7 +198,8 @@ instance Function (GamePromptState m) where
 
 --------------------------------------------------------------------------------
 
-newtype AppT m a
+newtype AppT (m :: Type -> Type) a
+  -- TODO: drop the StateT here
   = AppT { unAppT :: ReaderT GameEnv (StateT GameState m) a }
   deriving ( Functor
            , Applicative
@@ -212,7 +214,7 @@ newtype AppT m a
            )
        via (ReaderT GameEnv `ComposeT` StateT GameState)
 
-type AppM = AppT (EventM ResourceName)
+type AppM = AppT (EventM ResourceName GameState)
 
 --------------------------------------------------------------------------------
 
@@ -551,11 +553,24 @@ runAppT appt env initialState
   . unAppT
   $ appt
 
-instance (Monad m) => MonadRandom (AppT m) where
-  getRandomR rng = randomGen %%= randomR rng
-  getRandom = randomGen %%= random
-  getRandomRs rng = uses randomGen $ randomRs rng
-  getRandoms = uses randomGen randoms
+instance {-# OVERLAPPING #-} Monad m => StatefulGen StdGen (AppT m) where
+  uniformWord32R r _g = randomGen %%= genWord32R r
+  uniformWord64R r _g = randomGen %%= genWord64R r
+  uniformWord8 _g = randomGen %%= genWord8
+  uniformWord16 _g = randomGen %%= genWord16
+  uniformWord32 _g = randomGen %%= genWord32
+  uniformWord64 _g = randomGen %%= genWord64
+  uniformShortByteString n _g = randomGen %%= genShortByteString n
+
+instance Monad m => MonadRandom (AppT m) where
+  type Generator (AppT m) = StdGen
+  getGen = use randomGen
+
+-- instance (Monad m) => MonadRandom (AppT m) where
+--   getRandomR rng = randomGen %%= randomR rng
+--   getRandom = randomGen %%= random
+--   getRandomRs rng = uses randomGen $ randomRs rng
+--   getRandoms = uses randomGen randoms
 
 instance MonadTransControl AppT where
   type StT AppT a = (a, GameState)

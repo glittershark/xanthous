@@ -12,7 +12,6 @@ module Xanthous.Generators.Level.LevelContents
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (any, toList)
 --------------------------------------------------------------------------------
-import           Control.Monad.Random
 import           Data.Array.IArray (amap, bounds, rangeSize, (!))
 import qualified Data.Array.IArray as Arr
 import           Data.Foldable (any, toList)
@@ -55,7 +54,7 @@ placeDownStaircase cells = do
 
 randomDoors :: MonadRandom m => Cells -> m (EntityMap Door)
 randomDoors cells = do
-  doorRatio <- getRandomR subsetRange
+  doorRatio <- uniformR subsetRange
   let numDoors = floor $ doorRatio * fromIntegral (length candidateCells)
       doorPositions =
         removeAdjacent . fmap positionFromV2 . take numDoors $ candidateCells
@@ -155,7 +154,7 @@ randomEntities newWithType sizeRange cells =
     Just raws -> do
       let len = rangeSize $ bounds cells
       (numEntities :: Int) <-
-        floor . (* fromIntegral len) <$> getRandomR sizeRange
+        floor . (* fromIntegral len) <$> uniformR sizeRange
       entities <- for [0..numEntities] $ const $ do
         pos <- randomPosition cells
         r <- choose raws

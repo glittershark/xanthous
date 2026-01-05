@@ -9,7 +9,6 @@ module Xanthous.AI.Gormlak
 import           Xanthous.Prelude hiding (lines)
 --------------------------------------------------------------------------------
 import           Control.Monad.State
-import           Control.Monad.Random
 import           Data.Aeson (object)
 import qualified Data.Aeson as A
 import           Data.Generics.Product.Fields

@@ -23,34 +23,33 @@ import           Xanthous.Prelude hiding (Foldable, toList, for_)
 --------------------------------------------------------------------------------
 import           Data.Array.ST
 import           Data.Array.Unboxed
-import           Control.Monad.ST
-import           Control.Monad.Random
 import           Data.Monoid
 import           Data.Foldable (Foldable, toList, for_)
 import qualified Data.Set as Set
 import           Data.Semigroup.Foldable
 import           Linear.V2
 --------------------------------------------------------------------------------
+import           Xanthous.Random
 import           Xanthous.Util (foldlMapM', maximum1, minimum1)
 import           Xanthous.Data (Dimensions, width, height)
 --------------------------------------------------------------------------------
 
 type MCells s = STUArray s (V2 Word) Bool
 type Cells = UArray (V2 Word) Bool
-type CellM g s a = RandT g (ST s) a
+type CellM g s a = RandST g s a
 
 randInitialize :: RandomGen g => Dimensions -> Double -> CellM g s (MCells s)
 randInitialize dims aliveChance = do
   res <- initializeEmpty dims
   for_ [0..dims ^. width] $ \i ->
     for_ [0..dims ^. height] $ \j -> do
-      val <- (>= aliveChance) <$> getRandomR (0, 1)
-      lift $ writeArray res (V2 i j) val
+      val <- (>= aliveChance) <$> uniformR (0, 1)
+      liftST $ writeArray res (V2 i j) val
   pure res
 
 initializeEmpty :: RandomGen g => Dimensions -> CellM g s (MCells s)
 initializeEmpty dims =
-  lift $ newArray (0, V2 (dims ^. width) (dims ^. height)) False
+  liftST $ newArray (0, V2 (dims ^. width) (dims ^. height)) False
 
 -- | Returns the number of neighbors of the given point in the given array that
 -- are True.
@@ -154,11 +153,11 @@ floodFill :: forall a i.
             , Eq i
             )
           => a (V2 i) Bool -- ^ array
-          -> (V2 i)        -- ^ position
+          -> V2 i        -- ^ position
           -> Set (V2 i)
 floodFill = go mempty
   where
-    go :: Set (V2 i) -> a (V2 i) Bool -> (V2 i) -> Set (V2 i)
+    go :: Set (V2 i) -> a (V2 i) Bool -> V2 i -> Set (V2 i)
     go res arr@(bounds -> arrBounds) idx@(V2 x y)
       | not (inRange arrBounds idx) =  res
       | not (arr ! idx) =  res
@@ -180,7 +179,7 @@ floodFill = go mempty
                                in r' `seq` go r' arr idx')
                      else r)
            (res & contains idx .~ True) neighbors
-{-# SPECIALIZE floodFill :: UArray (V2 Word) Bool -> (V2 Word) -> Set (V2 Word) #-}
+{-# SPECIALIZE floodFill :: UArray (V2 Word) Bool -> V2 Word -> Set (V2 Word) #-}
 
 -- | Gives a list of all the disconnected regions in a cell array, represented
 -- each as lists of points

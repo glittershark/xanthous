@@ -4,7 +4,7 @@
 }:
 
 let
-  inherit (depot.users.grfn) xanthous;
+  inherit (depot.users.aspen) xanthous;
   xanthous-server = xanthous.server;
 in
 pkgs.dockerTools.buildLayeredImage {

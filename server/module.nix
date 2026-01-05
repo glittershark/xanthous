@@ -22,12 +22,12 @@ in
 
       image = mkOption {
         type = types.package;
-        default = depot.users.grfn.xanthous.server.docker;
+        default = depot.users.aspen.xanthous.server.docker;
         description = "OCI image file to run";
       };
 
       ed25519SecretKeyFile = mkOption {
-        type = with types; uniq string;
+        type = with types; uniq str;
         description = "Path to the ed25519 secret key for the server";
       };
     };

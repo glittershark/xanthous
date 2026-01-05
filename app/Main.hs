@@ -8,7 +8,6 @@ import qualified Brick.BChan
 import qualified Graphics.Vty as Vty
 import qualified Options.Applicative as Opt
 import           System.Random
-import           Control.Monad.Random (getRandom)
 import           Control.Exception (finally)
 import           System.Exit (die)
 --------------------------------------------------------------------------------
@@ -27,6 +26,7 @@ import           Xanthous.Generators.Level.Util (regions)
 import           Xanthous.Generators.Level.LevelContents
 import           Xanthous.Data (Dimensions, Dimensions'(Dimensions))
 import           Data.Array.IArray ( amap )
+import Xanthous.Random
 --------------------------------------------------------------------------------
 
 parseGameConfig :: Opt.Parser Game.Config
@@ -109,7 +109,7 @@ thanks = putStr "\n\n" >> putStrLn "Thanks for playing Xanthous!"
 
 newGame :: RunParams -> IO ()
 newGame rparams = do
-  gameSeed <- maybe getRandom pure $ seed rparams
+  gameSeed <- maybe (evalRandIO uniformM) pure $ seed rparams
   when (isNothing $ seed rparams)
     . putStrLn
     $ "Seed: " <> tshow gameSeed
@@ -147,7 +147,7 @@ runGame rt _config gameState = do
 runGenerate :: GeneratorInput -> Dimensions -> Maybe Int -> IO ()
 runGenerate input dims mSeed = do
   putStrLn "Generating..."
-  genSeed <- maybe getRandom pure mSeed
+  genSeed <- maybe (evalRandIO uniformM) pure mSeed
   let randGen = mkStdGen genSeed
       res = generateFromInput input dims randGen
       rs = regions $ amap not res
@@ -159,7 +159,7 @@ runGenerate input dims mSeed = do
   putStr "region lengths: "
   print $ length <$> rs
   putStr "character position: "
-  print =<< chooseCharacterPosition res
+  print =<< evalRandIO (chooseCharacterPosition res)
   putStrLn $ showCells res
 
 runCommand :: Command -> IO ()

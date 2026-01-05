@@ -5,7 +5,6 @@ module Xanthous.Generators.Level.Village
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding (any, failing, toList)
 --------------------------------------------------------------------------------
-import           Control.Monad.Random (MonadRandom)
 import           Control.Monad.State (execStateT, MonadState, modify)
 import           Control.Monad.Trans.Maybe
 import           Control.Parallel.Strategies

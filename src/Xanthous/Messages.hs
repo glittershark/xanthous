@@ -17,7 +17,6 @@ module Xanthous.Messages
 --------------------------------------------------------------------------------
 import Xanthous.Prelude hiding (lookup)
 --------------------------------------------------------------------------------
-import           Control.Monad.Random.Class (MonadRandom)
 import           Data.Aeson (FromJSON, ToJSON, toJSON, object)
 import qualified Data.Aeson as JSON
 import           Data.Aeson.Generic.DerivingVia

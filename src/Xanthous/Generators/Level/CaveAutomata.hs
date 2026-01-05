@@ -10,16 +10,17 @@ module Xanthous.Generators.Level.CaveAutomata
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
-import           Control.Monad.Random (RandomGen, runRandT)
 import           Data.Array.ST
 import           Data.Array.Unboxed
 import qualified Options.Applicative as Opt
 --------------------------------------------------------------------------------
+import           Xanthous.Random
 import           Xanthous.Util (between)
 import           Xanthous.Util.Optparse
 import           Xanthous.Data (Dimensions, width, height)
 import           Xanthous.Generators.Level.Util
 import           Linear.V2
+import System.Random.Stateful (newSTGenM)
 --------------------------------------------------------------------------------
 
 data Params = Params
@@ -84,9 +85,8 @@ parseParams = Params
 generate :: RandomGen g => Params -> Dimensions -> g -> Cells
 generate params dims gen
   = runSTUArray
-  $ fmap fst
-  $ flip runRandT gen
-  $ generate' params dims
+  $ newSTGenM gen
+  >>= runRandST (generate' params dims)
 
 generate' :: RandomGen g => Params -> Dimensions -> CellM g s (MCells s)
 generate' params dims = do
@@ -95,18 +95,18 @@ generate' params dims = do
   when (steps' > 0)
    $ for_ [0 .. pred steps'] . const $ stepAutomata cells dims params
   -- Remove all but the largest contiguous region of unfilled space
-  (_: smallerRegions) <- lift $ regions @UArray . amap not <$> freeze cells
-  lift $ fillAllM (fold smallerRegions) cells
-  lift $ fillOuterEdgesM cells
+  (_: smallerRegions) <- liftST $ regions @UArray . amap not <$> freeze cells
+  liftST $ fillAllM (fold smallerRegions) cells
+  liftST $ fillOuterEdgesM cells
   pure cells
 
 stepAutomata :: forall s g. MCells s -> Dimensions -> Params -> CellM g s ()
 stepAutomata cells dims params = do
-  origCells <- lift $ cloneMArray @_ @(STUArray s) cells
+  origCells <- liftST $ cloneMArray @_ @(STUArray s) cells
   for_ (range (0, V2 (dims ^. width) (dims ^. height))) $ \pos -> do
-    neighs <- lift $ numAliveNeighborsM origCells pos
-    origValue <- lift $ readArray origCells pos
-    lift . writeArray cells pos
+    neighs <- liftST $ numAliveNeighborsM origCells pos
+    origValue <- liftST $ readArray origCells pos
+    liftST . writeArray cells pos
       $ if origValue
         then neighs >= params ^. deathLimit
         else neighs > params ^. birthLimit

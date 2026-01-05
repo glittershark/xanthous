@@ -27,7 +27,6 @@ import           Xanthous.Prelude
 --------------------------------------------------------------------------------
 import           System.Random
 import           Control.Monad.State
-import           Control.Monad.Random (getRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Game.State
 import qualified Xanthous.Game.Memo as Memo
@@ -40,11 +39,12 @@ import           Xanthous.Data.VectorBag
 import           Xanthous.Entities.Character (Character, mkCharacter)
 import           {-# SOURCE #-} Xanthous.Entities.Entities ()
 import           Xanthous.Game.Memo (emptyMemoState, MemoState)
+import           Xanthous.Random
 import           Xanthous.Data.Memo (fillWithM, Memoized)
 --------------------------------------------------------------------------------
 
 getInitialState :: IO GameState
-getInitialState = initialStateFromSeed <$> getRandom
+getInitialState = initialStateFromSeed <$> evalRandIO uniformM
 
 initialStateFromSeed :: Int -> GameState
 initialStateFromSeed seed =

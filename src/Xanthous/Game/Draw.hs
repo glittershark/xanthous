@@ -10,7 +10,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Edit
 import           Control.Monad.State.Lazy (evalState)
-import           Control.Monad.State.Class ( get, MonadState, gets )
+import           Control.Monad.State.Class ( MonadState )
 --------------------------------------------------------------------------------
 import           Xanthous.Data
 import           Xanthous.Data.App (ResourceName, Panel(..))

@@ -9,7 +9,6 @@ module Xanthous.Generators.Level.Dungeon
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude hiding ((:>))
 --------------------------------------------------------------------------------
-import           Control.Monad.Random
 import           Data.Array.ST
 import           Data.Array.IArray (amap)
 import           Data.Stream.Infinite (Stream(..))
@@ -27,6 +26,7 @@ import           Xanthous.Data hiding (x, y, _x, _y, edges, distance)
 import           Xanthous.Generators.Level.Util
 import           Xanthous.Util.Graphics (delaunay, straightLine)
 import           Xanthous.Util.Graph (mstSubGraph)
+import System.Random.Stateful (newSTGenM)
 --------------------------------------------------------------------------------
 
 data Params = Params
@@ -83,11 +83,10 @@ parseParams = Params
 
 generate :: RandomGen g => Params -> Dimensions -> g -> Cells
 generate params dims gen
-  = amap not
-  $ runSTUArray
-  $ fmap fst
-  $ flip runRandT gen
-  $ generate' params dims
+  =   amap not
+  $   runSTUArray
+  $   newSTGenM gen
+  >>= runRandST (generate' params dims)
 
 --------------------------------------------------------------------------------
 
@@ -104,7 +103,7 @@ generate' params dims = do
                     $ Graph.labEdges fullRoomGraph
 
   reintroEdgeCount <- floor . (* fromIntegral (length nonMSTEdges))
-                     <$> getRandomR (params ^. connectednessRatioRange)
+                     <$> uniformR (params ^. connectednessRatioRange)
   let reintroEdges = take reintroEdgeCount nonMSTEdges
       corridorGraph = Graph.insEdges reintroEdges mst
 
@@ -113,7 +112,7 @@ generate' params dims = do
               . over both (fromJust . Graph.lab corridorGraph)
               ) $ Graph.edges corridorGraph
 
-  for_ (join corridors) $ \pt -> lift $ writeArray cells pt True
+  for_ (join corridors) $ \pt -> liftST $ writeArray cells pt True
 
   pure cells
 
@@ -121,12 +120,13 @@ type Room = Box Word
 
 genRooms :: MonadRandom m => Params -> Dimensions -> m [Room]
 genRooms params dims = do
-  numRooms <- fromIntegral <$> getRandomR (params ^. numRoomsRange)
-  subRand . fmap (Stream.take numRooms . removeIntersecting []) . infinitely $ do
-    roomWidth <- getRandomR $ params ^. roomDimensionRange
-    roomHeight <- getRandomR $ params ^. roomDimensionRange
-    xPos <- getRandomR (0, dims ^. width - roomWidth)
-    yPos <- getRandomR (0, dims ^. height - roomHeight)
+  numRooms <- fromIntegral <$> uniformR (params ^. numRoomsRange)
+  -- TODO(aspen): There was a `subRand` here; maybe figure out why?
+  fmap (Stream.take numRooms . removeIntersecting []) . infinitely $ do
+    roomWidth <- uniformR $ params ^. roomDimensionRange
+    roomHeight <- uniformR $ params ^. roomDimensionRange
+    xPos <- uniformR (0, dims ^. width - roomWidth)
+    yPos <- uniformR (0, dims ^. height - roomHeight)
     pure Box
       { _topLeftCorner = V2 xPos yPos
       , _dimensions = V2 roomWidth roomHeight
@@ -159,7 +159,7 @@ fillRoom cells room =
       V2 dimx dimy = room ^. dimensions
   in for_ [posx .. posx + dimx] $ \x ->
        for_ [posy .. posy + dimy] $ \y ->
-         lift $ writeArray cells (V2 x y) True
+         liftST $ writeArray cells (V2 x y) True
 
 corridorBetween :: MonadRandom m => Room -> Room -> m [V2 Word]
 corridorBetween originRoom destinationRoom

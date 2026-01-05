@@ -192,7 +192,7 @@ y = lens (\(Position _ yy) -> yy) (\(Position xx _) yy -> Position xx yy)
 type Position = Position' Int
 
 instance (Arbitrary a) => Arbitrary (Position' a) where
-  arbitrary = genericArbitrary
+  arbitrary = Position <$> arbitrary <*> arbitrary
   shrink (Position px py) = Position <$> shrink px <*> shrink py
 
 
@@ -434,7 +434,27 @@ data Neighbors a = Neighbors
   deriving stock (Show, Eq, Ord, Functor, Foldable, Traversable, Generic)
   deriving anyclass (NFData, CoArbitrary, Function, MonoFoldable)
 
-deriving via (GenericArbitrary (Neighbors a)) instance (Arbitrary a) => Arbitrary (Neighbors a)
+instance Arbitrary a => Arbitrary (Neighbors a) where
+  arbitrary
+    = Neighbors
+    <$> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+  shrink (Neighbors tl t tr l r bl b br)
+    = Neighbors
+    <$> shrink tl
+    <*> shrink t
+    <*> shrink tr
+    <*> shrink l
+    <*> shrink r
+    <*> shrink bl
+    <*> shrink b
+    <*> shrink br
 
 type instance Element (Neighbors a) = a
 

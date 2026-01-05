@@ -16,7 +16,8 @@ module Xanthous.App.Prompt
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
 --------------------------------------------------------------------------------
-import           Brick (BrickEvent(..), Next)
+--------------------------------------------------------------------------------
+import           Brick (BrickEvent(..), nestEventM')
 import           Brick.Widgets.Edit (handleEditorEvent)
 import           Data.Aeson (ToJSON, object)
 import           Graphics.Vty.Input.Events (Event(EvKey), Key(..))
@@ -39,7 +40,7 @@ handlePromptEvent
   :: Text -- ^ Prompt message
   -> Prompt AppM
   -> BrickEvent ResourceName AppEvent
-  -> AppM (Next GameState)
+  -> AppM GameState
 
 handlePromptEvent _ (Prompt Cancellable _ _ _ _) (VtyEvent (EvKey KEsc []))
   = clearPrompt >> continue
@@ -55,9 +56,9 @@ handlePromptEvent _ (Prompt _ SConfirm _ _ _) (VtyEvent (EvKey (KChar 'n') []))
 handlePromptEvent
   msg
   (Prompt c SStringPrompt (StringPromptState edit) pri cb)
-  (VtyEvent ev)
+  ev@(VtyEvent _)
   = do
-    edit' <- lift $ handleEditorEvent ev edit
+    edit' <- lift . nestEventM' edit $ handleEditorEvent ev
     let prompt' = Prompt c SStringPrompt (StringPromptState edit') pri cb
     promptState .= WaitingPrompt msg prompt'
     continue

@@ -4,14 +4,13 @@
 , directory, fgl, fgl-arbitrary, file-embed, filepath
 , generic-arbitrary, generic-lens, groups, hgeometry
 , hgeometry-combinatorial, JuicyPixels, lens, lens-properties, lib
-, lifted-async, linear, megaparsec, mmorph, monad-control
-, MonadRandom, mtl, optparse-applicative, parallel
-, parser-combinators, pointed, QuickCheck, quickcheck-instances
-, quickcheck-text, random, random-extras, random-fu, random-source
-, Rasterific, raw-strings-qq, reflection, semigroupoids, semigroups
-, splitmix, stache, streams, tasty, tasty-hunit, tasty-quickcheck
-, tasty-rerun, text, text-zipper, tomland, transformers, vector
-, vty, witherable, yaml, zlib
+, lifted-async, linear, megaparsec, mmorph, monad-control, mtl
+, optparse-applicative, parallel, parser-combinators, pointed
+, QuickCheck, quickcheck-instances, quickcheck-text, random
+, random-fu, Rasterific, raw-strings-qq, reflection, semigroupoids
+, semigroups, splitmix, stache, streams, tasty, tasty-hunit
+, tasty-quickcheck, tasty-rerun, text, text-zipper, tomland
+, transformers, vector, vty, witherable, yaml, zlib
 }:
 mkDerivation {
   pname = "xanthous";
@@ -25,12 +24,11 @@ mkDerivation {
     data-default data-interval deepseq directory fgl fgl-arbitrary
     file-embed filepath generic-arbitrary generic-lens groups hgeometry
     hgeometry-combinatorial JuicyPixels lens lifted-async linear
-    megaparsec mmorph monad-control MonadRandom mtl
-    optparse-applicative parallel parser-combinators pointed QuickCheck
-    quickcheck-instances quickcheck-text random random-extras random-fu
-    random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams text text-zipper tomland
-    transformers vector vty witherable yaml zlib
+    megaparsec mmorph monad-control mtl optparse-applicative parallel
+    parser-combinators pointed QuickCheck quickcheck-instances
+    quickcheck-text random random-fu Rasterific raw-strings-qq
+    reflection semigroupoids semigroups splitmix stache streams text
+    text-zipper tomland transformers vector vty witherable yaml zlib
   ];
   executableHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
@@ -38,12 +36,11 @@ mkDerivation {
     data-default data-interval deepseq directory fgl fgl-arbitrary
     file-embed filepath generic-arbitrary generic-lens groups hgeometry
     hgeometry-combinatorial JuicyPixels lens lifted-async linear
-    megaparsec mmorph monad-control MonadRandom mtl
-    optparse-applicative parallel parser-combinators pointed QuickCheck
-    quickcheck-instances quickcheck-text random random-extras random-fu
-    random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams text text-zipper tomland
-    transformers vector vty witherable yaml zlib
+    megaparsec mmorph monad-control mtl optparse-applicative parallel
+    parser-combinators pointed QuickCheck quickcheck-instances
+    quickcheck-text random random-fu Rasterific raw-strings-qq
+    reflection semigroupoids semigroups splitmix stache streams text
+    text-zipper tomland transformers vector vty witherable yaml zlib
   ];
   testHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
@@ -51,13 +48,12 @@ mkDerivation {
     data-default data-interval deepseq directory fgl fgl-arbitrary
     file-embed filepath generic-arbitrary generic-lens groups hgeometry
     hgeometry-combinatorial JuicyPixels lens lens-properties
-    lifted-async linear megaparsec mmorph monad-control MonadRandom mtl
+    lifted-async linear megaparsec mmorph monad-control mtl
     optparse-applicative parallel parser-combinators pointed QuickCheck
-    quickcheck-instances quickcheck-text random random-extras random-fu
-    random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams tasty tasty-hunit
-    tasty-quickcheck tasty-rerun text text-zipper tomland transformers
-    vector vty witherable yaml zlib
+    quickcheck-instances quickcheck-text random random-fu Rasterific
+    raw-strings-qq reflection semigroupoids semigroups splitmix stache
+    streams tasty tasty-hunit tasty-quickcheck tasty-rerun text
+    text-zipper tomland transformers vector vty witherable yaml zlib
   ];
   benchmarkHaskellDepends = [
     aeson array async base bifunctors brick checkers classy-prelude
@@ -65,12 +61,11 @@ mkDerivation {
     data-default data-interval deepseq directory fgl fgl-arbitrary
     file-embed filepath generic-arbitrary generic-lens groups hgeometry
     hgeometry-combinatorial JuicyPixels lens lifted-async linear
-    megaparsec mmorph monad-control MonadRandom mtl
-    optparse-applicative parallel parser-combinators pointed QuickCheck
-    quickcheck-instances quickcheck-text random random-extras random-fu
-    random-source Rasterific raw-strings-qq reflection semigroupoids
-    semigroups splitmix stache streams text text-zipper tomland
-    transformers vector vty witherable yaml zlib
+    megaparsec mmorph monad-control mtl optparse-applicative parallel
+    parser-combinators pointed QuickCheck quickcheck-instances
+    quickcheck-text random random-fu Rasterific raw-strings-qq
+    reflection semigroupoids semigroups splitmix stache streams text
+    text-zipper tomland transformers vector vty witherable yaml zlib
   ];
   homepage = "https://github.com/glittershark/xanthous#readme";
   description = "A WIP TUI RPG";

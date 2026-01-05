@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 --------------------------------------------------------------------------------
 module Xanthous.Random
@@ -11,12 +12,7 @@ module Xanthous.Random
   , uniformWord64R
   , uniformWord8
   , uniformR
-  , uniformM
   , RandomGen
-  , RandST(..)
-  , liftST
-  , RandIO(..)
-  , evalRandIO
 
     -- | Random generation
   , Choose(..)
@@ -46,64 +42,24 @@ import           Data.Interval ( Interval, lowerBound', Extended (Finite)
                                , upperBound
                                )
 import qualified System.Random.Stateful as RS
-import           System.Random.Stateful
-                 ( UniformRange, RandomGen(..), StdGen, getStdGen, IOGenM )
-import           Control.Monad.ST
-import           Control.Monad.Fix
-import           Control.Monad.Fail
-import           Control.Monad.State (StateT)
-import           Control.Monad.Trans.Maybe (MaybeT)
+import           System.Random.Stateful (UniformRange, RandomGen(..))
+import Control.Monad.ST
 --------------------------------------------------------------------------------
 
 class (Monad m, RS.StatefulGen (Generator m) m) => MonadRandom m where
   type Generator m
   getGen :: m (Generator m)
 
-newtype RandIO g m a = RandIO { runRandIO :: ReaderT (IOGenM g) m a  }
-  deriving newtype ( Functor, Applicative, Monad, MonadFix, MonadFail
-                   , MonadIO, MonadTrans )
-
-evalRandIO :: MonadIO m => RandIO StdGen m a -> m a
-evalRandIO m = do
-  gen <- getStdGen >>= RS.newIOGenM
-  runReaderT (runRandIO m) gen
-
-instance (RandomGen g, Monad m, MonadIO m) => MonadRandom (RandIO g m) where
-  type Generator (RandIO g m) = IOGenM g
-  getGen = RandIO ask
-
-newtype RandST g s a = RandST { runRandST :: RS.STGenM g s -> (ST s) a }
-  deriving stock Generic
-  deriving ( Functor, Applicative, Monad, MonadFix, MonadFail
-           , RS.StatefulGen (RS.STGenM g s))
-       via ReaderT (RS.STGenM g s) (ST s)
-
-liftST :: ST s a -> RandST g s a
-liftST = RandST . const
+newtype RandST g s a = RandST { runRandSTT :: RS.STGenM g s -> (ST s) a }
+  deriving stock Functor
 
 instance RS.RandomGen g => MonadRandom (RandST g s) where
   type Generator (RandST g s) = RS.STGenM g s
-  getGen = RandST pure
+  getGen = ask
 
-newtype LiftMonadRandom t m a = LiftMonadRandom (t m a)
-
-deriving newtype instance Functor (t m) => Functor (LiftMonadRandom t m)
-deriving newtype instance Applicative (t m) => Applicative (LiftMonadRandom t m)
-deriving newtype instance Monad (t m) => Monad (LiftMonadRandom t m)
-deriving newtype instance MonadTrans t => MonadTrans (LiftMonadRandom t)
-
-instance (MonadTrans t, Monad (t m), MonadRandom m)
-    => MonadRandom (LiftMonadRandom t m) where
-  type Generator (LiftMonadRandom t m) = Generator m
+instance (MonadTrans t, Monad (t m), MonadRandom m) => MonadRandom (t m) where
+  type Generator (t m) = Generator m
   getGen = lift getGen
-
-deriving via (LiftMonadRandom (StateT s) m)
-    instance (MonadRandom m) => MonadRandom (StateT s m)
-deriving via (LiftMonadRandom (ReaderT r) m)
-    instance (MonadRandom m) => MonadRandom (ReaderT r m)
-deriving via (LiftMonadRandom MaybeT m)
-    instance (MonadRandom m) => MonadRandom (MaybeT m)
-
 
 instance {-# INCOHERENT #-} (MonadTrans t, Monad (t m), RS.StatefulGen g m) => RS.StatefulGen g (t m) where
   uniformWord32R u g = lift $ RS.uniformWord32R u g
@@ -127,9 +83,6 @@ uniformWord64R ub = getGen >>= RS.uniformWord64R ub
 
 uniformWord8 :: MonadRandom m => m Word8
 uniformWord8 = getGen >>= RS.uniformWord8
-
-uniformM :: (RS.Uniform a, MonadRandom m) => m a
-uniformM = getGen >>= RS.uniformM
 
 uniformR :: (UniformRange a, MonadRandom m) => (a, a) -> m a
 uniformR range = getGen >>= RS.uniformRM range

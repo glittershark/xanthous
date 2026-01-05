@@ -8,12 +8,10 @@ module Xanthous.App
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
-import           Brick hiding (App, halt, continue, raw)
+import           Brick hiding (App, halt, raw)
 import qualified Brick
 import           Graphics.Vty.Attributes (defAttr)
 import           Graphics.Vty.Input.Events (Event(EvKey))
-import           Control.Monad.State (get, gets)
-import           Control.Monad.State.Class (modify)
 import           Data.Aeson (object, ToJSON)
 import qualified Data.Aeson as A
 import qualified Data.Vector as V
@@ -87,14 +85,17 @@ makeApp :: GameEnv -> RunType -> IO App
 makeApp env rt = pure $ Brick.App
   { appDraw = drawGame
   , appChooseCursor = const headMay
-  , appHandleEvent = \game event -> runAppM (handleEvent event) env game
+  , appHandleEvent = \event -> do
+      game <- get
+      game' <- runAppM (handleEvent event) env game
+      put game'
   , appStartEvent = case rt of
-      NewGame -> runAppM (startEvent >> get) env
-      LoadGame save -> pure . (savefile ?~ save)
+      NewGame -> get >>= runAppM (startEvent >> get) env >>= put
+      LoadGame save -> get <&> (savefile ?~ save) >>= put
   , appAttrMap = const $ attrMap defAttr []
   }
 
-runAppM :: AppM a -> GameEnv -> GameState -> EventM ResourceName a
+runAppM :: AppM a -> GameEnv -> GameState -> EventM ResourceName GameState a
 runAppM appm ge = fmap fst . runAppT appm ge
 
 startEvent :: AppM ()
@@ -116,13 +117,13 @@ initLevel = do
 
 --------------------------------------------------------------------------------
 
-handleEvent :: BrickEvent ResourceName AppEvent -> AppM (Next GameState)
+handleEvent :: BrickEvent ResourceName AppEvent -> AppM GameState
 handleEvent ev = use promptState >>= \case
   NoPrompt -> handleNoPromptEvent ev
   WaitingPrompt msg pr -> handlePromptEvent msg pr ev
 
 
-handleNoPromptEvent :: BrickEvent ResourceName AppEvent -> AppM (Next GameState)
+handleNoPromptEvent :: BrickEvent ResourceName AppEvent -> AppM GameState
 handleNoPromptEvent (VtyEvent (EvKey k mods))
   | Just command <- commandFromKey k mods
   = do messageHistory %= nextTurn
@@ -133,7 +134,7 @@ handleNoPromptEvent (AppEvent AutoContinue) = do
   continue
 handleNoPromptEvent _ = continue
 
-handleCommand :: Command -> AppM (Next GameState)
+handleCommand :: Command -> AppM GameState
 handleCommand Quit = confirm_ ["quit", "confirm"] (liftIO exitSuccess) >> continue
 
 handleCommand Help = showPanel HelpPanel >> continue

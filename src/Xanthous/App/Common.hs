@@ -17,7 +17,6 @@ import           Xanthous.Prelude
 import           Data.Aeson (object)
 import qualified Data.Aeson as A
 import           Control.Monad.State (MonadState)
-import           Control.Monad.Random (MonadRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Data (Position, positioned)
 import           Xanthous.Data.EntityMap (EntityMap)
@@ -28,6 +27,7 @@ import           Xanthous.Game.State
 import           Xanthous.Monad
 import           Xanthous.Entities.Character (Character)
 import           Xanthous.Util.Inflection (toSentence)
+import           Xanthous.Random
 --------------------------------------------------------------------------------
 
 entitiesAtPositionWithType

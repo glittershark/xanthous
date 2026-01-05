@@ -4,7 +4,6 @@ module Xanthous.Generators.Level.UtilSpec (main, test) where
 --------------------------------------------------------------------------------
 import Test.Prelude
 import System.Random (mkStdGen)
-import Control.Monad.Random (runRandT)
 import Data.Array.ST (STUArray, runSTUArray, thaw)
 import Data.Array.IArray (bounds, array)
 import Data.Array.MArray (newArray, readArray, writeArray)

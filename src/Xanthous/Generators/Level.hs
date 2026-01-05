@@ -25,7 +25,6 @@ module Xanthous.Generators.Level
 import           Xanthous.Prelude
 import           Data.Array.Unboxed
 import qualified Options.Applicative as Opt
-import           Control.Monad.Random
 --------------------------------------------------------------------------------
 import qualified Xanthous.Generators.Level.CaveAutomata as CaveAutomata
 import qualified Xanthous.Generators.Level.Dungeon as Dungeon
@@ -39,7 +38,9 @@ import           Xanthous.Entities.Environment
 import           Xanthous.Entities.Item (Item)
 import           Xanthous.Entities.Creature (Creature)
 import           Xanthous.Game.State (SomeEntity(..))
+import           Xanthous.Random hiding (Generator)
 import           Linear.V2
+import qualified System.Random.Stateful as SR
 --------------------------------------------------------------------------------
 
 data Generator
@@ -56,7 +57,7 @@ type family Params (gen :: Generator) :: Type where
   Params 'Dungeon = Dungeon.Params
 
 generate
-  :: RandomGen g
+  :: SR.RandomGen g
   => SGenerator gen
   -> Params gen
   -> Dimensions
@@ -68,7 +69,7 @@ generate SDungeon = Dungeon.generate
 data GeneratorInput where
   GeneratorInput :: forall gen. SGenerator gen -> Params gen -> GeneratorInput
 
-generateFromInput :: RandomGen g => GeneratorInput -> Dimensions -> g -> Cells
+generateFromInput :: SR.RandomGen g => GeneratorInput -> Dimensions -> g -> Cells
 generateFromInput (GeneratorInput sg ps) = generate sg ps
 
 parseGeneratorInput :: Opt.Parser GeneratorInput
@@ -135,7 +136,7 @@ generateLevel
   -> Word -- ^ Level number, starting at 0
   -> m Level
 generateLevel gen ps dims num = do
-  rand <- mkStdGen <$> getRandom
+  rand <- SR.mkStdGen <$> uniformM
   let cells = generate gen ps dims rand
       _levelWalls = cellsToWalls cells
   village <- generateVillage cells gen

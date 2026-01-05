@@ -15,7 +15,6 @@ import           Data.Aeson hiding (Key)
 import qualified Data.Aeson.KeyMap as KM
 import           Data.Aeson.Types (typeMismatch)
 import           Data.List.NonEmpty (NonEmpty(..))
-import qualified Graphics.Vty.Input
 import           Graphics.Vty.Attributes
 import           Brick.Widgets.Edit
 import           Data.Text.Zipper.Generic (GenericTextZipper)
@@ -38,7 +37,6 @@ import           Data.Interval ( Interval, Extended (..), Boundary (..)
 import           Test.QuickCheck.Checkers (EqProp ((=-=)))
 --------------------------------------------------------------------------------
 import           Xanthous.Util.JSON
-import           Xanthous.Util.QuickCheck
 import           Xanthous.Util (EqEqProp(EqEqProp))
 import qualified Graphics.Vty.Input.Events
 --------------------------------------------------------------------------------
@@ -374,7 +372,10 @@ deriving newtype instance (Arbitrary s, CoArbitrary (m (a, s)))
 
 --------------------------------------------------------------------------------
 
-deriving via (GenericArbitrary (V2 a)) instance (Arbitrary a) => Arbitrary (V2 a)
+instance (Arbitrary a) => Arbitrary (V2 a) where
+  arbitrary = V2 <$> arbitrary <*> arbitrary
+  shrink (V2 x y) = V2 <$> shrink x <*> shrink y
+
 instance CoArbitrary a => CoArbitrary (V2 a)
 instance Function a => Function (V2 a)
 
@@ -489,7 +490,3 @@ instance forall a. (FromJSON a, Ord a) => FromJSON (Interval a) where
       checkLength arr =
         when (length arr /= 2) $ fail "Expected array of length 2"
 
---------------------------------------------------------------------------------
-
-deriving anyclass instance NFData Graphics.Vty.Input.Key
-deriving anyclass instance NFData Graphics.Vty.Input.Modifier

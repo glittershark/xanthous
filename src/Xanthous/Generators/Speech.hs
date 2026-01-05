@@ -31,8 +31,9 @@ module Xanthous.Generators.Speech
 import           Xanthous.Prelude hiding (replicateM)
 import           Data.Interval (Interval, (<=..<=))
 import qualified Data.Interval as Interval
-import           Control.Monad.Random.Class (MonadRandom)
-import           Xanthous.Random (chooseRange, choose, ChooseElement (..), Weighted (Weighted))
+import           Xanthous.Random
+                 ( MonadRandom
+                 , chooseRange, choose, ChooseElement (..), Weighted (Weighted))
 import           Control.Monad (replicateM)
 import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Test.QuickCheck.Instances.Text ()

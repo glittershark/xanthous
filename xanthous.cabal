@@ -29,6 +29,8 @@ source-repository head
 library
   exposed-modules:
       Data.Aeson.Generic.DerivingVia
+      Data.Random.Distribution.Uniform.Exclusive
+      Data.Random.Shuffle.Weighted
       Xanthous.AI.Gormlak
       Xanthous.App
       Xanthous.App.Autocommands
@@ -122,7 +124,6 @@ library
   ghc-options: -Wall -fconstraint-solver-iterations=6
   build-depends:
       JuicyPixels
-    , MonadRandom
     , QuickCheck
     , Rasterific
     , aeson
@@ -165,9 +166,8 @@ library
     , quickcheck-instances
     , quickcheck-text
     , random
-    , random-extras
+    -- , random-extras
     , random-fu
-    , random-source
     , raw-strings-qq
     , reflection
     , semigroupoids
@@ -223,7 +223,6 @@ executable xanthous
   ghc-options: -Wall -fconstraint-solver-iterations=6 -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       JuicyPixels
-    , MonadRandom
     , QuickCheck
     , Rasterific
     , aeson
@@ -266,9 +265,8 @@ executable xanthous
     , quickcheck-instances
     , quickcheck-text
     , random
-    , random-extras
+    -- , random-extras
     , random-fu
-    , random-source
     , raw-strings-qq
     , reflection
     , semigroupoids
@@ -352,7 +350,6 @@ test-suite test
   ghc-options: -Wall -fconstraint-solver-iterations=6 -threaded -rtsopts -with-rtsopts=-N -O0
   build-depends:
       JuicyPixels
-    , MonadRandom
     , QuickCheck
     , Rasterific
     , aeson
@@ -396,9 +393,8 @@ test-suite test
     , quickcheck-instances
     , quickcheck-text
     , random
-    , random-extras
+    -- , random-extras
     , random-fu
-    , random-source
     , raw-strings-qq
     , reflection
     , semigroupoids
@@ -463,7 +459,6 @@ benchmark benchmark
   ghc-options: -Wall -fconstraint-solver-iterations=6 -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       JuicyPixels
-    , MonadRandom
     , QuickCheck
     , Rasterific
     , aeson
@@ -506,9 +501,8 @@ benchmark benchmark
     , quickcheck-instances
     , quickcheck-text
     , random
-    , random-extras
+    -- , random-extras
     , random-fu
-    , random-source
     , raw-strings-qq
     , reflection
     , semigroupoids

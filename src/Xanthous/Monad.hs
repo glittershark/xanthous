@@ -3,8 +3,8 @@ module Xanthous.Monad
   ( AppT(..)
   , AppM
   , runAppT
-  , continue
   , halt
+  , continue
 
     -- * Messages
   , say
@@ -21,13 +21,13 @@ module Xanthous.Monad
   ) where
 --------------------------------------------------------------------------------
 import           Xanthous.Prelude
-import           Control.Monad.Random
 import           Control.Monad.State
 import qualified Brick
-import           Brick (EventM, Next)
+import           Brick (EventM)
 import           Brick.BChan (writeBChan)
 import           Data.Aeson (ToJSON, object)
 --------------------------------------------------------------------------------
+import           Xanthous.Random
 import           Xanthous.Data.App (AppEvent)
 import           Xanthous.Game.State
 import           Xanthous.Game.Env
@@ -35,11 +35,13 @@ import           Xanthous.Messages (Message)
 import qualified Xanthous.Messages as Messages
 --------------------------------------------------------------------------------
 
-halt :: AppT (EventM n) (Next GameState)
-halt = lift . Brick.halt =<< get
+halt :: AppT (EventM s n) GameState
+halt = do
+  lift Brick.halt
+  get
 
-continue :: AppT (EventM n) (Next GameState)
-continue = lift . Brick.continue =<< get
+continue :: AppT (EventM s n) GameState
+continue = get
 
 --------------------------------------------------------------------------------
 

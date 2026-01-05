@@ -17,14 +17,13 @@ import           Xanthous.Prelude
 import           Test.QuickCheck (Arbitrary, CoArbitrary, Function)
 import           Data.Aeson (ToJSON, FromJSON)
 import           Data.Aeson.Generic.DerivingVia
-import           Control.Monad.Random (MonadRandom)
 --------------------------------------------------------------------------------
 import           Xanthous.Entities.RawTypes (ItemType)
 import qualified Xanthous.Entities.RawTypes as Raw
 import           Xanthous.Game.State
 import           Xanthous.Data (Grams, Per, Cubic, Meters, (|*|))
 import           Xanthous.Util.QuickCheck (GenericArbitrary(GenericArbitrary))
-import           Xanthous.Random (choose, FiniteInterval(..))
+import           Xanthous.Random (MonadRandom, choose, FiniteInterval(..))
 --------------------------------------------------------------------------------
 
 data Item = Item
